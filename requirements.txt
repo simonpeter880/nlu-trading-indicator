@@ -1,0 +1,8 @@
+# Production dependencies for NLU Trading Indicators
+# Last updated: 2026-02-12
+
+# Async HTTP client for Binance API
+aiohttp==3.10.11
+
+# Timezone handling for VWAP session calculations
+pytz==2024.2

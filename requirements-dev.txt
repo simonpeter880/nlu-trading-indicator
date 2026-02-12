@@ -1,0 +1,38 @@
+# Development dependencies for NLU Trading Indicators
+# Last updated: 2026-02-12
+
+# Include production dependencies
+-r requirements.txt
+
+# Testing framework
+pytest==8.0.2
+pytest-cov==4.1.0
+pytest-asyncio==0.23.5
+
+# Code formatting
+black==24.2.0
+isort==5.13.2
+
+# Linting
+flake8==7.0.0
+flake8-docstrings==1.7.0
+flake8-bugbear==24.2.6
+
+# Type checking
+mypy==1.8.0
+types-pytz==2024.1.0.20240203
+
+# Security scanning
+bandit==1.7.7
+safety==3.0.1
+
+# Pre-commit hooks
+pre-commit==3.6.2
+
+# Documentation (optional)
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# Development utilities
+ipython==8.21.0
+ipdb==0.13.13
