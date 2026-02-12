@@ -33,6 +33,6 @@ pre-commit==3.5.0
 sphinx==7.1.2
 sphinx-rtd-theme==2.0.0
 
-# Development utilities (8.18.1 is last version supporting Python 3.9)
-ipython==8.18.1
+# Development utilities (8.12.3 is last version supporting Python 3.8)
+ipython==8.12.3
 ipdb==0.13.13
