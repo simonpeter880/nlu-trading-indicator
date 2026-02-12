@@ -1,6 +1,8 @@
 """
-Binance Data Fetcher for Indicator Analysis
+Binance Data Fetcher for Indicator Analysis.
+
 Fetches OHLCV, volume, open interest, funding rates, and orderbook data.
+Uses centralized retry logic with exponential backoff for resilient API calls.
 """
 
 import asyncio
@@ -11,6 +13,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import aiohttp
+
+from ..utils.retry import retry_async
 
 logger = logging.getLogger(__name__)
 

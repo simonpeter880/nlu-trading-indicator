@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Development guide (DEVELOPMENT.md)
 - Environment variable configuration (.env.example)
 - Security scanning workflow
+- Centralized logging configuration with colored output and rotation (indicator/logging_config.py)
+- Retry utilities with exponential backoff for resilient API calls (indicator/utils/retry.py)
+- Support for both sync and async retry decorators
+- Configurable retry context manager for flexible retry logic
 
 ### Changed
 - Migrated from Python 3.8+ to Python 3.9+ (dropped 3.8 support for modern type hints)

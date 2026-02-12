@@ -41,11 +41,11 @@ jobs:
 
     - name: Run flake8 linting
       run: |
-        flake8 nlu_analyzer/ indicator/ tests/ --count --show-source --statistics || true
+        flake8 nlu_analyzer/ indicator/ tests/ --count --show-source --statistics
 
     - name: Run mypy type checking
       run: |
-        mypy nlu_analyzer/ indicator/ --ignore-missing-imports || true
+        mypy nlu_analyzer/ indicator/ --ignore-missing-imports
 
     - name: Run bandit security scan
       run: |
@@ -53,7 +53,7 @@ jobs:
 
     - name: Run pytest with coverage
       run: |
-        pytest --cov=nlu_analyzer --cov=indicator --cov-report=xml --cov-report=term-missing --cov-fail-under=10 || true
+        pytest --cov=nlu_analyzer --cov=indicator --cov-report=xml --cov-report=term-missing --cov-fail-under=70
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
@@ -85,11 +85,11 @@ jobs:
 
     - name: Run safety check for vulnerabilities
       run: |
-        safety check --json || true
+        safety check --json
 
     - name: Run bandit security scan
       run: |
-        bandit -r nlu_analyzer/ indicator/ -f json -o bandit-report.json || true
+        bandit -r nlu_analyzer/ indicator/ -f json -o bandit-report.json
 
     - name: Upload bandit report
       uses: actions/upload-artifact@v4

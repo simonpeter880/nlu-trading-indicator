@@ -17,18 +17,14 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
-from indicators import VolatilityIndicators
-
+from ..engines.indicators import VolatilityIndicators
 from .atr_expansion_adapter import ATRExpansionAdapter, ATRSignal
 from .data_types import (
     BookSignal,
     DeltaSignal,
-    FundingUpdate,
     IngestionConfig,
     MarketState,
     OIFundingSignal,
-    OIUpdate,
-    OrderbookSnapshot,
     TradeEvent,
     VolumeSignal,
     WindowConfig,
@@ -42,7 +38,7 @@ from .engine_adapters import (
     VolumeEngineAdapter,
 )
 from .ingestion import DataIngestionManager
-from .metrics import MetricsCollector, get_metrics
+from .metrics import MetricsCollector
 from .rolling_window import MultiTimeframeWindows
 from .state_machine import MarketRegime, StateTransition, TradeSignal, TradingStateMachine
 

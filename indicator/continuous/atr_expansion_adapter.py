@@ -5,17 +5,16 @@ Bridges the ATR Expansion engine with the continuous analysis architecture,
 providing volatility regime signals for the state machine.
 """
 
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Dict, List, Optional
 
-# Add parent to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from atr_expansion import ATRExpansionConfig, ATRExpansionEngine, ATRExpansionState, Candle
-
-from .data_types import SignalDirection, TradeEvent
+from ..engines.atr_expansion import (
+    ATRExpansionConfig,
+    ATRExpansionEngine,
+    ATRExpansionState,
+    Candle,
+)
+from .data_types import SignalDirection
 from .rolling_window import TradeWindow
 
 

@@ -5,22 +5,19 @@ Integrates market structure detection into the continuous streaming system.
 Provides rolling window structure analysis with multiple timeframes.
 """
 
-import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-from market_structure import (
+from ..engines.market_structure import (
     MarketStructureDetector,
     MarketStructureState,
     StructuralMomentum,
-    StructureEvent,
     TimeframeAlignment,
     TrendDirection,
     get_allowed_trade_direction,
     structure_veto_signal,
 )
-
-from .rolling_window import TradeWindow, WindowStats
+from .rolling_window import TradeWindow
 
 
 @dataclass
@@ -170,7 +167,8 @@ class MarketStructureAdapter:
         Returns:
             Dict with: opens, highs, lows, closes, volumes, timestamps
         """
-        if not window.prices:
+        timestamped_trades = window.items_with_timestamps()
+        if not timestamped_trades:
             return {
                 "opens": [],
                 "highs": [],
@@ -180,51 +178,47 @@ class MarketStructureAdapter:
                 "timestamps": [],
             }
 
-        # Get all trades
-        trades_count = len(window.prices)
-
-        # Build candles by grouping trades
-        candles = []
+        candles: List[Dict[str, float]] = []
         candle_ms = candle_seconds * 1000
+        current_bucket = (timestamped_trades[0].timestamp_ms // candle_ms) * candle_ms
+        open_price = high_price = low_price = close_price = timestamped_trades[0].value.price
+        volume = timestamped_trades[0].value.quantity
 
-        # Find start time
-        start_time = window.start_time
-        current_time = window.start_time
+        for item in timestamped_trades[1:]:
+            bucket = (item.timestamp_ms // candle_ms) * candle_ms
+            trade = item.value
 
-        i = 0
-        while i < trades_count:
-            candle_start = current_time
-            candle_end = candle_start + candle_ms
-
-            # Collect trades in this candle
-            candle_prices = []
-            candle_volumes = []
-
-            while i < trades_count:
-                # Estimate timestamp for this trade
-                # (approximate: trades are evenly distributed in window)
-                trade_time = start_time + (i / trades_count) * (window.end_time - start_time)
-
-                if trade_time >= candle_end:
-                    break
-
-                candle_prices.append(window.prices[i])
-                candle_volumes.append(window.volumes[i])
-                i += 1
-
-            if candle_prices:
+            if bucket != current_bucket:
                 candles.append(
                     {
-                        "timestamp": int(candle_start),
-                        "open": candle_prices[0],
-                        "high": max(candle_prices),
-                        "low": min(candle_prices),
-                        "close": candle_prices[-1],
-                        "volume": sum(candle_volumes),
+                        "timestamp": int(current_bucket),
+                        "open": open_price,
+                        "high": high_price,
+                        "low": low_price,
+                        "close": close_price,
+                        "volume": volume,
                     }
                 )
+                current_bucket = bucket
+                open_price = high_price = low_price = close_price = trade.price
+                volume = trade.quantity
+                continue
 
-            current_time = candle_end
+            high_price = max(high_price, trade.price)
+            low_price = min(low_price, trade.price)
+            close_price = trade.price
+            volume += trade.quantity
+
+        candles.append(
+            {
+                "timestamp": int(current_bucket),
+                "open": open_price,
+                "high": high_price,
+                "low": low_price,
+                "close": close_price,
+                "volume": volume,
+            }
+        )
 
         # Extract OHLCV
         if not candles:

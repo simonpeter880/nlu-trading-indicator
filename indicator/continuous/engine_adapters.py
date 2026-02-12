@@ -6,12 +6,27 @@ from rolling windows instead of discrete REST fetches.
 """
 
 # Import existing engines
-import sys
 import time
-from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from ..engines.funding_analysis import AdvancedFundingAnalyzer, FundingAnalysisSummary, FundingZone
+from ..engines.oi_analysis import AdvancedOIAnalyzer, OIAnalysisSummary
+from ..engines.orderbook_analysis import (
+    AbsorptionSide,
+    AdvancedOrderbookAnalyzer,
+    OrderbookAnalysisSummary,
+)
+from ..engines.orderbook_analysis import OrderbookSnapshot as AnalyzerOrderbookSnapshot
+from ..engines.signals import Signal
+from ..engines.unified_score import UnifiedScore, calculate_unified_score
+from ..engines.volume_analysis import AdvancedVolumeAnalyzer, VolumeAnalysisSummary
+from ..engines.volume_engine import (
+    AggressionBias,
+    ExhaustionRisk,
+    InstitutionalVolumeEngine,
+    VolumeAcceleration,
+    VolumeEngineResult,
+)
 from .data_types import (
     BookSignal,
     DeltaSignal,
@@ -25,33 +40,6 @@ from .data_types import (
 )
 from .ring_buffer import TimestampedRingBuffer
 from .rolling_window import MultiTimeframeWindows, OrderbookHistory, TradeWindow
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from funding_analysis import (
-    AdvancedFundingAnalyzer,
-    CrowdPosition,
-    FundingAnalysisSummary,
-    FundingZone,
-)
-from oi_analysis import AdvancedOIAnalyzer, OIAnalysisSummary, OIRegime
-from orderbook_analysis import (
-    AbsorptionSide,
-    AdvancedOrderbookAnalyzer,
-    ImbalanceDirection,
-    OrderbookAnalysisSummary,
-)
-from orderbook_analysis import OrderbookSnapshot as AnalyzerOrderbookSnapshot
-from signals import Signal
-from unified_score import UnifiedScore, calculate_unified_score
-from volume_analysis import AdvancedVolumeAnalyzer, VolumeAnalysisSummary
-from volume_engine import (
-    AggressionBias,
-    ExhaustionRisk,
-    InstitutionalVolumeEngine,
-    VolumeAcceleration,
-    VolumeEngineResult,
-)
 
 
 def _bias_to_direction(bias: AggressionBias) -> SignalDirection:
@@ -220,7 +208,7 @@ class VolumeEngineAdapter:
         Uses lazy import to avoid heavy dependency at module load.
         """
         try:
-            from data_fetcher import AggTradeData
+            from ..engines.data_fetcher import AggTradeData
         except Exception:
             return []
 

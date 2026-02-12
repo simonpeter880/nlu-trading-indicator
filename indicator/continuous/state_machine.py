@@ -557,4 +557,3 @@ class TradingStateMachine:
                 self._transitions.append(transition)
             except Exception:
                 continue
-        self._transitions.clear()

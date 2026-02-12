@@ -13,7 +13,6 @@ Usage:
 
 import argparse
 import asyncio
-import sys
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -642,7 +641,7 @@ class DeepDiveDisplay:
         # Print ATR expansion (timing gate)
         atr_signals = results.get("atr_signals")
         if atr_signals:
-            from continuous.atr_expansion_adapter import format_atr_signals
+            from indicator.continuous.atr_expansion_adapter import format_atr_signals
 
             print()
             print(f"{Colors.BOLD}{Colors.CYAN}┌{'─' * 78}┐{Colors.RESET}")
