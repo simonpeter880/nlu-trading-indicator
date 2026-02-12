@@ -6,11 +6,11 @@ standard deviation bands, and interaction state machine.
 """
 
 import math
-from datetime import datetime, timedelta, timezone
-from typing import List
+from datetime import datetime, timezone
 
 import pytest
-from vwap_engine import (
+
+from nlu_analyzer.indicators.vwap_engine import (
     BandMethod,
     Candle,
     InteractionState,

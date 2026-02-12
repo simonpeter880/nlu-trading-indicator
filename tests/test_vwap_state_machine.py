@@ -1,13 +1,11 @@
-"""
-Tests for VWAP Interaction State Machine
-"""
+"""Tests for VWAP Interaction State Machine."""
 
 import pytest
-from vwap_state_machine import (
+
+from nlu_analyzer.indicators.vwap_state_machine import (
     InteractionState,
     Position,
     Regime,
-    VWAPInteractionState,
     VWAPStateConfig,
     VWAPStateMachine,
 )

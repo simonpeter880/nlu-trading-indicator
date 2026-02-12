@@ -7,7 +7,8 @@ Tests component normalization, weighting, smoothing, and bucketing.
 from typing import List
 
 import pytest
-from trend_strength import (
+
+from nlu_analyzer.indicators.trend_strength import (
     Bucket,
     Candle,
     TrendStrengthConfig,

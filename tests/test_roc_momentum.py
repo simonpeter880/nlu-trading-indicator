@@ -10,15 +10,10 @@ Validates:
 """
 
 import math
-import sys
-from pathlib import Path
-from typing import List
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from roc_momentum import Candle, ROCConfig, ROCMomentumEngine, ROCState
+from nlu_analyzer.indicators.roc_momentum import Candle, ROCConfig, ROCMomentumEngine, ROCState
 
 # =============================================================================
 # FIXTURES

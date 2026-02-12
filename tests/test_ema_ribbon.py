@@ -5,11 +5,11 @@ Tests incremental EMA updates, stack scoring, state classification,
 and various trend scenarios.
 """
 
-import math
 from typing import List
 
 import pytest
-from ema_ribbon import (
+
+from nlu_analyzer.indicators.ema_ribbon import (
     Candle,
     EMARibbonConfig,
     EMARibbonEngine,

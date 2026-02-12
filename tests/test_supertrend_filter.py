@@ -7,7 +7,8 @@ Tests ATR calculation, band locking, direction flips, and regime classification.
 from typing import List
 
 import pytest
-from supertrend_filter import (
+
+from nlu_analyzer.indicators.supertrend_filter import (
     Candle,
     Direction,
     Regime,
