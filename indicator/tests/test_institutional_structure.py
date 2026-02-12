@@ -14,7 +14,7 @@ from typing import List
 
 import pytest
 
-from ..institutional_structure import (
+from indicator.engines.institutional_structure import (
     Candle,
     EventType,
     MarketStructureEngine,
