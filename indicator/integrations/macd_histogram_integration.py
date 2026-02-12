@@ -9,18 +9,18 @@ Always combine with price action, volume, and market structure.
 """
 
 from indicator.engines.macd_histogram import (
-    MACDHistogramEngine,
-    MACDHistConfig,
     Candle,
-    print_macd_histogram,
+    MACDHistConfig,
+    MACDHistogramEngine,
     format_macd_state,
     interpret_macd,
+    print_macd_histogram,
 )
-
 
 # ============================================================================
 # EXAMPLE 1: Continuous Runner Integration
 # ============================================================================
+
 
 def example_continuous_integration():
     """
@@ -70,6 +70,7 @@ def example_continuous_integration():
 # ============================================================================
 # EXAMPLE 2: Batch Analysis Integration (runner.py)
 # ============================================================================
+
 
 def example_batch_integration():
     """
@@ -125,6 +126,7 @@ def example_batch_integration():
 # EXAMPLE 3: Combined with RSI for Divergence Confirmation
 # ============================================================================
 
+
 def example_combined_rsi_macd():
     """
     Example: Combine MACD with RSI for stronger reversal signals.
@@ -157,6 +159,7 @@ def example_combined_rsi_macd():
 # ============================================================================
 # EXAMPLE 4: Multi-Timeframe Momentum Alignment
 # ============================================================================
+
 
 def example_multi_timeframe_momentum():
     """
@@ -196,6 +199,7 @@ def example_multi_timeframe_momentum():
 # EXAMPLE 5: MACD Phase as Bias Filter
 # ============================================================================
 
+
 def example_phase_bias():
     """
     Example: Use MACD phase (BULL/BEAR) as directional bias.
@@ -223,6 +227,7 @@ def example_phase_bias():
 # ============================================================================
 # EXAMPLE 6: Event Confidence for Position Sizing
 # ============================================================================
+
 
 def example_event_confidence():
     """
@@ -253,6 +258,7 @@ def example_event_confidence():
 # EXAMPLE 7: Compact Print Block for Display
 # ============================================================================
 
+
 def example_compact_display():
     """
     Example: Display MACD histogram in deep-dive or batch analysis.
@@ -280,16 +286,16 @@ def example_compact_display():
     for i in range(50):
         change = 2 if i % 4 == 0 else -0.5
         price += change
-        example_candles.append(Candle(
-            i * 60000, price - 1, price + 2, price - 2, price, 1000
-        ))
+        example_candles.append(Candle(i * 60000, price - 1, price + 2, price - 2, price, 1000))
 
     # Warmup
-    states = engine.warmup({
-        "1m": example_candles,
-        "5m": example_candles[::5],
-        "1h": example_candles[::60] if len(example_candles) >= 60 else example_candles[:10],
-    })
+    states = engine.warmup(
+        {
+            "1m": example_candles,
+            "5m": example_candles[::5],
+            "1h": example_candles[::60] if len(example_candles) >= 60 else example_candles[:10],
+        }
+    )
 
     # Display
     print("\n" + "=" * 70)
@@ -305,6 +311,7 @@ def example_compact_display():
 # ============================================================================
 # EXAMPLE 8: Real-time Continuous Updates
 # ============================================================================
+
 
 def example_realtime_updates():
     """
@@ -334,7 +341,7 @@ def example_realtime_updates():
             high=price + 1,
             low=price - 2,
             close=price,
-            volume=1000 + i * 10
+            volume=1000 + i * 10,
         )
 
         # O(1) update

@@ -10,59 +10,66 @@ Key Concepts:
 """
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, TYPE_CHECKING
 from enum import Enum
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from .signals import Signal
+
 if TYPE_CHECKING:
     from .indicator_config import IndicatorConfig
 
 from .indicator_config import DEFAULT_CONFIG
 
+
 class OIRegime(Enum):
     """The 4 fundamental OI regimes."""
-    NEW_LONGS = "new_longs"          # Price ↑, OI ↑ - Trend continuation
-    SHORT_COVERING = "short_covering" # Price ↑, OI ↓ - Fake strength
-    NEW_SHORTS = "new_shorts"         # Price ↓, OI ↑ - Squeeze fuel
+
+    NEW_LONGS = "new_longs"  # Price ↑, OI ↑ - Trend continuation
+    SHORT_COVERING = "short_covering"  # Price ↑, OI ↓ - Fake strength
+    NEW_SHORTS = "new_shorts"  # Price ↓, OI ↑ - Squeeze fuel
     LONG_LIQUIDATION = "long_liquidation"  # Price ↓, OI ↓ - Trend exhaustion
-    NEUTRAL = "neutral"               # No clear regime
+    NEUTRAL = "neutral"  # No clear regime
 
 
 class OISignal(Enum):
     """High-edge OI signals."""
-    COMPRESSION = "compression"       # OI rising while price stalls
-    BREAKOUT_TRAP = "breakout_trap"   # OI dropping after breakout
-    EXPANSION = "expansion"           # OI expanding at key level
-    EXHAUSTION = "exhaustion"         # OI collapsing
+
+    COMPRESSION = "compression"  # OI rising while price stalls
+    BREAKOUT_TRAP = "breakout_trap"  # OI dropping after breakout
+    EXPANSION = "expansion"  # OI expanding at key level
+    EXHAUSTION = "exhaustion"  # OI collapsing
     NONE = "none"
 
 
 @dataclass
 class OIRegimeResult:
     """Result of OI regime analysis."""
+
     regime: OIRegime
     price_direction: str  # 'up', 'down', 'flat'
-    oi_direction: str     # 'up', 'down', 'flat'
+    oi_direction: str  # 'up', 'down', 'flat'
     interpretation: str
     trade_meaning: str
-    strength: float       # 0-100, how clear the regime is
+    strength: float  # 0-100, how clear the regime is
 
 
 @dataclass
 class OIRateOfChange:
     """OI rate of change analysis."""
+
     current_oi: float
     previous_oi: float
     oi_change_absolute: float
     oi_change_percent: float
-    rate_vs_average: float    # How fast compared to normal
-    acceleration: float       # Is the rate increasing or decreasing
+    rate_vs_average: float  # How fast compared to normal
+    acceleration: float  # Is the rate increasing or decreasing
     description: str
 
 
 @dataclass
 class OIHighEdgeSignal:
     """High-edge OI signal detection."""
+
     signal: OISignal
     detected: bool
     confidence: float
@@ -73,6 +80,7 @@ class OIHighEdgeSignal:
 @dataclass
 class OIAnalysisSummary:
     """Complete OI analysis summary."""
+
     regime: OIRegimeResult
     rate_of_change: OIRateOfChange
     high_edge_signal: OIHighEdgeSignal
@@ -95,17 +103,19 @@ class AdvancedOIAnalyzer:
         self,
         price_threshold: Optional[float] = None,
         oi_threshold: Optional[float] = None,
-        config: Optional['IndicatorConfig'] = None
+        config: Optional["IndicatorConfig"] = None,
     ):
         self.config = config or DEFAULT_CONFIG
         cfg = self.config.open_interest
-        self.price_threshold = price_threshold if price_threshold is not None else cfg.price_move_threshold_pct
-        self.oi_threshold = oi_threshold if oi_threshold is not None else cfg.oi_change_threshold_pct
+        self.price_threshold = (
+            price_threshold if price_threshold is not None else cfg.price_move_threshold_pct
+        )
+        self.oi_threshold = (
+            oi_threshold if oi_threshold is not None else cfg.oi_change_threshold_pct
+        )
 
     def determine_regime(
-        self,
-        price_change_percent: float,
-        oi_change_percent: float
+        self, price_change_percent: float, oi_change_percent: float
     ) -> OIRegimeResult:
         """
         Determine which of the 4 OI regimes we're in.
@@ -172,14 +182,10 @@ class AdvancedOIAnalyzer:
             oi_direction=oi_dir,
             interpretation=interpretation,
             trade_meaning=trade_meaning,
-            strength=strength
+            strength=strength,
         )
 
-    def analyze_rate_of_change(
-        self,
-        oi_history: List[float],
-        lookback: int = 20
-    ) -> OIRateOfChange:
+    def analyze_rate_of_change(self, oi_history: List[float], lookback: int = 20) -> OIRateOfChange:
         """
         Analyze the RATE of OI change, not just the absolute value.
 
@@ -193,7 +199,7 @@ class AdvancedOIAnalyzer:
                 oi_change_percent=0,
                 rate_vs_average=1.0,
                 acceleration=0,
-                description="Insufficient OI history"
+                description="Insufficient OI history",
             )
 
         current = oi_history[-1]
@@ -207,8 +213,8 @@ class AdvancedOIAnalyzer:
         if len(oi_history) >= lookback:
             changes = []
             for i in range(1, lookback):
-                if oi_history[-i-1] > 0:
-                    pct = (oi_history[-i] - oi_history[-i-1]) / oi_history[-i-1] * 100
+                if oi_history[-i - 1] > 0:
+                    pct = (oi_history[-i] - oi_history[-i - 1]) / oi_history[-i - 1] * 100
                     changes.append(abs(pct))
             avg_change = sum(changes) / len(changes) if changes else 1.0
         else:
@@ -226,12 +232,12 @@ class AdvancedOIAnalyzer:
             mid = cfg.rate_acceleration_periods // 2
 
             for i in range(1, mid + 1):
-                if oi_history[-i-1] > 0:
-                    recent_changes.append(abs(oi_history[-i] - oi_history[-i-1]))
+                if oi_history[-i - 1] > 0:
+                    recent_changes.append(abs(oi_history[-i] - oi_history[-i - 1]))
 
             for i in range(mid + 1, cfg.rate_acceleration_periods + 1):
-                if oi_history[-i-1] > 0:
-                    older_changes.append(abs(oi_history[-i] - oi_history[-i-1]))
+                if oi_history[-i - 1] > 0:
+                    older_changes.append(abs(oi_history[-i] - oi_history[-i - 1]))
 
             if recent_changes and older_changes:
                 recent_avg = sum(recent_changes) / len(recent_changes)
@@ -260,7 +266,7 @@ class AdvancedOIAnalyzer:
             oi_change_percent=change_pct,
             rate_vs_average=rate_vs_avg,
             acceleration=acceleration,
-            description=desc
+            description=desc,
         )
 
     def detect_high_edge_signal(
@@ -269,7 +275,7 @@ class AdvancedOIAnalyzer:
         oi_history: List[float],
         highs: Optional[List[float]] = None,
         lows: Optional[List[float]] = None,
-        lookback: int = 10
+        lookback: int = 10,
     ) -> OIHighEdgeSignal:
         """
         Detect high-edge OI signals:
@@ -294,7 +300,7 @@ class AdvancedOIAnalyzer:
                 detected=False,
                 confidence=0,
                 description="Insufficient data for signal detection",
-                action="Wait for more data"
+                action="Wait for more data",
             )
 
         cfg = self.config.open_interest
@@ -309,26 +315,37 @@ class AdvancedOIAnalyzer:
         oi_change_pct = (oi_end - oi_start) / oi_start * 100 if oi_start > 0 else 0
 
         # Recent price move (last few bars)
-        recent_price_move = (prices[-1] - prices[-3]) / prices[-3] * 100 if len(prices) >= 3 and prices[-3] > 0 else 0
+        recent_price_move = (
+            (prices[-1] - prices[-3]) / prices[-3] * 100
+            if len(prices) >= 3 and prices[-3] > 0
+            else 0
+        )
 
         # Check for COMPRESSION: OI up, price flat
-        if oi_change_pct > cfg.compression_oi_change_pct and price_volatility < cfg.compression_price_volatility_pct:
+        if (
+            oi_change_pct > cfg.compression_oi_change_pct
+            and price_volatility < cfg.compression_price_volatility_pct
+        ):
             return OIHighEdgeSignal(
                 signal=OISignal.COMPRESSION,
                 detected=True,
                 confidence=min(85, 50 + oi_change_pct * 5),
                 description=f"COMPRESSION: OI +{oi_change_pct:.1f}% while price ranged {price_volatility:.1f}%",
-                action="Prepare for breakout! Set alerts at range extremes"
+                action="Prepare for breakout! Set alerts at range extremes",
             )
 
         # Check for BREAKOUT TRAP: Recent breakout but OI dropping
         if highs and lows and len(highs) >= lookback:
             recent_window = min(cfg.breakout_trap_recent_window_bars, lookback)
             recent_high = max(highs[-recent_window:])
-            range_high = max(highs[-lookback:-recent_window]) if len(highs) > recent_window else recent_high
+            range_high = (
+                max(highs[-lookback:-recent_window]) if len(highs) > recent_window else recent_high
+            )
 
             recent_low = min(lows[-recent_window:])
-            range_low = min(lows[-lookback:-recent_window]) if len(lows) > recent_window else recent_low
+            range_low = (
+                min(lows[-lookback:-recent_window]) if len(lows) > recent_window else recent_low
+            )
 
             # Breakout high with OI drop
             breakout_ratio = cfg.breakout_trap_breakout_pct / 100
@@ -339,7 +356,8 @@ class AdvancedOIAnalyzer:
             recent_oi_start = oi_history[recent_oi_start_idx] if oi_history else 0
             recent_oi_change = (
                 (oi_history[-1] - recent_oi_start) / recent_oi_start * 100
-                if recent_oi_start > 0 else 0
+                if recent_oi_start > 0
+                else 0
             )
 
             if broke_high and recent_oi_change < cfg.breakout_trap_oi_drop_pct:
@@ -348,7 +366,7 @@ class AdvancedOIAnalyzer:
                     detected=True,
                     confidence=min(80, 50 + abs(recent_oi_change) * 3),
                     description=f"TRAP: Broke highs but OI dropped {recent_oi_change:.1f}%",
-                    action="Fade the breakout! Short entries with tight stops"
+                    action="Fade the breakout! Short entries with tight stops",
                 )
 
             if broke_low and recent_oi_change < cfg.breakout_trap_oi_drop_pct:
@@ -357,18 +375,21 @@ class AdvancedOIAnalyzer:
                     detected=True,
                     confidence=min(80, 50 + abs(recent_oi_change) * 3),
                     description=f"TRAP: Broke lows but OI dropped {recent_oi_change:.1f}%",
-                    action="Fade the breakdown! Long entries with tight stops"
+                    action="Fade the breakdown! Long entries with tight stops",
                 )
 
         # Check for EXPANSION: OI expanding significantly
-        if oi_change_pct > cfg.expansion_oi_change_pct and abs(recent_price_move) > cfg.expansion_price_move_pct:
+        if (
+            oi_change_pct > cfg.expansion_oi_change_pct
+            and abs(recent_price_move) > cfg.expansion_price_move_pct
+        ):
             direction = "bullish" if recent_price_move > 0 else "bearish"
             return OIHighEdgeSignal(
                 signal=OISignal.EXPANSION,
                 detected=True,
                 confidence=min(80, 50 + oi_change_pct * 3),
                 description=f"EXPANSION: OI +{oi_change_pct:.1f}% with {direction} price action",
-                action=f"Genuine interest - trade with the trend ({direction})"
+                action=f"Genuine interest - trade with the trend ({direction})",
             )
 
         # Check for EXHAUSTION: OI collapsing
@@ -378,7 +399,7 @@ class AdvancedOIAnalyzer:
                 detected=True,
                 confidence=min(75, 50 + abs(oi_change_pct) * 2),
                 description=f"EXHAUSTION: OI collapsed {oi_change_pct:.1f}%",
-                action="Move is ending - take profits or prepare for reversal"
+                action="Move is ending - take profits or prepare for reversal",
             )
 
         # No clear signal
@@ -387,7 +408,7 @@ class AdvancedOIAnalyzer:
             detected=False,
             confidence=40,
             description="No high-edge signal detected",
-            action="No clear edge - wait for setup"
+            action="No clear edge - wait for setup",
         )
 
     def full_analysis(
@@ -396,7 +417,7 @@ class AdvancedOIAnalyzer:
         oi_history: List[float],
         highs: Optional[List[float]] = None,
         lows: Optional[List[float]] = None,
-        price_change_percent: Optional[float] = None
+        price_change_percent: Optional[float] = None,
     ) -> OIAnalysisSummary:
         """
         Complete OI analysis answering: "Is money entering or leaving?"
@@ -414,22 +435,28 @@ class AdvancedOIAnalyzer:
                     oi_direction="flat",
                     interpretation="No data",
                     trade_meaning="Cannot analyze",
-                    strength=0
+                    strength=0,
                 ),
                 rate_of_change=OIRateOfChange(
-                    current_oi=0, previous_oi=0,
-                    oi_change_absolute=0, oi_change_percent=0,
-                    rate_vs_average=0, acceleration=0,
-                    description="No data"
+                    current_oi=0,
+                    previous_oi=0,
+                    oi_change_absolute=0,
+                    oi_change_percent=0,
+                    rate_vs_average=0,
+                    acceleration=0,
+                    description="No data",
                 ),
                 high_edge_signal=OIHighEdgeSignal(
-                    signal=OISignal.NONE, detected=False,
-                    confidence=0, description="No data", action="Wait"
+                    signal=OISignal.NONE,
+                    detected=False,
+                    confidence=0,
+                    description="No data",
+                    action="Wait",
                 ),
                 is_money_entering=False,
                 overall_signal=Signal.NEUTRAL,
                 confidence=0,
-                summary="Insufficient OI data"
+                summary="Insufficient OI data",
             )
 
         # Calculate price change if not provided
@@ -439,7 +466,9 @@ class AdvancedOIAnalyzer:
         # OI change
         oi_change_pct = 0
         if len(oi_history) >= 2:
-            oi_change_pct = (oi_history[-1] - oi_history[0]) / oi_history[0] * 100 if oi_history[0] > 0 else 0
+            oi_change_pct = (
+                (oi_history[-1] - oi_history[0]) / oi_history[0] * 100 if oi_history[0] > 0 else 0
+            )
 
         # Run analyses
         regime = self.determine_regime(price_change_percent or 0, oi_change_pct)
@@ -458,7 +487,9 @@ class AdvancedOIAnalyzer:
             elif signal.signal == OISignal.BREAKOUT_TRAP:
                 overall_signal = Signal.CAUTION
             elif signal.signal == OISignal.EXPANSION:
-                overall_signal = Signal.BULLISH if regime.price_direction == "up" else Signal.BEARISH
+                overall_signal = (
+                    Signal.BULLISH if regime.price_direction == "up" else Signal.BEARISH
+                )
             elif signal.signal == OISignal.EXHAUSTION:
                 overall_signal = Signal.CAUTION
             else:
@@ -476,7 +507,9 @@ class AdvancedOIAnalyzer:
                 overall_signal = Signal.NEUTRAL
 
         # Calculate confidence
-        confidence = (regime.strength + signal.confidence) / 2 if signal.detected else regime.strength
+        confidence = (
+            (regime.strength + signal.confidence) / 2 if signal.detected else regime.strength
+        )
 
         # Generate summary
         if is_money_entering:
@@ -494,7 +527,7 @@ class AdvancedOIAnalyzer:
             is_money_entering=is_money_entering,
             overall_signal=overall_signal,
             confidence=confidence,
-            summary=summary
+            summary=summary,
         )
 
 
@@ -502,7 +535,7 @@ class AdvancedOIAnalyzer:
 def get_oi_regime(
     price_change_percent: float,
     oi_change_percent: float,
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> Tuple[OIRegime, str]:
     """
     Quick regime check.

@@ -4,21 +4,21 @@ Rolling Window computations for continuous data.
 Provides efficient time-based aggregations over streaming data.
 """
 
-from typing import Generic, TypeVar, List, Optional, Callable, Dict, Any
-from dataclasses import dataclass, field
 import time
 from collections import deque
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar
 
-from .ring_buffer import RingBuffer, TimestampedRingBuffer, TimestampedItem
-from .data_types import TradeEvent, OrderbookSnapshot
+from .data_types import OrderbookSnapshot, TradeEvent
+from .ring_buffer import RingBuffer, TimestampedItem, TimestampedRingBuffer
 
-
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass
 class WindowStats:
     """Statistics computed over a rolling window."""
+
     window_seconds: int
     item_count: int
     span_ms: int  # Actual time span of data

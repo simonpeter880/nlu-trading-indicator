@@ -7,16 +7,22 @@ Prompts for a trading pair and runs the full analysis.
 import asyncio
 import sys
 
-from indicator.display.colors import Colors
 from indicator.apps.runner import analyze_pair
+from indicator.display.colors import Colors
 
 
 def get_user_input() -> tuple:
     """Get trading pair, timeframe, and OI history window from user."""
     print()
-    print(f"{Colors.BOLD}{Colors.CYAN}╔════════════════════════════════════════════════════════════╗{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.CYAN}║         TRADING PAIR INDICATOR ANALYSIS                    ║{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.CYAN}╚════════════════════════════════════════════════════════════╝{Colors.RESET}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}╔════════════════════════════════════════════════════════════╗{Colors.RESET}"
+    )
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}║         TRADING PAIR INDICATOR ANALYSIS                    ║{Colors.RESET}"
+    )
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}╚════════════════════════════════════════════════════════════╝{Colors.RESET}"
+    )
     print()
 
     # Get symbol
@@ -38,16 +44,22 @@ def get_user_input() -> tuple:
     tf_input = input(f"{Colors.CYAN}> {Colors.RESET}").strip()
 
     timeframe_map = {
-        '1': '1m', '1m': '1m',
-        '2': '5m', '5m': '5m',
-        '3': '15m', '15m': '15m',
-        '4': '1h', '1h': '1h',
-        '5': '4h', '4h': '4h',
-        '6': '1d', '1d': '1d',
-        '': '1h'
+        "1": "1m",
+        "1m": "1m",
+        "2": "5m",
+        "5m": "5m",
+        "3": "15m",
+        "15m": "15m",
+        "4": "1h",
+        "1h": "1h",
+        "5": "4h",
+        "4h": "4h",
+        "6": "1d",
+        "1d": "1d",
+        "": "1h",
     }
 
-    timeframe = timeframe_map.get(tf_input.lower(), '1h')
+    timeframe = timeframe_map.get(tf_input.lower(), "1h")
 
     # OI history window length
     print()

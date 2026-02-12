@@ -2,8 +2,9 @@
 
 from typing import Union
 
-from .colors import Colors
 from signals import Signal, signal_value
+
+from .colors import Colors
 
 
 def signal_color(signal: Union[Signal, str]) -> str:

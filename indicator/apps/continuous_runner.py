@@ -11,32 +11,33 @@ Usage:
     python continuous_runner.py BTCUSDT --quiet    # Minimal output
 """
 
-import asyncio
 import argparse
+import asyncio
 import sys
 import time
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List, Optional
 
-from indicator.display.colors import Colors
 from indicator.continuous import (
-    ContinuousAnalyzer,
     AnalyzerConfig,
+    ContinuousAnalyzer,
+    MarketRegime,
     MarketState,
     StateTransition,
     TradeSignal,
-    MarketRegime,
 )
-
+from indicator.display.colors import Colors
 
 # =============================================================================
 # TRADE TRACKER - Simulated P&L from trade signals
 # =============================================================================
 
+
 @dataclass
 class SimulatedTrade:
     """A single simulated trade from entry to exit."""
+
     trade_num: int
     direction: str  # "long" or "short"
     signal_type: str  # "breakout", "squeeze", "trend", "reversal"
@@ -211,7 +212,7 @@ class TradeTracker:
         for t in closed:
             pnl = t.pnl_percent
             if pnl is not None:
-                equity *= (1 + pnl / 100)
+                equity *= 1 + pnl / 100
         compounded_pnl = (equity - 1) * 100
 
         win_pnls = [t.pnl_percent for t in winners if t.pnl_percent is not None]
@@ -264,12 +265,20 @@ class ContinuousDisplay:
     def print_header(self, symbol: str) -> None:
         """Print startup header."""
         print()
-        print(f"{Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════╗{Colors.RESET}")
-        print(f"{Colors.BOLD}{Colors.CYAN}║         CONTINUOUS MARKET ANALYSIS                            ║{Colors.RESET}")
+        print(
+            f"{Colors.BOLD}{Colors.CYAN}╔═══════════════════════════════════════════════════════════════╗{Colors.RESET}"
+        )
+        print(
+            f"{Colors.BOLD}{Colors.CYAN}║         CONTINUOUS MARKET ANALYSIS                            ║{Colors.RESET}"
+        )
         print(f"{Colors.BOLD}{Colors.CYAN}║         {symbol:^50}   ║{Colors.RESET}")
-        print(f"{Colors.BOLD}{Colors.CYAN}╚═══════════════════════════════════════════════════════════════╝{Colors.RESET}")
+        print(
+            f"{Colors.BOLD}{Colors.CYAN}╚═══════════════════════════════════════════════════════════════╝{Colors.RESET}"
+        )
         print()
-        print(f"{Colors.DIM}Architecture: aggTrades(ws) → Rolling Windows → Engines → State Machine{Colors.RESET}")
+        print(
+            f"{Colors.DIM}Architecture: aggTrades(ws) → Rolling Windows → Engines → State Machine{Colors.RESET}"
+        )
         print(f"{Colors.DIM}Windows: 15s | 60s | 180s | 900s | 3600s{Colors.RESET}")
         print()
 
@@ -296,7 +305,11 @@ class ContinuousDisplay:
         # Score
         score = status["unified_score"]
         score_str = f"{score:+.2f}" if score is not None else "---"
-        score_color = Colors.GREEN if score and score > 0.3 else Colors.RED if score and score < -0.3 else Colors.RESET
+        score_color = (
+            Colors.GREEN
+            if score and score > 0.3
+            else Colors.RED if score and score < -0.3 else Colors.RESET
+        )
 
         # Confidence
         conf = status["confidence"]
@@ -309,7 +322,11 @@ class ContinuousDisplay:
         # Delta ratio from volume signal
         delta = signals["volume"]["delta_ratio"]
         delta_str = f"{delta:+.1%}" if delta is not None else "---"
-        delta_color = Colors.GREEN if delta and delta > 0.1 else Colors.RED if delta and delta < -0.1 else Colors.RESET
+        delta_color = (
+            Colors.GREEN
+            if delta and delta > 0.1
+            else Colors.RED if delta and delta < -0.1 else Colors.RESET
+        )
 
         # Check stop loss / take profit exits
         if price:
@@ -318,8 +335,10 @@ class ContinuousDisplay:
                 pnl = closed.pnl_percent or 0.0
                 pnl_color = Colors.GREEN if pnl >= 0 else Colors.RED
                 reason = closed.exit_reason.replace("_", " ").upper()
-                print(f"\n  {Colors.BOLD}{pnl_color}TRADE #{closed.trade_num} CLOSED ({reason}): "
-                      f"{pnl:+.2f}%{Colors.RESET}")
+                print(
+                    f"\n  {Colors.BOLD}{pnl_color}TRADE #{closed.trade_num} CLOSED ({reason}): "
+                    f"{pnl:+.2f}%{Colors.RESET}"
+                )
 
         # Trade tracker summary
         trade_str = ""
@@ -327,17 +346,23 @@ class ContinuousDisplay:
             stats = self.trade_tracker.get_stats(price or 0)
             net = stats["net_pnl"]
             net_color = Colors.GREEN if net >= 0 else Colors.RED
-            trade_str = (f" │ Trades: {stats['total_signals']} "
-                        f"│ P&L: {net_color}{net:+.2f}%{Colors.RESET}")
+            trade_str = (
+                f" │ Trades: {stats['total_signals']} "
+                f"│ P&L: {net_color}{net:+.2f}%{Colors.RESET}"
+            )
 
         # Clear line and print
-        print(f"\r{Colors.DIM}[{elapsed_str}]{Colors.RESET} "
-              f"{state_color}{state:20}{Colors.RESET} "
-              f"│ {price_str:>10} "
-              f"│ Score: {score_color}{score_str:>6}{Colors.RESET} "
-              f"│ Δ: {delta_color}{delta_str:>6}{Colors.RESET} "
-              f"│ Conf: {conf_str:>4} "
-              f"│ {quality_bar}{trade_str}", end="", flush=True)
+        print(
+            f"\r{Colors.DIM}[{elapsed_str}]{Colors.RESET} "
+            f"{state_color}{state:20}{Colors.RESET} "
+            f"│ {price_str:>10} "
+            f"│ Score: {score_color}{score_str:>6}{Colors.RESET} "
+            f"│ Δ: {delta_color}{delta_str:>6}{Colors.RESET} "
+            f"│ Conf: {conf_str:>4} "
+            f"│ {quality_bar}{trade_str}",
+            end="",
+            flush=True,
+        )
 
     def print_state_change(self, transition: StateTransition) -> None:
         """Print state transition."""
@@ -348,8 +373,12 @@ class ContinuousDisplay:
 
         print()  # New line after status
         print(f"\n{Colors.BOLD}[{timestamp}] STATE CHANGE:{Colors.RESET}")
-        print(f"  {from_color}{transition.from_state.value}{Colors.RESET} → {to_color}{transition.to_state.value}{Colors.RESET}")
-        print(f"  {Colors.DIM}Trigger: {transition.trigger} | Confidence: {transition.confidence:.1f}%{Colors.RESET}")
+        print(
+            f"  {from_color}{transition.from_state.value}{Colors.RESET} → {to_color}{transition.to_state.value}{Colors.RESET}"
+        )
+        print(
+            f"  {Colors.DIM}Trigger: {transition.trigger} | Confidence: {transition.confidence:.1f}%{Colors.RESET}"
+        )
 
     def print_trade_signal(self, signal: TradeSignal) -> None:
         """Print trade signal with emphasis."""
@@ -368,7 +397,9 @@ class ContinuousDisplay:
 
         print()
         print(f"\n{Colors.BOLD}{dir_color}{'═' * 60}{Colors.RESET}")
-        print(f"{Colors.BOLD}{dir_color}  {arrow} TRADE SIGNAL #{self._trade_count}: {signal.direction.upper()} {signal.signal_type.upper()}{Colors.RESET}")
+        print(
+            f"{Colors.BOLD}{dir_color}  {arrow} TRADE SIGNAL #{self._trade_count}: {signal.direction.upper()} {signal.signal_type.upper()}{Colors.RESET}"
+        )
         print(f"{Colors.BOLD}{dir_color}{'═' * 60}{Colors.RESET}")
         print(f"  {Colors.BOLD}Entry:{Colors.RESET}  ${signal.entry_price:,.2f}")
         if signal.stop_loss:
@@ -484,7 +515,9 @@ class ContinuousDisplay:
         # Latencies
         print(f"\n{Colors.BOLD}Signal Latencies (ms):{Colors.RESET}")
         signal_lat = latencies.get("signal_compute", {})
-        print(f"  Overall:  mean={signal_lat.get('mean', '0')} p95={signal_lat.get('p95', '0')} max={signal_lat.get('max', '0')}")
+        print(
+            f"  Overall:  mean={signal_lat.get('mean', '0')} p95={signal_lat.get('p95', '0')} max={signal_lat.get('max', '0')}"
+        )
 
         for name in ["volume_engine", "book_engine", "unified_score"]:
             lat = latencies.get(name, {})
@@ -516,6 +549,7 @@ class DeepDiveDisplay:
     def should_refresh(self) -> bool:
         """Check if it's time to refresh the deep dive display."""
         import time
+
         now = time.time()
         if now - self._last_refresh >= self.refresh_interval:
             self._last_refresh = now
@@ -530,28 +564,30 @@ class DeepDiveDisplay:
         # Check if analyzer is warmed up
         if not analyzer.is_warmed_up:
             warmup = analyzer.warmup_progress
-            elapsed = warmup.get('elapsed_seconds', 0)
-            required = warmup.get('required_seconds', 60)
-            trades = warmup.get('trade_count', 0)
-            required_trades = warmup.get('required_trades', 100)
+            elapsed = warmup.get("elapsed_seconds", 0)
+            required = warmup.get("required_seconds", 60)
+            trades = warmup.get("trade_count", 0)
+            required_trades = warmup.get("required_trades", 100)
 
             print(f"\n{Colors.YELLOW}⏳ WARMING UP - Collecting initial data...{Colors.RESET}")
             print(f"   Time: {elapsed}/{required}s")
             print(f"   Trades: {trades}/{required_trades}")
-            print(f"   {Colors.DIM}Please wait for sufficient data before analysis begins{Colors.RESET}\n")
+            print(
+                f"   {Colors.DIM}Please wait for sufficient data before analysis begins{Colors.RESET}\n"
+            )
             return
 
         self._iteration += 1
 
         # Import display functions
         from indicator.display import (
-            print_volume_deep_dive,
-            print_volume_engine_deep_dive,
-            print_oi_deep_dive,
             print_funding_deep_dive,
+            print_header,
+            print_oi_deep_dive,
             print_orderbook_deep_dive,
             print_unified_score,
-            print_header,
+            print_volume_deep_dive,
+            print_volume_engine_deep_dive,
         )
 
         # Get current state
@@ -562,12 +598,12 @@ class DeepDiveDisplay:
 
         # Get full results
         results = analyzer.get_all_full_results()
-        volume_analysis = results['volume_analysis']
-        volume_engine = results['volume_engine']
-        oi_analysis = results['oi']
-        funding_analysis = results['funding']
-        orderbook_analysis = results['orderbook']
-        unified_score_obj = results['unified_score']
+        volume_analysis = results["volume_analysis"]
+        volume_engine = results["volume_engine"]
+        oi_analysis = results["oi"]
+        funding_analysis = results["funding"]
+        orderbook_analysis = results["orderbook"]
+        unified_score_obj = results["unified_score"]
 
         # Calculate price change
         price_change_pct = 0.0
@@ -592,7 +628,9 @@ class DeepDiveDisplay:
             print_oi_deep_dive(oi_analysis)
 
         if funding_analysis:
-            oi_change_for_display = oi_analysis.rate_of_change.oi_change_percent if oi_analysis else None
+            oi_change_for_display = (
+                oi_analysis.rate_of_change.oi_change_percent if oi_analysis else None
+            )
             print_funding_deep_dive(funding_analysis, oi_change_for_display)
 
         if orderbook_analysis:
@@ -602,16 +640,19 @@ class DeepDiveDisplay:
             print_unified_score(unified_score_obj)
 
         # Print ATR expansion (timing gate)
-        atr_signals = results.get('atr_signals')
+        atr_signals = results.get("atr_signals")
         if atr_signals:
             from continuous.atr_expansion_adapter import format_atr_signals
+
             print()
             print(f"{Colors.BOLD}{Colors.CYAN}┌{'─' * 78}┐{Colors.RESET}")
-            print(f"{Colors.BOLD}{Colors.CYAN}│  ATR EXPANSION - Volatility Timing{' ' * 46}│{Colors.RESET}")
+            print(
+                f"{Colors.BOLD}{Colors.CYAN}│  ATR EXPANSION - Volatility Timing{' ' * 46}│{Colors.RESET}"
+            )
             print(f"{Colors.BOLD}{Colors.CYAN}└{'─' * 78}┘{Colors.RESET}")
             print()
             formatted = format_atr_signals(atr_signals)
-            for line in formatted.split('\n'):
+            for line in formatted.split("\n"):
                 print(f"  {line}")
             print()
 
@@ -621,8 +662,16 @@ class DeepDiveDisplay:
         print(f"{Colors.BOLD}{Colors.CYAN}│  CURRENT STATE{' ' * 63}│{Colors.RESET}")
         print(f"{Colors.BOLD}{Colors.CYAN}└{'─' * 78}┘{Colors.RESET}")
         print(f"  {Colors.BOLD}Regime:{Colors.RESET} {state}")
-        print(f"  {Colors.BOLD}Score:{Colors.RESET} {unified_score:+.2f}" if unified_score is not None else "  Score: ---")
-        print(f"  {Colors.BOLD}Confidence:{Colors.RESET} {status['confidence']:.0f}%" if status['confidence'] is not None else "  Confidence: ---")
+        print(
+            f"  {Colors.BOLD}Score:{Colors.RESET} {unified_score:+.2f}"
+            if unified_score is not None
+            else "  Score: ---"
+        )
+        print(
+            f"  {Colors.BOLD}Confidence:{Colors.RESET} {status['confidence']:.0f}%"
+            if status["confidence"] is not None
+            else "  Confidence: ---"
+        )
         print(f"  {Colors.DIM}Last updated: {datetime.now().strftime('%H:%M:%S')}{Colors.RESET}")
         print()
 
@@ -638,11 +687,15 @@ class DeepDiveDisplay:
         stats = self.trade_tracker.get_stats(current_price)
 
         print(f"{Colors.BOLD}{Colors.CYAN}┌{'─' * 78}┐{Colors.RESET}")
-        print(f"{Colors.BOLD}{Colors.CYAN}│  TRADE PERFORMANCE (Simulated){' ' * 47}│{Colors.RESET}")
+        print(
+            f"{Colors.BOLD}{Colors.CYAN}│  TRADE PERFORMANCE (Simulated){' ' * 47}│{Colors.RESET}"
+        )
         print(f"{Colors.BOLD}{Colors.CYAN}└{'─' * 78}┘{Colors.RESET}")
 
         if stats["total_signals"] == 0:
-            print(f"  {Colors.DIM}No trade signals generated yet. Waiting for setups...{Colors.RESET}")
+            print(
+                f"  {Colors.DIM}No trade signals generated yet. Waiting for setups...{Colors.RESET}"
+            )
             print()
             return
 
@@ -653,9 +706,11 @@ class DeepDiveDisplay:
         total_color = Colors.GREEN if total_pnl >= 0 else Colors.RED
 
         print()
-        print(f"  {Colors.BOLD}Total Signals:{Colors.RESET} {stats['total_signals']}  "
-              f"│  {Colors.BOLD}Closed:{Colors.RESET} {stats['closed']}  "
-              f"│  {Colors.BOLD}Open:{Colors.RESET} {stats['open']}")
+        print(
+            f"  {Colors.BOLD}Total Signals:{Colors.RESET} {stats['total_signals']}  "
+            f"│  {Colors.BOLD}Closed:{Colors.RESET} {stats['closed']}  "
+            f"│  {Colors.BOLD}Open:{Colors.RESET} {stats['open']}"
+        )
         print()
 
         # Win/Loss breakdown
@@ -666,26 +721,38 @@ class DeepDiveDisplay:
             # Win rate bar
             bar_width = 30
             filled = int(win_rate / 100 * bar_width)
-            win_bar = (f"{Colors.GREEN}{'█' * filled}{Colors.RESET}"
-                      f"{Colors.RED}{'█' * (bar_width - filled)}{Colors.RESET}")
+            win_bar = (
+                f"{Colors.GREEN}{'█' * filled}{Colors.RESET}"
+                f"{Colors.RED}{'█' * (bar_width - filled)}{Colors.RESET}"
+            )
 
-            print(f"  {Colors.BOLD}Win Rate:{Colors.RESET}  {wr_color}{win_rate:.0f}%{Colors.RESET} "
-                  f"({stats['winners']}W / {stats['losers']}L)")
+            print(
+                f"  {Colors.BOLD}Win Rate:{Colors.RESET}  {wr_color}{win_rate:.0f}%{Colors.RESET} "
+                f"({stats['winners']}W / {stats['losers']}L)"
+            )
             print(f"             {win_bar}")
             print()
 
             # P&L details
-            print(f"  {Colors.BOLD}Realized P&L:{Colors.RESET}   {total_color}{total_pnl:+.2f}%{Colors.RESET}")
+            print(
+                f"  {Colors.BOLD}Realized P&L:{Colors.RESET}   {total_color}{total_pnl:+.2f}%{Colors.RESET}"
+            )
             if stats["avg_win"] > 0:
-                print(f"  {Colors.BOLD}Avg Winner:{Colors.RESET}     {Colors.GREEN}{stats['avg_win']:+.2f}%{Colors.RESET}")
+                print(
+                    f"  {Colors.BOLD}Avg Winner:{Colors.RESET}     {Colors.GREEN}{stats['avg_win']:+.2f}%{Colors.RESET}"
+                )
             if stats["avg_loss"] < 0:
-                print(f"  {Colors.BOLD}Avg Loser:{Colors.RESET}      {Colors.RED}{stats['avg_loss']:+.2f}%{Colors.RESET}")
+                print(
+                    f"  {Colors.BOLD}Avg Loser:{Colors.RESET}      {Colors.RED}{stats['avg_loss']:+.2f}%{Colors.RESET}"
+                )
 
             # Profit factor
             if stats["avg_loss"] != 0:
                 pf = abs(stats["avg_win"] / stats["avg_loss"]) if stats["avg_loss"] != 0 else 0
                 pf_color = Colors.GREEN if pf >= 1.0 else Colors.RED
-                print(f"  {Colors.BOLD}Profit Factor:{Colors.RESET}  {pf_color}{pf:.2f}{Colors.RESET}")
+                print(
+                    f"  {Colors.BOLD}Profit Factor:{Colors.RESET}  {pf_color}{pf:.2f}{Colors.RESET}"
+                )
 
             # Exit reasons
             print()
@@ -707,9 +774,11 @@ class DeepDiveDisplay:
 
             print()
             print(f"  {Colors.DIM}{'─' * 40}{Colors.RESET}")
-            print(f"  {Colors.BOLD}Open Position:{Colors.RESET} "
-                  f"{dir_color}{dir_arrow} {open_trade.direction.upper()}{Colors.RESET} "
-                  f"({open_trade.signal_type})")
+            print(
+                f"  {Colors.BOLD}Open Position:{Colors.RESET} "
+                f"{dir_color}{dir_arrow} {open_trade.direction.upper()}{Colors.RESET} "
+                f"({open_trade.signal_type})"
+            )
             print(f"    Entry:      ${open_trade.entry_price:,.2f}")
             print(f"    Current:    ${current_price:,.2f}")
             print(f"    Unrealized: {ur_color}{unrealized:+.2f}%{Colors.RESET}")
@@ -723,8 +792,10 @@ class DeepDiveDisplay:
         # Net P&L summary
         print()
         print(f"  {Colors.BOLD}{'─' * 40}{Colors.RESET}")
-        print(f"  {Colors.BOLD}Net P&L (realized + unrealized): "
-              f"{net_color}{net_pnl:+.2f}%{Colors.RESET}")
+        print(
+            f"  {Colors.BOLD}Net P&L (realized + unrealized): "
+            f"{net_color}{net_pnl:+.2f}%{Colors.RESET}"
+        )
 
         # Recent trades list (last 5)
         closed_trades = self.trade_tracker.closed_trades
@@ -739,16 +810,24 @@ class DeepDiveDisplay:
                 dir_sym = "▲" if t.direction == "long" else "▼"
                 reason = t.exit_reason.replace("_", " ")
                 entry_time = datetime.fromtimestamp(t.entry_time).strftime("%H:%M:%S")
-                print(f"    {pnl_color}{icon}{Colors.RESET} #{t.trade_num} "
-                      f"{dir_sym} {t.direction:5} "
-                      f"${t.entry_price:>10,.2f} → ${t.exit_price:>10,.2f} "
-                      f"{pnl_color}{pnl:+.2f}%{Colors.RESET} "
-                      f"{Colors.DIM}({reason}){Colors.RESET}")
+                print(
+                    f"    {pnl_color}{icon}{Colors.RESET} #{t.trade_num} "
+                    f"{dir_sym} {t.direction:5} "
+                    f"${t.entry_price:>10,.2f} → ${t.exit_price:>10,.2f} "
+                    f"{pnl_color}{pnl:+.2f}%{Colors.RESET} "
+                    f"{Colors.DIM}({reason}){Colors.RESET}"
+                )
 
         print()
 
 
-async def run_continuous(symbol: str, quiet: bool = False, show_metrics: bool = False, deep_dive: bool = False, refresh_interval: int = 5):
+async def run_continuous(
+    symbol: str,
+    quiet: bool = False,
+    show_metrics: bool = False,
+    deep_dive: bool = False,
+    refresh_interval: int = 5,
+):
     """Run continuous analysis."""
     if deep_dive:
         display = DeepDiveDisplay(refresh_interval=refresh_interval)
@@ -798,8 +877,12 @@ async def run_continuous(symbol: str, quiet: bool = False, show_metrics: bool = 
             metrics = analyzer.get_metrics_summary()
             latencies = metrics.get("latencies_ms", {})
             signal_lat = latencies.get("signal_compute", {})
-            print(f"Signal compute: mean={signal_lat.get('mean', '0')}ms p99={signal_lat.get('p99', '0')}ms")
-            print(f"Total trades processed: {metrics.get('ingestion', {}).get('total_trades', 0):,}")
+            print(
+                f"Signal compute: mean={signal_lat.get('mean', '0')}ms p99={signal_lat.get('p99', '0')}ms"
+            )
+            print(
+                f"Total trades processed: {metrics.get('ingestion', {}).get('total_trades', 0):,}"
+            )
             print(f"State transitions: {metrics.get('state_machine', {}).get('transitions', 0)}")
             print(f"{Colors.CYAN}{'═' * 60}{Colors.RESET}")
         print(f"\n{Colors.YELLOW}Shutting down...{Colors.RESET}")
@@ -809,35 +892,27 @@ async def run_continuous(symbol: str, quiet: bool = False, show_metrics: bool = 
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Continuous market analysis with rolling windows"
+    parser = argparse.ArgumentParser(description="Continuous market analysis with rolling windows")
+    parser.add_argument(
+        "symbol", nargs="?", default="BTCUSDT", help="Trading pair symbol (default: BTCUSDT)"
     )
     parser.add_argument(
-        "symbol",
-        nargs="?",
-        default="BTCUSDT",
-        help="Trading pair symbol (default: BTCUSDT)"
+        "--quiet", "-q", action="store_true", help="Minimal output (only trade signals)"
     )
     parser.add_argument(
-        "--quiet", "-q",
+        "--metrics", "-m", action="store_true", help="Show latency metrics every 10 seconds"
+    )
+    parser.add_argument(
+        "--deep-dive",
+        "-d",
         action="store_true",
-        help="Minimal output (only trade signals)"
-    )
-    parser.add_argument(
-        "--metrics", "-m",
-        action="store_true",
-        help="Show latency metrics every 10 seconds"
-    )
-    parser.add_argument(
-        "--deep-dive", "-d",
-        action="store_true",
-        help="Deep-dive mode: show full analysis sections like analyze.py"
+        help="Deep-dive mode: show full analysis sections like analyze.py",
     )
     parser.add_argument(
         "--refresh",
         type=int,
         default=5,
-        help="Deep-dive refresh interval in seconds (min: 2, default: 5)"
+        help="Deep-dive refresh interval in seconds (min: 2, default: 5)",
     )
 
     args = parser.parse_args()
@@ -848,16 +923,20 @@ def main():
     # Enforce minimum refresh interval
     refresh_interval = max(2, args.refresh)
     if args.refresh < 2:
-        print(f"{Colors.YELLOW}Warning: Minimum refresh interval is 2s, using 2s instead of {args.refresh}s{Colors.RESET}")
+        print(
+            f"{Colors.YELLOW}Warning: Minimum refresh interval is 2s, using 2s instead of {args.refresh}s{Colors.RESET}"
+        )
 
     try:
-        asyncio.run(run_continuous(
-            symbol,
-            quiet=args.quiet,
-            show_metrics=args.metrics,
-            deep_dive=args.deep_dive,
-            refresh_interval=refresh_interval
-        ))
+        asyncio.run(
+            run_continuous(
+                symbol,
+                quiet=args.quiet,
+                show_metrics=args.metrics,
+                deep_dive=args.deep_dive,
+                refresh_interval=refresh_interval,
+            )
+        )
     except KeyboardInterrupt:
         pass
 

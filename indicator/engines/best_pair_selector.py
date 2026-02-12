@@ -20,27 +20,26 @@ Usage:
     result = select_best_pair()
 """
 
-import requests
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Tuple, Optional
+import logging
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import time
-import logging
 from functools import lru_cache
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+import pandas as pd
+import requests
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class Config:
     """Configuration for pair selection"""
+
     # API settings
     BASE_URL: str = "https://fapi.binance.com"
     REQUEST_TIMEOUT: int = 10
@@ -114,11 +113,7 @@ class BinanceFuturesAPI:
         url = f"{self.config.BASE_URL}{endpoint}"
 
         try:
-            response = self.session.get(
-                url,
-                params=params,
-                timeout=self.config.REQUEST_TIMEOUT
-            )
+            response = self.session.get(url, params=params, timeout=self.config.REQUEST_TIMEOUT)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.Timeout:
@@ -206,12 +201,18 @@ class PairScorer:
         percentile = self.normalize_percentile(quote_volume, all_volumes)
 
         # Apply power curve to emphasize high-volume pairs
-        score = percentile ** 0.8
+        score = percentile**0.8
 
         return max(0.0, min(1.0, score))
 
-    def score_liquidity(self, spread_pct: float, bid_qty: float, ask_qty: float,
-                       all_spreads: List[float], all_depths: List[float]) -> float:
+    def score_liquidity(
+        self,
+        spread_pct: float,
+        bid_qty: float,
+        ask_qty: float,
+        all_spreads: List[float],
+        all_depths: List[float],
+    ) -> float:
         """
         Score liquidity quality (weight: 0.25)
         Tight spread + good depth = better
@@ -312,15 +313,21 @@ class PairScorer:
 
         return max(0.0, min(1.0, score))
 
-    def calculate_tradability_score(self, participation: float, liquidity: float,
-                                   volatility: float, cleanliness: float, crowd: float) -> float:
+    def calculate_tradability_score(
+        self,
+        participation: float,
+        liquidity: float,
+        volatility: float,
+        cleanliness: float,
+        crowd: float,
+    ) -> float:
         """Calculate final weighted tradability score"""
         score = (
-            self.config.WEIGHT_PARTICIPATION * participation +
-            self.config.WEIGHT_LIQUIDITY * liquidity +
-            self.config.WEIGHT_VOLATILITY * volatility +
-            self.config.WEIGHT_CLEANLINESS * cleanliness +
-            self.config.WEIGHT_CROWD * crowd
+            self.config.WEIGHT_PARTICIPATION * participation
+            + self.config.WEIGHT_LIQUIDITY * liquidity
+            + self.config.WEIGHT_VOLATILITY * volatility
+            + self.config.WEIGHT_CLEANLINESS * cleanliness
+            + self.config.WEIGHT_CROWD * crowd
         )
         return score
 
@@ -354,22 +361,22 @@ class BestPairSelector:
         exchange_info = self.api.get_exchange_info()
 
         eligible = []
-        for symbol_info in exchange_info['symbols']:
+        for symbol_info in exchange_info["symbols"]:
             # Must be TRADING status
-            if symbol_info['status'] != 'TRADING':
+            if symbol_info["status"] != "TRADING":
                 continue
 
             # Must be PERPETUAL contract
-            if symbol_info.get('contractType') != 'PERPETUAL':
+            if symbol_info.get("contractType") != "PERPETUAL":
                 continue
 
             # Must be USDT quote asset
-            if symbol_info.get('quoteAsset') != 'USDT':
+            if symbol_info.get("quoteAsset") != "USDT":
                 continue
 
             # Exclude leveraged tokens and indices
-            symbol = symbol_info['symbol']
-            if any(x in symbol for x in ['UP', 'DOWN', 'BEAR', 'BULL', 'DEFI', 'MOVE']):
+            symbol = symbol_info["symbol"]
+            if any(x in symbol for x in ["UP", "DOWN", "BEAR", "BULL", "DEFI", "MOVE"]):
                 continue
 
             eligible.append(symbol_info)
@@ -385,65 +392,71 @@ class BestPairSelector:
         Returns: (filtered_tickers, filter_stats)
         """
         # Calculate volume threshold
-        volumes = [float(t['quoteVolume']) for t in tickers if float(t['quoteVolume']) > 0]
+        volumes = [float(t["quoteVolume"]) for t in tickers if float(t["quoteVolume"]) > 0]
         if not volumes:
             return [], {}
 
-        volume_threshold = np.percentile(volumes, (1 - self.config.VOLUME_PERCENTILE_THRESHOLD) * 100)
+        volume_threshold = np.percentile(
+            volumes, (1 - self.config.VOLUME_PERCENTILE_THRESHOLD) * 100
+        )
 
         # Get book tickers for spread calculation
         book_tickers = self.api.get_book_ticker()
-        book_map = {bt['symbol']: bt for bt in book_tickers} if isinstance(book_tickers, list) else {book_tickers['symbol']: book_tickers}
+        book_map = (
+            {bt["symbol"]: bt for bt in book_tickers}
+            if isinstance(book_tickers, list)
+            else {book_tickers["symbol"]: book_tickers}
+        )
 
         filtered = []
         stats = {
-            'total_input': len(tickers),
-            'failed_volume': 0,
-            'failed_spread': 0,
-            'failed_book_data': 0,
-            'passed': 0
+            "total_input": len(tickers),
+            "failed_volume": 0,
+            "failed_spread": 0,
+            "failed_book_data": 0,
+            "passed": 0,
         }
 
         for ticker in tickers:
-            symbol = ticker['symbol']
-            quote_volume = float(ticker['quoteVolume'])
+            symbol = ticker["symbol"]
+            quote_volume = float(ticker["quoteVolume"])
 
             # Volume filter
             if quote_volume < volume_threshold:
-                stats['failed_volume'] += 1
+                stats["failed_volume"] += 1
                 continue
 
             # Get book data
             if symbol not in book_map:
-                stats['failed_book_data'] += 1
+                stats["failed_book_data"] += 1
                 continue
 
             book = book_map[symbol]
-            bid = float(book['bidPrice'])
-            ask = float(book['askPrice'])
+            bid = float(book["bidPrice"])
+            ask = float(book["askPrice"])
 
             if bid <= 0 or ask <= 0:
-                stats['failed_book_data'] += 1
+                stats["failed_book_data"] += 1
                 continue
 
             # Calculate spread
             mid = (bid + ask) / 2
-            spread_pct = ((ask - bid) / mid) * 100 if mid > 0 else float('inf')
+            spread_pct = ((ask - bid) / mid) * 100 if mid > 0 else float("inf")
 
             # Spread filter
             if spread_pct > self.config.MAX_SPREAD_PCT:
-                stats['failed_spread'] += 1
+                stats["failed_spread"] += 1
                 continue
 
             # Augment ticker with book data
-            ticker['_bid'] = bid
-            ticker['_ask'] = ask
-            ticker['_bidQty'] = float(book['bidQty'])
-            ticker['_askQty'] = float(book['askQty'])
-            ticker['_spread_pct'] = spread_pct
+            ticker["_bid"] = bid
+            ticker["_ask"] = ask
+            ticker["_bidQty"] = float(book["bidQty"])
+            ticker["_askQty"] = float(book["askQty"])
+            ticker["_spread_pct"] = spread_pct
 
             filtered.append(ticker)
-            stats['passed'] += 1
+            stats["passed"] += 1
 
         logger.info(f"Liquidity filter: {stats['passed']}/{stats['total_input']} symbols passed")
         return filtered, stats
@@ -453,22 +466,22 @@ class BestPairSelector:
         results = []
 
         # Collect all values for percentile calculations
-        all_volumes = [float(t['quoteVolume']) for t in tickers]
-        all_spreads = [t['_spread_pct'] for t in tickers]
-        all_depths = [t['_bidQty'] + t['_askQty'] for t in tickers]
+        all_volumes = [float(t["quoteVolume"]) for t in tickers]
+        all_spreads = [t["_spread_pct"] for t in tickers]
+        all_depths = [t["_bidQty"] + t["_askQty"] for t in tickers]
 
         for ticker in tickers:
-            symbol = ticker['symbol']
+            symbol = ticker["symbol"]
 
             # Extract metrics
-            quote_volume = float(ticker['quoteVolume'])
-            price_change_pct = float(ticker['priceChangePercent'])
-            high = float(ticker['highPrice'])
-            low = float(ticker['lowPrice'])
-            last_price = float(ticker['lastPrice'])
-            spread_pct = ticker['_spread_pct']
-            bid_qty = ticker['_bidQty']
-            ask_qty = ticker['_askQty']
+            quote_volume = float(ticker["quoteVolume"])
+            price_change_pct = float(ticker["priceChangePercent"])
+            high = float(ticker["highPrice"])
+            low = float(ticker["lowPrice"])
+            last_price = float(ticker["lastPrice"])
+            spread_pct = ticker["_spread_pct"]
+            bid_qty = ticker["_bidQty"]
+            ask_qty = ticker["_askQty"]
 
             # Calculate range
             range_pct = ((high - low) / last_price) * 100 if last_price > 0 else 0
@@ -485,15 +498,20 @@ class BestPairSelector:
 
             # Calculate individual scores
             participation_score = self.scorer.score_participation(quote_volume, all_volumes)
-            liquidity_score = self.scorer.score_liquidity(spread_pct, bid_qty, ask_qty, all_spreads, all_depths)
+            liquidity_score = self.scorer.score_liquidity(
+                spread_pct, bid_qty, ask_qty, all_spreads, all_depths
+            )
             volatility_score = self.scorer.score_volatility(range_pct / 100)  # Convert to decimal
             cleanliness_score = self.scorer.score_cleanliness(price_change_pct, volume_percentile)
             crowd_score = self.scorer.score_crowd_risk(funding_rate)
 
             # Calculate final tradability score
             tradability_score = self.scorer.calculate_tradability_score(
-                participation_score, liquidity_score, volatility_score,
-                cleanliness_score, crowd_score
+                participation_score,
+                liquidity_score,
+                volatility_score,
+                cleanliness_score,
+                crowd_score,
             )
 
             # Check trade gate
@@ -501,27 +519,29 @@ class BestPairSelector:
                 participation_score, liquidity_score, spread_pct
             )
 
-            results.append({
-                'symbol': symbol,
-                'tradability_score': tradability_score,
-                'trade_allowed': trade_allowed,
-                'participation_score': participation_score,
-                'liquidity_score': liquidity_score,
-                'volatility_score': volatility_score,
-                'cleanliness_score': cleanliness_score,
-                'crowd_score': crowd_score,
-                'quote_volume': quote_volume,
-                'spread_pct': spread_pct,
-                'range_pct': range_pct,
-                'price_change_pct': price_change_pct,
-                'bid_qty': bid_qty,
-                'ask_qty': ask_qty,
-                'funding_rate': funding_rate if funding_rate is not None else 0.0
-            })
+            results.append(
+                {
+                    "symbol": symbol,
+                    "tradability_score": tradability_score,
+                    "trade_allowed": trade_allowed,
+                    "participation_score": participation_score,
+                    "liquidity_score": liquidity_score,
+                    "volatility_score": volatility_score,
+                    "cleanliness_score": cleanliness_score,
+                    "crowd_score": crowd_score,
+                    "quote_volume": quote_volume,
+                    "spread_pct": spread_pct,
+                    "range_pct": range_pct,
+                    "price_change_pct": price_change_pct,
+                    "bid_qty": bid_qty,
+                    "ask_qty": ask_qty,
+                    "funding_rate": funding_rate if funding_rate is not None else 0.0,
+                }
+            )
 
         # Create DataFrame and sort by tradability score
         df = pd.DataFrame(results)
-        df = df.sort_values('tradability_score', ascending=False).reset_index(drop=True)
+        df = df.sort_values("tradability_score", ascending=False).reset_index(drop=True)
 
         return df
 
@@ -546,14 +566,14 @@ class BestPairSelector:
 
         # Step 1: Get eligible symbols
         eligible_symbols = self.get_eligible_symbols()
-        eligible_symbol_names = [s['symbol'] for s in eligible_symbols]
+        eligible_symbol_names = [s["symbol"] for s in eligible_symbols]
 
         # Step 2: Get 24h ticker data
         logger.info("Fetching 24h ticker data...")
         all_tickers = self.api.get_24h_tickers()
 
         # Filter to eligible symbols only
-        tickers = [t for t in all_tickers if t['symbol'] in eligible_symbol_names]
+        tickers = [t for t in all_tickers if t["symbol"] in eligible_symbol_names]
         logger.info(f"Got ticker data for {len(tickers)} eligible symbols")
 
         # Step 3: Apply liquidity filters
@@ -563,12 +583,12 @@ class BestPairSelector:
         if not filtered_tickers:
             logger.error("No symbols passed liquidity filters!")
             return {
-                'best_symbol': None,
-                'best_score': 0.0,
-                'trade_allowed': False,
-                'top_n': pd.DataFrame(),
-                'all_results': pd.DataFrame(),
-                'stats': filter_stats
+                "best_symbol": None,
+                "best_score": 0.0,
+                "trade_allowed": False,
+                "top_n": pd.DataFrame(),
+                "all_results": pd.DataFrame(),
+                "stats": filter_stats,
             }
 
         # Step 4: Score all filtered symbols
@@ -577,20 +597,16 @@ class BestPairSelector:
 
         # Step 5: Get best pair
         best_row = results_df.iloc[0]
-        best_symbol = best_row['symbol']
-        best_score = best_row['tradability_score']
-        trade_allowed = best_row['trade_allowed']
+        best_symbol = best_row["symbol"]
+        best_score = best_row["tradability_score"]
+        trade_allowed = best_row["trade_allowed"]
 
         # Step 6: Get top N
         top_n = results_df.head(self.config.TOP_N_DISPLAY).copy()
 
         elapsed = time.time() - start_time
 
-        stats = {
-            **filter_stats,
-            'total_scored': len(results_df),
-            'elapsed_seconds': elapsed
-        }
+        stats = {**filter_stats, "total_scored": len(results_df), "elapsed_seconds": elapsed}
 
         logger.info("=" * 80)
         logger.info(f"Selection complete in {elapsed:.2f}s")
@@ -598,12 +614,12 @@ class BestPairSelector:
         logger.info("=" * 80)
 
         return {
-            'best_symbol': best_symbol,
-            'best_score': best_score,
-            'trade_allowed': trade_allowed,
-            'top_n': top_n,
-            'all_results': results_df,
-            'stats': stats
+            "best_symbol": best_symbol,
+            "best_score": best_score,
+            "trade_allowed": trade_allowed,
+            "top_n": top_n,
+            "all_results": results_df,
+            "stats": stats,
         }
 
 
@@ -619,7 +635,7 @@ def print_results(result: dict):
     print(f"   Trade Allowed: {'✅ YES' if result['trade_allowed'] else '❌ NO'}")
 
     # Stats
-    stats = result['stats']
+    stats = result["stats"]
     print(f"\n📊 STATISTICS:")
     print(f"   Total symbols scanned: {stats['total_input']}")
     print(f"   Passed filters: {stats['passed']}")
@@ -632,23 +648,25 @@ def print_results(result: dict):
     print(f"\n📈 TOP {len(result['top_n'])} RANKED PAIRS:")
     print("=" * 100)
 
-    df = result['top_n']
+    df = result["top_n"]
 
     # Format for display
-    display_df = pd.DataFrame({
-        'Rank': range(1, len(df) + 1),
-        'Symbol': df['symbol'],
-        'Score': df['tradability_score'].apply(lambda x: f"{x:.4f}"),
-        'Trade?': df['trade_allowed'].apply(lambda x: '✅' if x else '❌'),
-        'Part.': df['participation_score'].apply(lambda x: f"{x:.3f}"),
-        'Liq.': df['liquidity_score'].apply(lambda x: f"{x:.3f}"),
-        'Vol.': df['volatility_score'].apply(lambda x: f"{x:.3f}"),
-        'Clean': df['cleanliness_score'].apply(lambda x: f"{x:.3f}"),
-        'Crowd': df['crowd_score'].apply(lambda x: f"{x:.3f}"),
-        'Volume': df['quote_volume'].apply(lambda x: f"${x/1e6:.1f}M"),
-        'Spread%': df['spread_pct'].apply(lambda x: f"{x:.4f}"),
-        'Range%': df['range_pct'].apply(lambda x: f"{x:.2f}"),
-    })
+    display_df = pd.DataFrame(
+        {
+            "Rank": range(1, len(df) + 1),
+            "Symbol": df["symbol"],
+            "Score": df["tradability_score"].apply(lambda x: f"{x:.4f}"),
+            "Trade?": df["trade_allowed"].apply(lambda x: "✅" if x else "❌"),
+            "Part.": df["participation_score"].apply(lambda x: f"{x:.3f}"),
+            "Liq.": df["liquidity_score"].apply(lambda x: f"{x:.3f}"),
+            "Vol.": df["volatility_score"].apply(lambda x: f"{x:.3f}"),
+            "Clean": df["cleanliness_score"].apply(lambda x: f"{x:.3f}"),
+            "Crowd": df["crowd_score"].apply(lambda x: f"{x:.3f}"),
+            "Volume": df["quote_volume"].apply(lambda x: f"${x/1e6:.1f}M"),
+            "Spread%": df["spread_pct"].apply(lambda x: f"{x:.4f}"),
+            "Range%": df["range_pct"].apply(lambda x: f"{x:.2f}"),
+        }
+    )
 
     print(display_df.to_string(index=False))
 
@@ -658,20 +676,30 @@ def print_results(result: dict):
     best = df.iloc[0]
 
     print(f"\nFinal Score: {best['tradability_score']:.4f}")
-    print(f"  ├─ Participation (35%):  {best['participation_score']:.4f}  [Volume: ${best['quote_volume']/1e6:.1f}M]")
-    print(f"  ├─ Liquidity (25%):      {best['liquidity_score']:.4f}  [Spread: {best['spread_pct']:.4f}%, Depth: {best['bid_qty']:.0f}/{best['ask_qty']:.0f}]")
-    print(f"  ├─ Volatility (20%):     {best['volatility_score']:.4f}  [Range: {best['range_pct']:.2f}%]")
-    print(f"  ├─ Cleanliness (10%):    {best['cleanliness_score']:.4f}  [Change: {best['price_change_pct']:.2f}%]")
-    print(f"  └─ Crowd Risk (10%):     {best['crowd_score']:.4f}  [Funding: {best['funding_rate']:.6f}]")
+    print(
+        f"  ├─ Participation (35%):  {best['participation_score']:.4f}  [Volume: ${best['quote_volume']/1e6:.1f}M]"
+    )
+    print(
+        f"  ├─ Liquidity (25%):      {best['liquidity_score']:.4f}  [Spread: {best['spread_pct']:.4f}%, Depth: {best['bid_qty']:.0f}/{best['ask_qty']:.0f}]"
+    )
+    print(
+        f"  ├─ Volatility (20%):     {best['volatility_score']:.4f}  [Range: {best['range_pct']:.2f}%]"
+    )
+    print(
+        f"  ├─ Cleanliness (10%):    {best['cleanliness_score']:.4f}  [Change: {best['price_change_pct']:.2f}%]"
+    )
+    print(
+        f"  └─ Crowd Risk (10%):     {best['crowd_score']:.4f}  [Funding: {best['funding_rate']:.6f}]"
+    )
 
     print(f"\nTrade Gate: {'✅ PASSED' if best['trade_allowed'] else '❌ FAILED'}")
-    if not best['trade_allowed']:
+    if not best["trade_allowed"]:
         print("  Reason: ", end="")
-        if best['participation_score'] < 0.60:
+        if best["participation_score"] < 0.60:
             print("Participation score too low")
-        elif best['liquidity_score'] < 0.60:
+        elif best["liquidity_score"] < 0.60:
             print("Liquidity score too low")
-        elif best['spread_pct'] > 0.03:
+        elif best["spread_pct"] > 0.03:
             print("Spread too wide")
 
     print("\n" + "=" * 100)

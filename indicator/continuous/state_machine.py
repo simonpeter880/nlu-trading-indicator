@@ -8,18 +8,18 @@ signal combinations, not individual indicators.
 """
 
 import time
-from typing import Optional, List, Dict, Callable, Any
+from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from collections import deque
+from typing import Any, Callable, Dict, List, Optional
 
 from .data_types import (
-    MarketState,
-    VolumeSignal,
-    DeltaSignal,
     BookSignal,
+    DeltaSignal,
+    MarketState,
     OIFundingSignal,
     SignalDirection,
+    VolumeSignal,
 )
 
 
@@ -30,34 +30,36 @@ class MarketRegime(Enum):
     These are mutually exclusive states that define
     what kind of market we're in RIGHT NOW.
     """
+
     # No trade states
-    NO_TRADE = "no_trade"              # Default - no clear setup
-    LOW_VOLUME = "low_volume"          # Volume too low for reliable signals
-    CHOPPY = "choppy"                  # Conflicting signals, stay out
+    NO_TRADE = "no_trade"  # Default - no clear setup
+    LOW_VOLUME = "low_volume"  # Volume too low for reliable signals
+    CHOPPY = "choppy"  # Conflicting signals, stay out
 
     # Pre-setup states (building energy)
-    COMPRESSION = "compression"         # OI rising, price stalling - breakout imminent
-    ACCUMULATION = "accumulation"       # Hidden buying, preparing for up move
-    DISTRIBUTION = "distribution"       # Hidden selling, preparing for down move
+    COMPRESSION = "compression"  # OI rising, price stalling - breakout imminent
+    ACCUMULATION = "accumulation"  # Hidden buying, preparing for up move
+    DISTRIBUTION = "distribution"  # Hidden selling, preparing for down move
 
     # Trade setup states
-    SQUEEZE_SETUP_LONG = "squeeze_long"   # Short squeeze building
-    SQUEEZE_SETUP_SHORT = "squeeze_short" # Long squeeze building
-    TREND_CONTINUATION_LONG = "trend_long"   # Healthy uptrend, buy dips
-    TREND_CONTINUATION_SHORT = "trend_short" # Healthy downtrend, sell rallies
-    EXHAUSTION_LONG = "exhaustion_long"   # Uptrend exhausting, prepare for reversal
-    EXHAUSTION_SHORT = "exhaustion_short" # Downtrend exhausting, prepare for reversal
+    SQUEEZE_SETUP_LONG = "squeeze_long"  # Short squeeze building
+    SQUEEZE_SETUP_SHORT = "squeeze_short"  # Long squeeze building
+    TREND_CONTINUATION_LONG = "trend_long"  # Healthy uptrend, buy dips
+    TREND_CONTINUATION_SHORT = "trend_short"  # Healthy downtrend, sell rallies
+    EXHAUSTION_LONG = "exhaustion_long"  # Uptrend exhausting, prepare for reversal
+    EXHAUSTION_SHORT = "exhaustion_short"  # Downtrend exhausting, prepare for reversal
 
     # Active states (in a position or just triggered)
-    BREAKOUT_LONG = "breakout_long"    # Active long breakout
+    BREAKOUT_LONG = "breakout_long"  # Active long breakout
     BREAKOUT_SHORT = "breakout_short"  # Active short breakout
-    REVERSAL_LONG = "reversal_long"    # Reversing to long
+    REVERSAL_LONG = "reversal_long"  # Reversing to long
     REVERSAL_SHORT = "reversal_short"  # Reversing to short
 
 
 @dataclass
 class StateTransition:
     """Record of a state transition."""
+
     timestamp_ms: int
     from_state: MarketRegime
     to_state: MarketRegime
@@ -73,6 +75,7 @@ class TradeSignal:
 
     This is what gets output when a tradeable state is entered.
     """
+
     timestamp_ms: int
     direction: str  # "long" or "short"
     signal_type: str  # "breakout", "squeeze", "trend", "reversal"
@@ -108,11 +111,13 @@ class TradingStateMachine:
 
     # States that are "risk-off" (protective / exit states).
     # Transitions INTO these bypass min-duration and confirmation requirements.
-    RISK_OFF_STATES = frozenset({
-        MarketRegime.NO_TRADE,
-        MarketRegime.LOW_VOLUME,
-        MarketRegime.CHOPPY,
-    })
+    RISK_OFF_STATES = frozenset(
+        {
+            MarketRegime.NO_TRADE,
+            MarketRegime.LOW_VOLUME,
+            MarketRegime.CHOPPY,
+        }
+    )
 
     def __init__(
         self,
@@ -276,14 +281,18 @@ class TradingStateMachine:
         # === SQUEEZE SETUPS ===
         if oi_fund:
             # Short squeeze setup: crowded shorts + OI rising + bullish flow
-            if (oi_fund.crowd_position in ["heavily_short", "moderately_short"] and
-                oi_fund.oi_direction == "rising"):
+            if (
+                oi_fund.crowd_position in ["heavily_short", "moderately_short"]
+                and oi_fund.oi_direction == "rising"
+            ):
                 if vol and vol.direction == SignalDirection.BULLISH:
                     return MarketRegime.SQUEEZE_SETUP_LONG, "crowded_shorts_bullish_flow", conf
 
             # Long squeeze setup: crowded longs + OI rising + bearish flow
-            if (oi_fund.crowd_position in ["heavily_long", "moderately_long"] and
-                oi_fund.oi_direction == "rising"):
+            if (
+                oi_fund.crowd_position in ["heavily_long", "moderately_long"]
+                and oi_fund.oi_direction == "rising"
+            ):
                 if vol and vol.direction == SignalDirection.BEARISH:
                     return MarketRegime.SQUEEZE_SETUP_SHORT, "crowded_longs_bearish_flow", conf
 
@@ -424,12 +433,12 @@ class TradingStateMachine:
 
         volume_confirms = vol is not None and vol.relative_volume >= 1.2
         book_confirms = book is not None and (
-            (direction == "long" and book.path_of_least_resistance == "up") or
-            (direction == "short" and book.path_of_least_resistance == "down")
+            (direction == "long" and book.path_of_least_resistance == "up")
+            or (direction == "short" and book.path_of_least_resistance == "down")
         )
         oi_confirms = oi_fund is not None and (
-            (direction == "long" and oi_fund.allows_long) or
-            (direction == "short" and oi_fund.allows_short)
+            (direction == "long" and oi_fund.allows_long)
+            or (direction == "short" and oi_fund.allows_short)
         )
 
         # Gather warnings

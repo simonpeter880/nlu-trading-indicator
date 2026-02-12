@@ -17,85 +17,91 @@ Key filter (HARD VETO):
 - Breakout DOWN + (ΔVr > +0.05 OR S_oi > +0.3) → BLOCK SHORT
 """
 
-from dataclasses import dataclass
-import time
-from typing import List, Optional, Tuple, Dict, TYPE_CHECKING
-from enum import Enum
 import math
+import time
+from dataclasses import dataclass
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from .indicator_config import IndicatorConfig
 
 from .indicator_config import DEFAULT_CONFIG
 
+
 class BreakoutType(Enum):
     """Type of breakout."""
-    UPWARD = "upward"       # Breaking resistance
-    DOWNWARD = "downward"   # Breaking support
+
+    UPWARD = "upward"  # Breaking resistance
+    DOWNWARD = "downward"  # Breaking support
 
 
 class BreakoutOutcome(Enum):
     """Outcome classification."""
-    TRUE_BREAKOUT = "true"      # Continued in breakout direction
-    FAKE_BREAKOUT = "fake"      # Reversed and failed
-    PENDING = "pending"         # Not enough bars to classify
-    UNCLEAR = "unclear"         # Mixed signals
+
+    TRUE_BREAKOUT = "true"  # Continued in breakout direction
+    FAKE_BREAKOUT = "fake"  # Reversed and failed
+    PENDING = "pending"  # Not enough bars to classify
+    UNCLEAR = "unclear"  # Mixed signals
 
 
 class BreakoutQuality(Enum):
     """Quality rating of breakout."""
+
     INSTITUTIONAL = "institutional"  # All signals aligned
-    RETAIL = "retail"               # Weak signals, likely fake
-    MIXED = "mixed"                 # Some signals align
+    RETAIL = "retail"  # Weak signals, likely fake
+    MIXED = "mixed"  # Some signals align
 
 
 @dataclass
 class BreakoutEvent:
     """A detected breakout event."""
+
     # Basic info
     timestamp: int
     breakout_type: BreakoutType
     breakout_price: float
-    breakout_level: float       # The level that was broken
+    breakout_level: float  # The level that was broken
     breakout_margin_pct: float  # How far above/below level
 
     # Price context
-    pre_breakout_range: float   # ATR or recent range
-    close_above_level: bool     # For upward breakout
-    close_below_level: bool     # For downward breakout
+    pre_breakout_range: float  # ATR or recent range
+    close_above_level: bool  # For upward breakout
+    close_below_level: bool  # For downward breakout
 
     # Outcome (if classified)
     outcome: BreakoutOutcome
     bars_to_classify: int
-    max_favorable_excursion_pct: float   # MFE
-    max_adverse_excursion_pct: float     # MAE
-    final_return_pct: float              # Return after M bars
+    max_favorable_excursion_pct: float  # MFE
+    max_adverse_excursion_pct: float  # MAE
+    final_return_pct: float  # Return after M bars
 
 
 @dataclass
 class BreakoutFeatures:
     """Features captured at breakout moment."""
+
     # Volume
-    relative_volume: float      # RV
+    relative_volume: float  # RV
     volume_acceleration: float  # VA
-    delta_ratio: float          # ΔVr
-    cvd_slope: float           # CVD momentum (last 5 bars)
+    delta_ratio: float  # ΔVr
+    cvd_slope: float  # CVD momentum (last 5 bars)
 
     # OI
-    oi_change_pct: float       # ΔOI%
-    oi_acceleration: float     # OI rate of change acceleration
+    oi_change_pct: float  # ΔOI%
+    oi_acceleration: float  # OI rate of change acceleration
 
     # Funding
     funding_z_score: float
 
     # Orderbook
-    depth_imbalance_25bps: float    # Imbalance within 0.25%
-    depth_imbalance_50bps: float    # Imbalance within 0.50%
+    depth_imbalance_25bps: float  # Imbalance within 0.25%
+    depth_imbalance_50bps: float  # Imbalance within 0.50%
     absorption_present: bool
     absorption_side: Optional[str]  # 'bid' or 'ask'
 
     # Exhaustion
-    exhaustion_risk: str       # 'low', 'medium', 'high', 'extreme'
+    exhaustion_risk: str  # 'low', 'medium', 'high', 'extreme'
 
     # Derived scores
     volume_score: float
@@ -106,26 +112,27 @@ class BreakoutFeatures:
 @dataclass
 class BreakoutValidation:
     """Complete breakout validation result."""
+
     # Event
     event: BreakoutEvent
     features: BreakoutFeatures
 
     # Validation
-    is_valid: bool              # Passed validation
+    is_valid: bool  # Passed validation
     quality: BreakoutQuality
-    confidence: float           # 0-100
+    confidence: float  # 0-100
 
     # Veto checks
     hard_veto: bool
     veto_reason: Optional[str]
 
     # Signals
-    flow_aligned: bool          # Delta matches direction
-    oi_aligned: bool            # OI expanding in direction
-    book_aligned: bool          # Orderbook supports
+    flow_aligned: bool  # Delta matches direction
+    oi_aligned: bool  # OI expanding in direction
+    book_aligned: bool  # Orderbook supports
 
     # Action
-    action: str                 # 'enter_long', 'enter_short', 'avoid', 'wait'
+    action: str  # 'enter_long', 'enter_short', 'avoid', 'wait'
     entry_price: Optional[float]
     stop_loss: Optional[float]
     target: Optional[float]
@@ -142,7 +149,7 @@ class BreakoutValidator:
     Implements hard veto filter to block fake breakouts.
     """
 
-    def __init__(self, config: Optional['IndicatorConfig'] = None):
+    def __init__(self, config: Optional["IndicatorConfig"] = None):
         self.config = config or DEFAULT_CONFIG
         self.cfg = self.config.breakout
 
@@ -154,7 +161,7 @@ class BreakoutValidator:
         timestamps: Optional[List[int]],
         swing_high: float,
         swing_low: float,
-        atr_pct: float
+        atr_pct: float,
     ) -> Optional[BreakoutEvent]:
         """
         Detect if a breakout occurred on the most recent bar.
@@ -200,7 +207,7 @@ class BreakoutValidator:
                     bars_to_classify=0,
                     max_favorable_excursion_pct=0,
                     max_adverse_excursion_pct=0,
-                    final_return_pct=0
+                    final_return_pct=0,
                 )
 
         # Check downward breakout
@@ -225,7 +232,7 @@ class BreakoutValidator:
                     bars_to_classify=0,
                     max_favorable_excursion_pct=0,
                     max_adverse_excursion_pct=0,
-                    final_return_pct=0
+                    final_return_pct=0,
                 )
 
         return None
@@ -235,7 +242,7 @@ class BreakoutValidator:
         event: BreakoutEvent,
         future_highs: List[float],
         future_lows: List[float],
-        future_closes: List[float]
+        future_closes: List[float],
     ) -> BreakoutEvent:
         """
         Classify breakout outcome after M bars.
@@ -313,7 +320,7 @@ class BreakoutValidator:
         features: BreakoutFeatures,
         volume_score: float,
         oi_score: float,
-        orderbook_score: float
+        orderbook_score: float,
     ) -> BreakoutValidation:
         """
         Validate breakout using flow, OI, and orderbook.
@@ -363,7 +370,7 @@ class BreakoutValidator:
                 stop_loss=None,
                 target=None,
                 warnings=[veto_reason],
-                description=f"FAKE BREAKOUT - {veto_reason}"
+                description=f"FAKE BREAKOUT - {veto_reason}",
             )
 
         # Check alignment
@@ -373,16 +380,26 @@ class BreakoutValidator:
 
         if event.breakout_type == BreakoutType.UPWARD:
             # Need positive signals
-            flow_aligned = features.delta_ratio > self.cfg.flow_delta_ratio and volume_score > self.cfg.flow_volume_score
-            oi_aligned = features.oi_change_pct > self.cfg.oi_change_pct and oi_score > self.cfg.oi_score
+            flow_aligned = (
+                features.delta_ratio > self.cfg.flow_delta_ratio
+                and volume_score > self.cfg.flow_volume_score
+            )
+            oi_aligned = (
+                features.oi_change_pct > self.cfg.oi_change_pct and oi_score > self.cfg.oi_score
+            )
             book_aligned = (
                 features.depth_imbalance_25bps > self.cfg.book_depth_imbalance_25bps
                 or orderbook_score > self.cfg.book_score
             )
         else:
             # Need negative signals
-            flow_aligned = features.delta_ratio < -self.cfg.flow_delta_ratio and volume_score < -self.cfg.flow_volume_score
-            oi_aligned = features.oi_change_pct < -self.cfg.oi_change_pct and oi_score < -self.cfg.oi_score
+            flow_aligned = (
+                features.delta_ratio < -self.cfg.flow_delta_ratio
+                and volume_score < -self.cfg.flow_volume_score
+            )
+            oi_aligned = (
+                features.oi_change_pct < -self.cfg.oi_change_pct and oi_score < -self.cfg.oi_score
+            )
             book_aligned = (
                 features.depth_imbalance_25bps < -self.cfg.book_depth_imbalance_25bps
                 or orderbook_score < -self.cfg.book_score
@@ -407,7 +424,7 @@ class BreakoutValidator:
             confidence += 10
         if abs(features.delta_ratio) > self.cfg.delta_ratio_boost_threshold:
             confidence += 10
-        if features.exhaustion_risk in ['high', 'extreme']:
+        if features.exhaustion_risk in ["high", "extreme"]:
             confidence -= self.cfg.exhaustion_penalty
             warnings.append(f"Exhaustion risk: {features.exhaustion_risk}")
 
@@ -464,13 +481,14 @@ class BreakoutValidator:
             stop_loss=stop_loss,
             target=target,
             warnings=warnings,
-            description=desc
+            description=desc,
         )
 
 
 @dataclass
 class BreakoutBacktestResult:
     """Backtest results for breakout strategy."""
+
     total_breakouts: int
     true_breakouts: int
     fake_breakouts: int
@@ -478,14 +496,14 @@ class BreakoutBacktestResult:
 
     # With veto filter
     total_entered: int
-    correct_entries: int      # Entered true breakouts
-    false_positives: int      # Entered fake breakouts
-    missed_true: int          # Didn't enter true breakouts
-    avoided_fake: int         # Correctly avoided fake breakouts
+    correct_entries: int  # Entered true breakouts
+    false_positives: int  # Entered fake breakouts
+    missed_true: int  # Didn't enter true breakouts
+    avoided_fake: int  # Correctly avoided fake breakouts
 
     # Metrics
-    precision: float          # correct / total_entered
-    recall: float             # correct / true_breakouts
+    precision: float  # correct / total_entered
+    recall: float  # correct / true_breakouts
     false_positive_rate: float
 
     # Excursions
@@ -511,9 +529,7 @@ class BreakoutBacktester:
         self.validator = validator
 
     def backtest(
-        self,
-        events: List[BreakoutEvent],
-        validations: List[BreakoutValidation]
+        self, events: List[BreakoutEvent], validations: List[BreakoutValidation]
     ) -> BreakoutBacktestResult:
         """
         Backtest breakout strategy.
@@ -529,7 +545,9 @@ class BreakoutBacktester:
         unclear = sum(1 for e in events if e.outcome == BreakoutOutcome.UNCLEAR)
 
         # Analyze entries (where validation said to enter)
-        total_entered = sum(1 for v in validations if v.is_valid and v.action in ["enter_long", "enter_short"])
+        total_entered = sum(
+            1 for v in validations if v.is_valid and v.action in ["enter_long", "enter_short"]
+        )
         correct_entries = 0
         false_positives = 0
         missed_true = 0
@@ -586,7 +604,7 @@ class BreakoutBacktester:
         # Profit factor
         gross_profit = sum(r for r in returns if r > 0)
         gross_loss = abs(sum(r for r in returns if r < 0))
-        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
+        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float("inf")
 
         return BreakoutBacktestResult(
             total_breakouts=total_breakouts,
@@ -607,7 +625,7 @@ class BreakoutBacktester:
             avg_mae_fake=avg_mae_fake,
             avg_return=avg_return,
             win_rate=win_rate,
-            profit_factor=profit_factor
+            profit_factor=profit_factor,
         )
 
 
@@ -618,7 +636,7 @@ def is_breakout_valid(
     breakout_type: str,
     delta_ratio: float,
     oi_score: float,
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> Tuple[bool, Optional[str]]:
     """
     Quick check: Is this breakout valid or fake?

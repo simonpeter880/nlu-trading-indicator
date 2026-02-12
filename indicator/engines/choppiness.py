@@ -19,15 +19,16 @@ Where:
 - MinLow(n) = Lowest low over last n bars
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Tuple
-from collections import deque
 import math
+from collections import deque
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass
 class Candle:
     """OHLCV candle data."""
+
     timestamp: int
     open: float
     high: float
@@ -39,12 +40,13 @@ class Candle:
 @dataclass
 class ChoppinessConfig:
     """Configuration for Choppiness Index calculation."""
+
     timeframes: List[str] = field(default_factory=lambda: ["1m", "5m", "1h"])
     period_by_tf: Dict[str, int] = field(default_factory=dict)  # Override per TF
     default_period: int = 14
     chop_high: float = 61.8  # Above => CHOP (range-bound)
-    chop_low: float = 38.2   # Below => TREND
-    slope_smooth: int = 1    # EMA smoothing for slope (1=no smoothing)
+    chop_low: float = 38.2  # Below => TREND
+    slope_smooth: int = 1  # EMA smoothing for slope (1=no smoothing)
     window_crossings: int = 20  # Optional crossings window
     eps: float = 1e-12
 
@@ -56,6 +58,7 @@ class ChoppinessConfig:
 @dataclass
 class ChopState:
     """Choppiness Index state for a timeframe."""
+
     tr: float
     sum_tr: Optional[float]
     hh: Optional[float]  # Highest high over n
@@ -89,7 +92,7 @@ class _TimeframeState:
         # Monotonic deques for HH/LL (amortized O(1))
         # Elements: (bar_index, value)
         self.max_high_deque: deque = deque()  # Decreasing highs
-        self.min_low_deque: deque = deque()   # Increasing lows
+        self.min_low_deque: deque = deque()  # Increasing lows
 
         # CHOP history
         self.chop_prev: Optional[float] = None
@@ -212,8 +215,7 @@ class ChoppinessEngine:
         state.max_high_deque.append((state.bar_index, high))
 
         # Remove elements from front that are outside window
-        while (state.max_high_deque and
-               state.max_high_deque[0][0] <= state.bar_index - state.period):
+        while state.max_high_deque and state.max_high_deque[0][0] <= state.bar_index - state.period:
             state.max_high_deque.popleft()
 
     def _update_min_low(self, state: _TimeframeState, low: float) -> None:
@@ -226,8 +228,7 @@ class ChoppinessEngine:
         state.min_low_deque.append((state.bar_index, low))
 
         # Remove elements from front that are outside window
-        while (state.min_low_deque and
-               state.min_low_deque[0][0] <= state.bar_index - state.period):
+        while state.min_low_deque and state.min_low_deque[0][0] <= state.bar_index - state.period:
             state.min_low_deque.popleft()
 
     def _compute_chop(self, state: _TimeframeState, timeframe: str) -> ChopState:
@@ -251,7 +252,7 @@ class ChoppinessEngine:
                     "bars_collected": len(state.tr_deque),
                     "bars_needed": state.period,
                     "timeframe": timeframe,
-                }
+                },
             )
 
         # Get HH and LL
@@ -274,7 +275,7 @@ class ChoppinessEngine:
                     "bars_collected": len(state.tr_deque),
                     "hh": hh,
                     "ll": ll,
-                }
+                },
             )
 
         # Calculate CHOP
@@ -334,7 +335,7 @@ class ChoppinessEngine:
                 "trendiness_score": 100.0 - chop,
                 "ratio": ratio,
                 "eps": self.config.eps,
-            }
+            },
         )
 
 

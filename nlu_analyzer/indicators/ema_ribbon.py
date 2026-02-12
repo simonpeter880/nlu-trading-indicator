@@ -12,15 +12,16 @@ Features:
 - Stack scoring, ribbon width analysis, center slope tracking
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
-from collections import deque
-from enum import Enum
 import statistics
+from collections import deque
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class RibbonDirection(Enum):
     """Ribbon direction based on EMA stack alignment"""
+
     BULL = "BULL"
     BEAR = "BEAR"
     NEUTRAL = "NEUTRAL"
@@ -28,6 +29,7 @@ class RibbonDirection(Enum):
 
 class RibbonState(Enum):
     """Ribbon health state classification"""
+
     HEALTHY = "HEALTHY"
     WEAKENING = "WEAKENING"
     EXHAUSTING = "EXHAUSTING"
@@ -37,6 +39,7 @@ class RibbonState(Enum):
 @dataclass
 class Candle:
     """OHLCV candle structure"""
+
     timestamp: float
     open: float
     high: float
@@ -50,17 +53,17 @@ class EMARibbonConfig:
     """Configuration for EMA Ribbon Engine"""
 
     # Ribbon periods (must be sorted ascending, unique)
-    ribbon_periods: List[int] = field(default_factory=lambda: [9, 12, 15, 18, 21, 25, 30, 35, 40, 50])
+    ribbon_periods: List[int] = field(
+        default_factory=lambda: [9, 12, 15, 18, 21, 25, 30, 35, 40, 50]
+    )
 
     # ATR configuration
     atr_period: int = 14
 
     # Slope lookback by timeframe (bars to look back for center slope)
-    slope_lookback_by_tf: Dict[str, int] = field(default_factory=lambda: {
-        "1m": 15,
-        "5m": 10,
-        "1h": 4
-    })
+    slope_lookback_by_tf: Dict[str, int] = field(
+        default_factory=lambda: {"1m": 15, "5m": 10, "1h": 4}
+    )
     slope_lookback_default: int = 10
 
     # Width smoothing period
@@ -74,21 +77,15 @@ class EMARibbonConfig:
     expand_rate_thr: float = 0.15  # width_rate threshold for expansion
 
     # Static fallbacks if ATR% not available
-    width_thr_static_by_tf: Dict[str, float] = field(default_factory=lambda: {
-        "1m": 0.0008,
-        "5m": 0.0012,
-        "1h": 0.0020
-    })
-    slope_thr_static_by_tf: Dict[str, float] = field(default_factory=lambda: {
-        "1m": 0.00025,
-        "5m": 0.00035,
-        "1h": 0.0010
-    })
-    pullback_band_static_by_tf: Dict[str, float] = field(default_factory=lambda: {
-        "1m": 0.0010,
-        "5m": 0.0020,
-        "1h": 0.0060
-    })
+    width_thr_static_by_tf: Dict[str, float] = field(
+        default_factory=lambda: {"1m": 0.0008, "5m": 0.0012, "1h": 0.0020}
+    )
+    slope_thr_static_by_tf: Dict[str, float] = field(
+        default_factory=lambda: {"1m": 0.00025, "5m": 0.00035, "1h": 0.0010}
+    )
+    pullback_band_static_by_tf: Dict[str, float] = field(
+        default_factory=lambda: {"1m": 0.0010, "5m": 0.0020, "1h": 0.0060}
+    )
 
     # Stack score thresholds
     stack_strong_thr: float = 0.80
@@ -115,8 +112,12 @@ class EMARibbonConfig:
             raise ValueError("All ribbon_periods must be positive")
 
         # Validate weights sum to 1.0
-        weight_sum = (self.strength_weight_stack + self.strength_weight_width +
-                     self.strength_weight_slope + self.strength_weight_expansion)
+        weight_sum = (
+            self.strength_weight_stack
+            + self.strength_weight_width
+            + self.strength_weight_slope
+            + self.strength_weight_expansion
+        )
         if abs(weight_sum - 1.0) > 1e-6:
             raise ValueError(f"Strength weights must sum to 1.0, got {weight_sum}")
 
@@ -225,15 +226,15 @@ class EMARibbonEngine:
         """
         if atr_percent is not None and atr_percent > 0:
             return {
-                'width_thr': self.config.width_thr_factor * atr_percent,
-                'slope_thr': self.config.slope_thr_factor * atr_percent,
-                'pullback_band': self.config.pullback_band_factor * atr_percent
+                "width_thr": self.config.width_thr_factor * atr_percent,
+                "slope_thr": self.config.slope_thr_factor * atr_percent,
+                "pullback_band": self.config.pullback_band_factor * atr_percent,
             }
         else:
             return {
-                'width_thr': self.config.width_thr_static_by_tf.get(tf, 0.0010),
-                'slope_thr': self.config.slope_thr_static_by_tf.get(tf, 0.0005),
-                'pullback_band': self.config.pullback_band_static_by_tf.get(tf, 0.0020)
+                "width_thr": self.config.width_thr_static_by_tf.get(tf, 0.0010),
+                "slope_thr": self.config.slope_thr_static_by_tf.get(tf, 0.0005),
+                "pullback_band": self.config.pullback_band_static_by_tf.get(tf, 0.0020),
             }
 
     def _compute_stack_score(self, emas: Dict[int, float]) -> tuple[float, RibbonDirection]:
@@ -272,12 +273,16 @@ class EMARibbonEngine:
         stack_score_bear = correct_bear / total_pairs if total_pairs > 0 else 0
 
         # Determine direction
-        if (stack_score_bull >= self.config.stack_direction_thr and
-            stack_score_bull > stack_score_bear):
+        if (
+            stack_score_bull >= self.config.stack_direction_thr
+            and stack_score_bull > stack_score_bear
+        ):
             direction = RibbonDirection.BULL
             stack_score = stack_score_bull
-        elif (stack_score_bear >= self.config.stack_direction_thr and
-              stack_score_bear > stack_score_bull):
+        elif (
+            stack_score_bear >= self.config.stack_direction_thr
+            and stack_score_bear > stack_score_bull
+        ):
             direction = RibbonDirection.BEAR
             stack_score = stack_score_bear
         else:
@@ -286,8 +291,9 @@ class EMARibbonEngine:
 
         return stack_score, direction
 
-    def _compute_ribbon_width(self, emas: Dict[int, float], close: float,
-                             state: _TimeframeState) -> tuple[float, float, float]:
+    def _compute_ribbon_width(
+        self, emas: Dict[int, float], close: float, state: _TimeframeState
+    ) -> tuple[float, float, float]:
         """
         Compute ribbon width, smoothed width, and width rate.
 
@@ -312,14 +318,15 @@ class EMARibbonEngine:
         if state.width_smooth is None:
             width_smooth = width
         else:
-            width_smooth = (state.width_smooth_alpha * width +
-                          (1 - state.width_smooth_alpha) * state.width_smooth)
+            width_smooth = (
+                state.width_smooth_alpha * width
+                + (1 - state.width_smooth_alpha) * state.width_smooth
+            )
 
         # Compute width rate
         if len(state.width_smooth_history) > 0:
             prev_width_smooth = state.width_smooth_history[-1]
-            width_rate = ((width_smooth - prev_width_smooth) /
-                         (abs(prev_width_smooth) + eps))
+            width_rate = (width_smooth - prev_width_smooth) / (abs(prev_width_smooth) + eps)
         else:
             width_rate = 0.0
 
@@ -329,8 +336,9 @@ class EMARibbonEngine:
 
         return width, width_smooth, width_rate
 
-    def _compute_ribbon_center(self, emas: Dict[int, float],
-                               state: _TimeframeState) -> tuple[float, float]:
+    def _compute_ribbon_center(
+        self, emas: Dict[int, float], state: _TimeframeState
+    ) -> tuple[float, float]:
         """
         Compute ribbon center and center slope.
 
@@ -369,8 +377,7 @@ class EMARibbonEngine:
 
         return center, center_slope
 
-    def _check_pullback(self, close: float, center: float,
-                        pullback_band: float) -> bool:
+    def _check_pullback(self, close: float, center: float, pullback_band: float) -> bool:
         """
         Check if price is pulling back into ribbon.
 
@@ -387,9 +394,16 @@ class EMARibbonEngine:
         band_absolute = pullback_band * close
         return abs(close - center) <= band_absolute
 
-    def _classify_state(self, direction: RibbonDirection, stack_score: float,
-                       width_smooth: float, center_slope: float, width_rate: float,
-                       thresholds: Dict[str, float], state: _TimeframeState) -> RibbonState:
+    def _classify_state(
+        self,
+        direction: RibbonDirection,
+        stack_score: float,
+        width_smooth: float,
+        center_slope: float,
+        width_rate: float,
+        thresholds: Dict[str, float],
+        state: _TimeframeState,
+    ) -> RibbonState:
         """
         Classify ribbon state based on metrics.
 
@@ -405,12 +419,13 @@ class EMARibbonEngine:
         Returns:
             RibbonState classification
         """
-        width_thr = thresholds['width_thr']
-        slope_thr = thresholds['slope_thr']
+        width_thr = thresholds["width_thr"]
+        slope_thr = thresholds["slope_thr"]
 
         # Check for CHOP
-        if (stack_score < self.config.stack_direction_thr or
-            (width_smooth < 0.7 * width_thr and abs(center_slope) < 0.5 * slope_thr)):
+        if stack_score < self.config.stack_direction_thr or (
+            width_smooth < 0.7 * width_thr and abs(center_slope) < 0.5 * slope_thr
+        ):
             return RibbonState.CHOP
 
         # Remaining states require BULL or BEAR direction
@@ -429,13 +444,12 @@ class EMARibbonEngine:
             slope_good = center_slope <= -slope_thr
 
         # HEALTHY: Strong trend with good metrics
-        if (stack_good and width_good and slope_good and
-            width_rate >= self.config.compress_rate_thr):
+        if stack_good and width_good and slope_good and width_rate >= self.config.compress_rate_thr:
             return RibbonState.HEALTHY
 
         # EXHAUSTING: Compression + slope decay
         exhaustion_compress = self.config.compress_rate_thr - 0.05
-        if (stack_ok and width_rate <= exhaustion_compress):
+        if stack_ok and width_rate <= exhaustion_compress:
             # Check for slope decay if we have history
             slope_decaying = False
             if state.prev_center_slope is not None:
@@ -448,17 +462,23 @@ class EMARibbonEngine:
                 return RibbonState.EXHAUSTING
 
         # WEAKENING: Trend present but deteriorating
-        if (stack_ok and
-            (width_rate < self.config.compress_rate_thr or abs(center_slope) < slope_thr)):
+        if stack_ok and (
+            width_rate < self.config.compress_rate_thr or abs(center_slope) < slope_thr
+        ):
             return RibbonState.WEAKENING
 
         # Default to WEAKENING if we're trending but not healthy
         return RibbonState.WEAKENING
 
-    def _compute_strength(self, stack_score: float, width_smooth: float,
-                         center_slope: float, width_rate: float,
-                         thresholds: Dict[str, float],
-                         ribbon_state: RibbonState) -> float:
+    def _compute_strength(
+        self,
+        stack_score: float,
+        width_smooth: float,
+        center_slope: float,
+        width_rate: float,
+        thresholds: Dict[str, float],
+        ribbon_state: RibbonState,
+    ) -> float:
         """
         Compute ribbon strength score (0-100).
 
@@ -478,23 +498,23 @@ class EMARibbonEngine:
         # Component calculations (clip to 0..1)
         stack_component = max(0.0, min(1.0, (stack_score - 0.5) / 0.5))
 
-        width_component = max(0.0, min(1.0,
-            width_smooth / (2 * thresholds['width_thr'] + eps)))
+        width_component = max(0.0, min(1.0, width_smooth / (2 * thresholds["width_thr"] + eps)))
 
-        slope_component = max(0.0, min(1.0,
-            abs(center_slope) / (2 * thresholds['slope_thr'] + eps)))
+        slope_component = max(
+            0.0, min(1.0, abs(center_slope) / (2 * thresholds["slope_thr"] + eps))
+        )
 
-        expansion_range = (self.config.expand_rate_thr -
-                          self.config.compress_rate_thr)
-        expansion_component = max(0.0, min(1.0,
-            (width_rate - self.config.compress_rate_thr) / (expansion_range + eps)))
+        expansion_range = self.config.expand_rate_thr - self.config.compress_rate_thr
+        expansion_component = max(
+            0.0, min(1.0, (width_rate - self.config.compress_rate_thr) / (expansion_range + eps))
+        )
 
         # Weighted strength
         strength = 100 * (
-            self.config.strength_weight_stack * stack_component +
-            self.config.strength_weight_width * width_component +
-            self.config.strength_weight_slope * slope_component +
-            self.config.strength_weight_expansion * expansion_component
+            self.config.strength_weight_stack * stack_component
+            + self.config.strength_weight_width * width_component
+            + self.config.strength_weight_slope * slope_component
+            + self.config.strength_weight_expansion * expansion_component
         )
 
         # Apply state caps
@@ -505,8 +525,11 @@ class EMARibbonEngine:
 
         return strength
 
-    def warmup(self, candles_by_tf: Dict[str, List[Candle]],
-               atr_percent_by_tf: Optional[Dict[str, float]] = None) -> None:
+    def warmup(
+        self,
+        candles_by_tf: Dict[str, List[Candle]],
+        atr_percent_by_tf: Optional[Dict[str, float]] = None,
+    ) -> None:
         """
         Warm up the engine with historical candles.
 
@@ -520,9 +543,13 @@ class EMARibbonEngine:
             for candle in candles:
                 state.update_emas(candle.close)
 
-    def on_candle_close(self, tf: str, candle: Candle,
-                       atr_percent: Optional[float] = None,
-                       ema_system_state: Optional[Dict[str, Any]] = None) -> RibbonStateOutput:
+    def on_candle_close(
+        self,
+        tf: str,
+        candle: Candle,
+        atr_percent: Optional[float] = None,
+        ema_system_state: Optional[Dict[str, Any]] = None,
+    ) -> RibbonStateOutput:
         """
         Process a candle close and return ribbon state.
 
@@ -555,7 +582,7 @@ class EMARibbonEngine:
                 ribbon_state=RibbonState.CHOP,
                 ribbon_strength_0_100=0.0,
                 pullback_into_ribbon=False,
-                debug={'warmup': True, 'candles': state.candle_count}
+                debug={"warmup": True, "candles": state.candle_count},
             )
 
         # Get thresholds
@@ -564,26 +591,27 @@ class EMARibbonEngine:
         # Compute metrics
         stack_score, direction = self._compute_stack_score(state.ema_values)
         width, width_smooth, width_rate = self._compute_ribbon_width(
-            state.ema_values, candle.close, state)
+            state.ema_values, candle.close, state
+        )
         center, center_slope = self._compute_ribbon_center(state.ema_values, state)
-        pullback = self._check_pullback(candle.close, center, thresholds['pullback_band'])
+        pullback = self._check_pullback(candle.close, center, thresholds["pullback_band"])
 
         # Classify state
         ribbon_state = self._classify_state(
-            direction, stack_score, width_smooth, center_slope,
-            width_rate, thresholds, state)
+            direction, stack_score, width_smooth, center_slope, width_rate, thresholds, state
+        )
 
         # Compute strength
         strength = self._compute_strength(
-            stack_score, width_smooth, center_slope, width_rate,
-            thresholds, ribbon_state)
+            stack_score, width_smooth, center_slope, width_rate, thresholds, ribbon_state
+        )
 
         # Build debug info
         debug_info = {
-            'thresholds': thresholds,
-            'atr_percent': atr_percent,
-            'slope_lookback': state.center_history.maxlen - 1,
-            'candles_processed': state.candle_count
+            "thresholds": thresholds,
+            "atr_percent": atr_percent,
+            "slope_lookback": state.center_history.maxlen - 1,
+            "candles_processed": state.candle_count,
         }
 
         return RibbonStateOutput(
@@ -599,12 +627,15 @@ class EMARibbonEngine:
             ribbon_state=ribbon_state,
             ribbon_strength_0_100=strength,
             pullback_into_ribbon=pullback,
-            debug=debug_info
+            debug=debug_info,
         )
 
-    def update(self, candles_by_tf: Dict[str, List[Candle]],
-               atr_percent_by_tf: Optional[Dict[str, float]] = None,
-               ema_system_state_by_tf: Optional[Dict[str, Any]] = None) -> Dict[str, RibbonStateOutput]:
+    def update(
+        self,
+        candles_by_tf: Dict[str, List[Candle]],
+        atr_percent_by_tf: Optional[Dict[str, float]] = None,
+        ema_system_state_by_tf: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, RibbonStateOutput]:
         """
         Convenience method to update all timeframes.
 
@@ -631,8 +662,7 @@ class EMARibbonEngine:
         return results
 
 
-def format_ribbon_output(ribbon_states: Dict[str, RibbonStateOutput],
-                         compact: bool = True) -> str:
+def format_ribbon_output(ribbon_states: Dict[str, RibbonStateOutput], compact: bool = True) -> str:
     """
     Format ribbon states for display.
 
@@ -649,16 +679,18 @@ def format_ribbon_output(ribbon_states: Dict[str, RibbonStateOutput],
         if compact:
             # Compact format
             pullback_str = "YES" if state.pullback_into_ribbon else "NO"
-            width_thr = state.debug.get('thresholds', {}).get('width_thr', 0)
+            width_thr = state.debug.get("thresholds", {}).get("width_thr", 0)
 
-            line = (f"{tf}: dir={state.ribbon_direction.value} "
-                   f"state={state.ribbon_state.value} "
-                   f"strength={state.ribbon_strength_0_100:.0f} "
-                   f"stack={state.stack_score:.2f} "
-                   f"width={state.ribbon_width_smooth:.4f} (thr={width_thr:.4f}) "
-                   f"rate={state.width_rate:+.2f} "
-                   f"slope={state.ribbon_center_slope:+.5f} "
-                   f"pullback={pullback_str}")
+            line = (
+                f"{tf}: dir={state.ribbon_direction.value} "
+                f"state={state.ribbon_state.value} "
+                f"strength={state.ribbon_strength_0_100:.0f} "
+                f"stack={state.stack_score:.2f} "
+                f"width={state.ribbon_width_smooth:.4f} (thr={width_thr:.4f}) "
+                f"rate={state.width_rate:+.2f} "
+                f"slope={state.ribbon_center_slope:+.5f} "
+                f"pullback={pullback_str}"
+            )
             lines.append(line)
         else:
             # Verbose format
@@ -667,7 +699,9 @@ def format_ribbon_output(ribbon_states: Dict[str, RibbonStateOutput],
             lines.append(f"  State: {state.ribbon_state.value}")
             lines.append(f"  Strength: {state.ribbon_strength_0_100:.1f}")
             lines.append(f"  Stack Score: {state.stack_score:.2f}")
-            lines.append(f"  Width: {state.ribbon_width_smooth:.4f} (rate: {state.width_rate:+.2%})")
+            lines.append(
+                f"  Width: {state.ribbon_width_smooth:.4f} (rate: {state.width_rate:+.2%})"
+            )
             lines.append(f"  Center Slope: {state.ribbon_center_slope:+.4%}")
             lines.append(f"  Pullback: {state.pullback_into_ribbon}")
 

@@ -6,18 +6,18 @@ as a regime filter for trend vs range-bound detection.
 """
 
 from indicator.engines.choppiness import (
-    ChoppinessEngine,
-    ChoppinessConfig,
     Candle,
-    print_choppiness,
+    ChoppinessConfig,
+    ChoppinessEngine,
     format_chop_state,
     interpret_chop,
+    print_choppiness,
 )
-
 
 # ============================================================================
 # EXAMPLE 1: Continuous Runner Integration
 # ============================================================================
+
 
 def example_continuous_integration():
     """
@@ -57,6 +57,7 @@ def example_continuous_integration():
 # ============================================================================
 # EXAMPLE 2: Batch Analysis Integration (runner.py)
 # ============================================================================
+
 
 def example_batch_integration():
     """
@@ -108,6 +109,7 @@ def example_batch_integration():
 # ============================================================================
 # EXAMPLE 3: Combined with ATR Expansion for Entry Timing
 # ============================================================================
+
 
 def example_combined_atr_chop():
     """
@@ -162,6 +164,7 @@ def example_combined_atr_chop():
 # EXAMPLE 4: Multi-Timeframe CHOP Confirmation
 # ============================================================================
 
+
 def example_multi_timeframe_chop():
     """
     Example: Use multi-timeframe CHOP for regime confirmation.
@@ -198,6 +201,7 @@ def example_multi_timeframe_chop():
 # EXAMPLE 5: CHOP as Position Sizing Input
 # ============================================================================
 
+
 def example_position_sizing():
     """
     Example: Use CHOP to adjust position sizing.
@@ -228,6 +232,7 @@ def example_position_sizing():
 # EXAMPLE 6: Compact Print Block for Display
 # ============================================================================
 
+
 def example_compact_display():
     """
     Example: Display CHOP in deep-dive or batch analysis.
@@ -253,11 +258,13 @@ def example_compact_display():
     ]
 
     # Warmup
-    states = engine.warmup({
-        "1m": example_candles,
-        "5m": example_candles[::5],
-        "1h": example_candles[::60] if len(example_candles) >= 60 else example_candles,
-    })
+    states = engine.warmup(
+        {
+            "1m": example_candles,
+            "5m": example_candles[::5],
+            "1h": example_candles[::60] if len(example_candles) >= 60 else example_candles,
+        }
+    )
 
     # Display
     print("\n" + "=" * 70)
@@ -273,6 +280,7 @@ def example_compact_display():
 # ============================================================================
 # EXAMPLE 7: Real-time Continuous Updates
 # ============================================================================
+
 
 def example_realtime_updates():
     """
@@ -294,7 +302,7 @@ def example_realtime_updates():
             high=price + 2,
             low=price - 2,
             close=price + 1,
-            volume=1000 + i * 10
+            volume=1000 + i * 10,
         )
 
         # O(1) update
@@ -305,7 +313,9 @@ def example_realtime_updates():
             if state.chop is not None:
                 print(f"Candle {i:2d}: {format_chop_state('1m', state)}")
             else:
-                print(f"Candle {i:2d}: WARMUP ({state.debug.get('bars_collected', 0)}/{state.debug.get('bars_needed', 14)} bars)")
+                print(
+                    f"Candle {i:2d}: WARMUP ({state.debug.get('bars_collected', 0)}/{state.debug.get('bars_needed', 14)} bars)"
+                )
 
 
 # ============================================================================

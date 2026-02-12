@@ -15,19 +15,16 @@ Usage:
     python example_market_structure.py [SYMBOL]
 """
 
-import asyncio
 import argparse
+import asyncio
+
+from indicator.display import Colors, print_structure_allowed_trades, print_structure_deep_dive
 from indicator.engines.data_fetcher import BinanceIndicatorFetcher
 from indicator.engines.market_structure import (
     MarketStructureDetector,
     TrendDirection,
     get_allowed_trade_direction,
     structure_veto_signal,
-)
-from indicator.display import (
-    print_structure_deep_dive,
-    print_structure_allowed_trades,
-    Colors,
 )
 
 
@@ -120,8 +117,10 @@ async def analyze_structure(symbol: str = "BTCUSDT"):
         status_color = Colors.RED if vetoed else Colors.GREEN
         status = "VETOED" if vetoed else "ALLOWED"
 
-        print(f"  {direction.upper():5} @ {confidence}% conf: "
-              f"{status_color}{status}{Colors.RESET}")
+        print(
+            f"  {direction.upper():5} @ {confidence}% conf: "
+            f"{status_color}{status}{Colors.RESET}"
+        )
         if reason:
             print(f"        Reason: {reason}")
 
@@ -140,7 +139,11 @@ async def analyze_structure(symbol: str = "BTCUSDT"):
 
     allowed = get_allowed_trade_direction(ltf_state)
     if allowed:
-        allowed_color = Colors.GREEN if allowed == "long" else Colors.RED if allowed == "short" else Colors.YELLOW
+        allowed_color = (
+            Colors.GREEN
+            if allowed == "long"
+            else Colors.RED if allowed == "short" else Colors.YELLOW
+        )
         print(f"  Allowed Direction: {allowed_color}{allowed.upper()}{Colors.RESET}")
     else:
         print(f"  Allowed Direction: {Colors.RED}NO TRADE{Colors.RESET}")
@@ -149,14 +152,9 @@ async def analyze_structure(symbol: str = "BTCUSDT"):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Market Structure Analysis Example"
-    )
+    parser = argparse.ArgumentParser(description="Market Structure Analysis Example")
     parser.add_argument(
-        "symbol",
-        nargs="?",
-        default="BTCUSDT",
-        help="Trading pair symbol (default: BTCUSDT)"
+        "symbol", nargs="?", default="BTCUSDT", help="Trading pair symbol (default: BTCUSDT)"
     )
     args = parser.parse_args()
 

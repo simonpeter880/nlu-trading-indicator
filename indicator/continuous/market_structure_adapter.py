@@ -6,19 +6,20 @@ Provides rolling window structure analysis with multiple timeframes.
 """
 
 import time
-from typing import List, Optional, Dict, Any, Tuple
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 from market_structure import (
     MarketStructureDetector,
     MarketStructureState,
-    TrendDirection,
+    StructuralMomentum,
     StructureEvent,
     TimeframeAlignment,
-    StructuralMomentum,
+    TrendDirection,
     get_allowed_trade_direction,
     structure_veto_signal,
 )
+
 from .rolling_window import TradeWindow, WindowStats
 
 
@@ -115,12 +116,10 @@ class MarketStructureAdapter:
         self,
         # LTF (lower timeframe) settings
         ltf_window_seconds: int = 180,  # 3 minutes for LTF
-        ltf_candle_seconds: int = 15,   # 15s candles
-
+        ltf_candle_seconds: int = 15,  # 15s candles
         # HTF (higher timeframe) settings
         htf_window_seconds: int = 3600,  # 1 hour for HTF
-        htf_candle_seconds: int = 60,    # 1m candles
-
+        htf_candle_seconds: int = 60,  # 1m candles
         # Structure detector settings
         swing_lookback: int = 5,
         bos_acceptance_bars: int = 3,
@@ -164,11 +163,7 @@ class MarketStructureAdapter:
         self._last_htf_state: Optional[MarketStructureState] = None
         self._last_signal: Optional[MarketStructureSignal] = None
 
-    def _build_candles(
-        self,
-        window: TradeWindow,
-        candle_seconds: int
-    ) -> Dict[str, List[float]]:
+    def _build_candles(self, window: TradeWindow, candle_seconds: int) -> Dict[str, List[float]]:
         """
         Build OHLCV candles from trade window.
 
@@ -177,12 +172,12 @@ class MarketStructureAdapter:
         """
         if not window.prices:
             return {
-                'opens': [],
-                'highs': [],
-                'lows': [],
-                'closes': [],
-                'volumes': [],
-                'timestamps': []
+                "opens": [],
+                "highs": [],
+                "lows": [],
+                "closes": [],
+                "volumes": [],
+                "timestamps": [],
             }
 
         # Get all trades
@@ -218,41 +213,41 @@ class MarketStructureAdapter:
                 i += 1
 
             if candle_prices:
-                candles.append({
-                    'timestamp': int(candle_start),
-                    'open': candle_prices[0],
-                    'high': max(candle_prices),
-                    'low': min(candle_prices),
-                    'close': candle_prices[-1],
-                    'volume': sum(candle_volumes)
-                })
+                candles.append(
+                    {
+                        "timestamp": int(candle_start),
+                        "open": candle_prices[0],
+                        "high": max(candle_prices),
+                        "low": min(candle_prices),
+                        "close": candle_prices[-1],
+                        "volume": sum(candle_volumes),
+                    }
+                )
 
             current_time = candle_end
 
         # Extract OHLCV
         if not candles:
             return {
-                'opens': [],
-                'highs': [],
-                'lows': [],
-                'closes': [],
-                'volumes': [],
-                'timestamps': []
+                "opens": [],
+                "highs": [],
+                "lows": [],
+                "closes": [],
+                "volumes": [],
+                "timestamps": [],
             }
 
         return {
-            'opens': [c['open'] for c in candles],
-            'highs': [c['high'] for c in candles],
-            'lows': [c['low'] for c in candles],
-            'closes': [c['close'] for c in candles],
-            'volumes': [c['volume'] for c in candles],
-            'timestamps': [c['timestamp'] for c in candles],
+            "opens": [c["open"] for c in candles],
+            "highs": [c["high"] for c in candles],
+            "lows": [c["low"] for c in candles],
+            "closes": [c["close"] for c in candles],
+            "volumes": [c["volume"] for c in candles],
+            "timestamps": [c["timestamp"] for c in candles],
         }
 
     def compute(
-        self,
-        ltf_window: TradeWindow,
-        htf_window: TradeWindow
+        self, ltf_window: TradeWindow, htf_window: TradeWindow
     ) -> Optional[MarketStructureSignal]:
         """
         Compute market structure from LTF and HTF windows.
@@ -269,27 +264,27 @@ class MarketStructureAdapter:
         htf_candles = self._build_candles(htf_window, self.htf_candle_seconds)
 
         # Need minimum candles
-        if len(ltf_candles['closes']) < 10 or len(htf_candles['closes']) < 10:
+        if len(ltf_candles["closes"]) < 10 or len(htf_candles["closes"]) < 10:
             return None
 
         # Analyze HTF structure first (context)
         htf_state = self.htf_detector.analyze(
-            highs=htf_candles['highs'],
-            lows=htf_candles['lows'],
-            closes=htf_candles['closes'],
-            volumes=htf_candles['volumes'],
-            timestamps=htf_candles['timestamps']
+            highs=htf_candles["highs"],
+            lows=htf_candles["lows"],
+            closes=htf_candles["closes"],
+            volumes=htf_candles["volumes"],
+            timestamps=htf_candles["timestamps"],
         )
         self._last_htf_state = htf_state
 
         # Analyze LTF structure with HTF context
         ltf_state = self.ltf_detector.analyze(
-            highs=ltf_candles['highs'],
-            lows=ltf_candles['lows'],
-            closes=ltf_candles['closes'],
-            volumes=ltf_candles['volumes'],
-            timestamps=ltf_candles['timestamps'],
-            htf_trend=htf_state.trend_direction
+            highs=ltf_candles["highs"],
+            lows=ltf_candles["lows"],
+            closes=ltf_candles["closes"],
+            volumes=ltf_candles["volumes"],
+            timestamps=ltf_candles["timestamps"],
+            htf_trend=htf_state.trend_direction,
         )
         self._last_ltf_state = ltf_state
 
@@ -302,8 +297,8 @@ class MarketStructureAdapter:
 
         # Check if near FVG
         near_fvg = False
-        if ltf_state.active_fvgs and ltf_candles['closes']:
-            current_price = ltf_candles['closes'][-1]
+        if ltf_state.active_fvgs and ltf_candles["closes"]:
+            current_price = ltf_candles["closes"][-1]
             for fvg in ltf_state.active_fvgs:
                 # Check if price within 0.5% of FVG
                 distance_to_top = abs(current_price - fvg.price_top) / current_price * 100
@@ -330,7 +325,7 @@ class MarketStructureAdapter:
             active_fvg_count=len(ltf_state.active_fvgs),
             near_fvg=near_fvg,
             warnings=ltf_state.warnings,
-            full_state=ltf_state
+            full_state=ltf_state,
         )
 
         self._last_signal = signal
@@ -341,9 +336,7 @@ class MarketStructureAdapter:
         return self._last_signal
 
     def veto_trade_signal(
-        self,
-        signal_direction: str,
-        signal_confidence: float
+        self, signal_direction: str, signal_confidence: float
     ) -> Tuple[bool, Optional[str]]:
         """
         Check if structure vetos a trade signal.
@@ -358,39 +351,30 @@ class MarketStructureAdapter:
         if self._last_ltf_state is None:
             return True, "No structure data available"
 
-        return structure_veto_signal(
-            self._last_ltf_state,
-            signal_direction,
-            signal_confidence
-        )
+        return structure_veto_signal(self._last_ltf_state, signal_direction, signal_confidence)
 
     def get_summary(self) -> Dict[str, Any]:
         """Get summary of current structure state."""
         if self._last_signal is None:
-            return {
-                'available': False,
-                'trend': 'unknown',
-                'confidence': 0,
-                'score': 0.0
-            }
+            return {"available": False, "trend": "unknown", "confidence": 0, "score": 0.0}
 
         return {
-            'available': True,
-            'trend': self._last_signal.trend_direction.value,
-            'ltf_trend': self._last_signal.ltf_trend.value,
-            'htf_trend': self._last_signal.htf_trend.value,
-            'confidence': self._last_signal.structure_confidence,
-            'score': self._last_signal.score,
-            'allowed_direction': self._last_signal.allowed_direction,
-            'in_range': self._last_signal.in_range,
-            'has_bos': self._last_signal.has_bos,
-            'has_choch': self._last_signal.has_choch,
-            'bos_accepted': self._last_signal.bos_accepted,
-            'tf_alignment': self._last_signal.tf_alignment.value,
-            'structural_momentum': self._last_signal.structural_momentum.value,
-            'active_fvgs': self._last_signal.active_fvg_count,
-            'near_fvg': self._last_signal.near_fvg,
-            'warnings': self._last_signal.warnings,
+            "available": True,
+            "trend": self._last_signal.trend_direction.value,
+            "ltf_trend": self._last_signal.ltf_trend.value,
+            "htf_trend": self._last_signal.htf_trend.value,
+            "confidence": self._last_signal.structure_confidence,
+            "score": self._last_signal.score,
+            "allowed_direction": self._last_signal.allowed_direction,
+            "in_range": self._last_signal.in_range,
+            "has_bos": self._last_signal.has_bos,
+            "has_choch": self._last_signal.has_choch,
+            "bos_accepted": self._last_signal.bos_accepted,
+            "tf_alignment": self._last_signal.tf_alignment.value,
+            "structural_momentum": self._last_signal.structural_momentum.value,
+            "active_fvgs": self._last_signal.active_fvg_count,
+            "near_fvg": self._last_signal.near_fvg,
+            "warnings": self._last_signal.warnings,
         }
 
     def get_full_result(self) -> Optional[MarketStructureState]:

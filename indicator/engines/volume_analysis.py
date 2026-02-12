@@ -9,40 +9,44 @@ Key Concepts:
 - Liquidity Sweeps: Volume after sweep = confirmation
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
-from enum import Enum
 import math
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import List, Optional, Tuple
 
 
 class VolumeContext(Enum):
     """Volume context relative to average."""
-    EXTREME = "extreme"      # > 3x average
-    HIGH = "high"            # > 1.5x average
-    NORMAL = "normal"        # 0.7x - 1.5x average
-    LOW = "low"              # < 0.7x average
-    DEAD = "dead"            # < 0.3x average
+
+    EXTREME = "extreme"  # > 3x average
+    HIGH = "high"  # > 1.5x average
+    NORMAL = "normal"  # 0.7x - 1.5x average
+    LOW = "low"  # < 0.7x average
+    DEAD = "dead"  # < 0.3x average
 
 
 class VolumeLocation(Enum):
     """Where volume occurred in the price range."""
-    RANGE_HIGH = "range_high"      # Distribution zone
-    RANGE_LOW = "range_low"        # Accumulation zone
-    MID_RANGE = "mid_range"        # Noise zone
+
+    RANGE_HIGH = "range_high"  # Distribution zone
+    RANGE_LOW = "range_low"  # Accumulation zone
+    MID_RANGE = "mid_range"  # Noise zone
     BREAKOUT_HIGH = "breakout_high"  # Above range
-    BREAKOUT_LOW = "breakout_low"    # Below range
+    BREAKOUT_LOW = "breakout_low"  # Below range
 
 
 class AbsorptionType(Enum):
     """Type of absorption detected."""
-    BID_ABSORPTION = "bid_absorption"    # Buyers absorbing sells
-    ASK_ABSORPTION = "ask_absorption"    # Sellers absorbing buys
+
+    BID_ABSORPTION = "bid_absorption"  # Buyers absorbing sells
+    ASK_ABSORPTION = "ask_absorption"  # Sellers absorbing buys
     NONE = "none"
 
 
 @dataclass
 class RelativeVolumeResult:
     """Result of relative volume analysis."""
+
     current_volume: float
     avg_volume_20: float
     relative_ratio: float
@@ -54,6 +58,7 @@ class RelativeVolumeResult:
 @dataclass
 class VolumeLocationResult:
     """Result of volume location analysis."""
+
     location: VolumeLocation
     range_high: float
     range_low: float
@@ -65,17 +70,19 @@ class VolumeLocationResult:
 @dataclass
 class AbsorptionResult:
     """Result of absorption detection."""
+
     detected: bool
     absorption_type: AbsorptionType
-    volume_ratio: float        # How much volume relative to avg
+    volume_ratio: float  # How much volume relative to avg
     price_move_percent: float  # How much price actually moved
-    efficiency: float          # price_move / volume_ratio (low = absorption)
+    efficiency: float  # price_move / volume_ratio (low = absorption)
     description: str
 
 
 @dataclass
 class LiquiditySweepResult:
     """Result of liquidity sweep detection."""
+
     sweep_detected: bool
     sweep_direction: str  # 'high', 'low', or 'none'
     sweep_level: float
@@ -86,6 +93,7 @@ class LiquiditySweepResult:
 @dataclass
 class VolumeAnalysisSummary:
     """Complete volume analysis summary."""
+
     relative_volume: RelativeVolumeResult
     volume_location: VolumeLocationResult
     absorption: AbsorptionResult
@@ -110,7 +118,7 @@ class AdvancedVolumeAnalyzer:
         lookback_period: int = 20,
         range_period: int = 20,
         relative_threshold: float = 1.5,
-        absorption_threshold: float = 0.3
+        absorption_threshold: float = 0.3,
     ):
         """
         Args:
@@ -125,9 +133,7 @@ class AdvancedVolumeAnalyzer:
         self.absorption_threshold = absorption_threshold
 
     def analyze_relative_volume(
-        self,
-        volumes: List[float],
-        session_volumes: Optional[List[float]] = None
+        self, volumes: List[float], session_volumes: Optional[List[float]] = None
     ) -> RelativeVolumeResult:
         """
         Analyze volume relative to recent history.
@@ -148,14 +154,14 @@ class AdvancedVolumeAnalyzer:
                 relative_ratio=1.0,
                 context=VolumeContext.NORMAL,
                 is_meaningful=False,
-                description="Insufficient data"
+                description="Insufficient data",
             )
 
         current = volumes[-1]
 
         # Calculate 20-bar average (or available)
         lookback = min(self.lookback_period, len(volumes) - 1)
-        avg_20 = sum(volumes[-lookback-1:-1]) / lookback if lookback > 0 else current
+        avg_20 = sum(volumes[-lookback - 1 : -1]) / lookback if lookback > 0 else current
 
         # Calculate relative ratio
         ratio = current / avg_20 if avg_20 > 0 else 1.0
@@ -189,15 +195,11 @@ class AdvancedVolumeAnalyzer:
             relative_ratio=ratio,
             context=context,
             is_meaningful=ratio > self.relative_threshold,
-            description=desc
+            description=desc,
         )
 
     def analyze_volume_location(
-        self,
-        closes: List[float],
-        highs: List[float],
-        lows: List[float],
-        volumes: List[float]
+        self, closes: List[float], highs: List[float], lows: List[float], volumes: List[float]
     ) -> VolumeLocationResult:
         """
         Determine WHERE in the range volume is occurring.
@@ -221,14 +223,14 @@ class AdvancedVolumeAnalyzer:
                 range_low=closes[-1] if closes else 0,
                 current_price=closes[-1] if closes else 0,
                 percentile_in_range=50,
-                interpretation="Insufficient data for range analysis"
+                interpretation="Insufficient data for range analysis",
             )
 
         current_price = closes[-1]
 
         # Calculate range from lookback period
-        range_highs = highs[-self.range_period:]
-        range_lows = lows[-self.range_period:]
+        range_highs = highs[-self.range_period :]
+        range_lows = lows[-self.range_period :]
 
         range_high = max(range_highs)
         range_low = min(range_lows)
@@ -241,7 +243,7 @@ class AdvancedVolumeAnalyzer:
                 range_low=range_low,
                 current_price=current_price,
                 percentile_in_range=50,
-                interpretation="No range (flat price)"
+                interpretation="No range (flat price)",
             )
 
         # Calculate position in range (0-100)
@@ -270,7 +272,7 @@ class AdvancedVolumeAnalyzer:
             range_low=range_low,
             current_price=current_price,
             percentile_in_range=percentile,
-            interpretation=interpretation
+            interpretation=interpretation,
         )
 
     def detect_absorption(
@@ -278,7 +280,7 @@ class AdvancedVolumeAnalyzer:
         closes: List[float],
         volumes: List[float],
         highs: Optional[List[float]] = None,
-        lows: Optional[List[float]] = None
+        lows: Optional[List[float]] = None,
     ) -> AbsorptionResult:
         """
         Detect absorption: Volume spike + minimal price movement.
@@ -300,7 +302,7 @@ class AdvancedVolumeAnalyzer:
                 volume_ratio=1.0,
                 price_move_percent=0,
                 efficiency=1.0,
-                description="Insufficient data"
+                description="Insufficient data",
             )
 
         # Get relative volume
@@ -318,8 +320,7 @@ class AdvancedVolumeAnalyzer:
 
         # Absorption detection: High volume + low efficiency
         is_absorption = (
-            volume_ratio > self.relative_threshold and
-            efficiency < self.absorption_threshold
+            volume_ratio > self.relative_threshold and efficiency < self.absorption_threshold
         )
 
         if is_absorption:
@@ -354,7 +355,7 @@ class AdvancedVolumeAnalyzer:
             volume_ratio=volume_ratio,
             price_move_percent=price_change_percent,
             efficiency=efficiency,
-            description=desc
+            description=desc,
         )
 
     def detect_liquidity_sweep(
@@ -363,7 +364,7 @@ class AdvancedVolumeAnalyzer:
         lows: List[float],
         closes: List[float],
         volumes: List[float],
-        sweep_lookback: int = 10
+        sweep_lookback: int = 10,
     ) -> LiquiditySweepResult:
         """
         Detect liquidity sweeps with volume confirmation.
@@ -384,7 +385,7 @@ class AdvancedVolumeAnalyzer:
                 sweep_direction="none",
                 sweep_level=0,
                 volume_confirmation=False,
-                description="Insufficient data for sweep detection"
+                description="Insufficient data for sweep detection",
             )
 
         current_close = closes[-1]
@@ -392,8 +393,8 @@ class AdvancedVolumeAnalyzer:
         current_low = lows[-1]
 
         # Find recent swing highs and lows (excluding last 2 bars)
-        lookback_highs = highs[-sweep_lookback-2:-2]
-        lookback_lows = lows[-sweep_lookback-2:-2]
+        lookback_highs = highs[-sweep_lookback - 2 : -2]
+        lookback_lows = lows[-sweep_lookback - 2 : -2]
 
         swing_high = max(lookback_highs)
         swing_low = min(lookback_lows)
@@ -439,7 +440,7 @@ class AdvancedVolumeAnalyzer:
             sweep_direction=direction,
             sweep_level=level,
             volume_confirmation=vol_confirms,
-            description=desc
+            description=desc,
         )
 
     def full_analysis(
@@ -448,7 +449,7 @@ class AdvancedVolumeAnalyzer:
         highs: List[float],
         lows: List[float],
         closes: List[float],
-        volumes: List[float]
+        volumes: List[float],
     ) -> VolumeAnalysisSummary:
         """
         Perform complete volume analysis answering: "Was the move REAL?"
@@ -470,9 +471,9 @@ class AdvancedVolumeAnalyzer:
         # Determine if move is real
         # A "real" move has: meaningful volume + appropriate location + no absorption
         move_is_real = (
-            rel_vol.is_meaningful and
-            not absorption.detected and
-            vol_location.location != VolumeLocation.MID_RANGE
+            rel_vol.is_meaningful
+            and not absorption.detected
+            and vol_location.location != VolumeLocation.MID_RANGE
         )
 
         # Calculate confidence
@@ -543,7 +544,9 @@ class AdvancedVolumeAnalyzer:
             summary = "MIXED: Conflicting signals - no clear edge"
 
         # Add context to summary
-        summary += f" | Vol: {rel_vol.relative_ratio:.1f}x | Location: {vol_location.location.value}"
+        summary += (
+            f" | Vol: {rel_vol.relative_ratio:.1f}x | Location: {vol_location.location.value}"
+        )
 
         return VolumeAnalysisSummary(
             relative_volume=rel_vol,
@@ -553,7 +556,7 @@ class AdvancedVolumeAnalyzer:
             move_is_real=move_is_real,
             confidence=confidence,
             signal=signal,
-            summary=summary
+            summary=summary,
         )
 
 
@@ -562,7 +565,7 @@ def was_move_real(
     closes: List[float],
     volumes: List[float],
     highs: Optional[List[float]] = None,
-    lows: Optional[List[float]] = None
+    lows: Optional[List[float]] = None,
 ) -> Tuple[bool, str]:
     """
     Quick check: Was the move REAL?

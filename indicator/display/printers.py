@@ -3,52 +3,43 @@
 from datetime import datetime
 from typing import List, Optional
 
-from .colors import Colors
-from .formatters import signal_color, strength_bar, score_bar
-from signals import Signal, signal_value
-
-# Type imports for annotations
-from volume_analysis import (
-    VolumeAnalysisSummary,
-    VolumeContext,
-    VolumeLocation,
-    AbsorptionType,
-)
-from volume_engine import (
-    VolumeEngineResult,
-    AggressionBias,
-    VolumeAcceleration,
-    ExhaustionRisk,
-    MTFAgreement,
-)
-from unified_score import UnifiedScore
 from breakout_validation import BreakoutValidation
-from oi_analysis import (
-    OIAnalysisSummary,
-    OIRegime,
-    OISignal,
-)
 from funding_analysis import (
-    FundingAnalysisSummary,
-    FundingZone,
     CrowdPosition,
-    FundingWarning,
+    FundingAnalysisSummary,
     FundingOICombo,
-)
-from orderbook_analysis import (
-    OrderbookAnalysisSummary as OBAnalysisSummary,
-    AbsorptionSide,
-    ImbalanceDirection,
-    SpoofType,
+    FundingWarning,
+    FundingZone,
 )
 from indicators import IndicatorResult
+from oi_analysis import OIAnalysisSummary, OIRegime, OISignal
+from orderbook_analysis import AbsorptionSide, ImbalanceDirection
+from orderbook_analysis import OrderbookAnalysisSummary as OBAnalysisSummary
+from orderbook_analysis import SpoofType
+from signals import Signal, signal_value
+from unified_score import UnifiedScore
+
+# Type imports for annotations
+from volume_analysis import AbsorptionType, VolumeAnalysisSummary, VolumeContext, VolumeLocation
+from volume_engine import (
+    AggressionBias,
+    ExhaustionRisk,
+    MTFAgreement,
+    VolumeAcceleration,
+    VolumeEngineResult,
+)
+
+from .colors import Colors
+from .formatters import score_bar, signal_color, strength_bar
 
 
 def print_volume_deep_dive(summary: VolumeAnalysisSummary):
     """Print detailed volume analysis - 'Was the move REAL?'"""
     print()
     print(f"{Colors.BOLD}{Colors.CYAN}┌{'─' * 78}┐{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.CYAN}│  WAS THE MOVE REAL? - Deep Volume Analysis{' ' * 34}│{Colors.RESET}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}│  WAS THE MOVE REAL? - Deep Volume Analysis{' ' * 34}│{Colors.RESET}"
+    )
     print(f"{Colors.BOLD}{Colors.CYAN}└{'─' * 78}┘{Colors.RESET}")
     print()
 
@@ -62,8 +53,12 @@ def print_volume_deep_dive(summary: VolumeAnalysisSummary):
 
     signal_clr = signal_color(summary.signal)
     print(f"  {Colors.BOLD}Verdict:{Colors.RESET} {verdict_color}{verdict}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Signal:{Colors.RESET}  {signal_clr}{signal_value(summary.signal).upper()}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Confidence:{Colors.RESET} {strength_bar(summary.confidence)} {summary.confidence:.0f}%")
+    print(
+        f"  {Colors.BOLD}Signal:{Colors.RESET}  {signal_clr}{signal_value(summary.signal).upper()}{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.BOLD}Confidence:{Colors.RESET} {strength_bar(summary.confidence)} {summary.confidence:.0f}%"
+    )
     print()
     print(f"  {Colors.DIM}{summary.summary}{Colors.RESET}")
     print()
@@ -83,7 +78,9 @@ def print_volume_deep_dive(summary: VolumeAnalysisSummary):
     print()
     print(f"  {Colors.BOLD}1. RELATIVE VOLUME{Colors.RESET}")
     print(f"     Current: {rv.current_volume:,.0f}  |  20-bar Avg: {rv.avg_volume_20:,.0f}")
-    print(f"     Ratio: {ctx_color}{rv.relative_ratio:.2f}x{Colors.RESET} ({rv.context.value.upper()})")
+    print(
+        f"     Ratio: {ctx_color}{rv.relative_ratio:.2f}x{Colors.RESET} ({rv.context.value.upper()})"
+    )
     print(f"     {Colors.DIM}{rv.description}{Colors.RESET}")
 
     meaningful_icon = "✓" if rv.is_meaningful else "✗"
@@ -113,10 +110,18 @@ def print_volume_deep_dive(summary: VolumeAnalysisSummary):
     print(f"     {Colors.DIM}┌─────────────────┬──────────────────┐{Colors.RESET}")
     print(f"     {Colors.DIM}│ Location        │ Meaning          │{Colors.RESET}")
     print(f"     {Colors.DIM}├─────────────────┼──────────────────┤{Colors.RESET}")
-    print(f"     {Colors.DIM}│{Colors.RESET} {Colors.RED}Range High{Colors.RESET}      {Colors.DIM}│{Colors.RESET} Distribution     {Colors.DIM}│{Colors.RESET}")
-    print(f"     {Colors.DIM}│{Colors.RESET} {Colors.GREEN}Range Low{Colors.RESET}       {Colors.DIM}│{Colors.RESET} Accumulation     {Colors.DIM}│{Colors.RESET}")
-    print(f"     {Colors.DIM}│{Colors.RESET} {Colors.YELLOW}Mid-Range{Colors.RESET}       {Colors.DIM}│{Colors.RESET} Noise            {Colors.DIM}│{Colors.RESET}")
-    print(f"     {Colors.DIM}│{Colors.RESET} {Colors.CYAN}After Sweep{Colors.RESET}     {Colors.DIM}│{Colors.RESET} Confirmation     {Colors.DIM}│{Colors.RESET}")
+    print(
+        f"     {Colors.DIM}│{Colors.RESET} {Colors.RED}Range High{Colors.RESET}      {Colors.DIM}│{Colors.RESET} Distribution     {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"     {Colors.DIM}│{Colors.RESET} {Colors.GREEN}Range Low{Colors.RESET}       {Colors.DIM}│{Colors.RESET} Accumulation     {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"     {Colors.DIM}│{Colors.RESET} {Colors.YELLOW}Mid-Range{Colors.RESET}       {Colors.DIM}│{Colors.RESET} Noise            {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"     {Colors.DIM}│{Colors.RESET} {Colors.CYAN}After Sweep{Colors.RESET}     {Colors.DIM}│{Colors.RESET} Confirmation     {Colors.DIM}│{Colors.RESET}"
+    )
     print(f"     {Colors.DIM}└─────────────────┴──────────────────┘{Colors.RESET}")
 
     # Absorption
@@ -127,9 +132,13 @@ def print_volume_deep_dive(summary: VolumeAnalysisSummary):
     print(f"     Efficiency: {ab.efficiency:.3f} (lower = more absorption)")
 
     if ab.detected:
-        ab_color = Colors.GREEN if ab.absorption_type == AbsorptionType.BID_ABSORPTION else Colors.RED
+        ab_color = (
+            Colors.GREEN if ab.absorption_type == AbsorptionType.BID_ABSORPTION else Colors.RED
+        )
         ab_icon = "⚠"
-        print(f"     {ab_color}{ab_icon} ABSORPTION DETECTED: {ab.absorption_type.value.upper()}{Colors.RESET}")
+        print(
+            f"     {ab_color}{ab_icon} ABSORPTION DETECTED: {ab.absorption_type.value.upper()}{Colors.RESET}"
+        )
     else:
         print(f"     {Colors.DIM}No absorption detected{Colors.RESET}")
     print(f"     {Colors.DIM}{ab.description}{Colors.RESET}")
@@ -143,7 +152,9 @@ def print_volume_deep_dive(summary: VolumeAnalysisSummary):
         sw_color = Colors.GREEN if sw.sweep_direction == "low" else Colors.RED
         conf_icon = "✓" if sw.volume_confirmation else "✗"
         conf_color = Colors.GREEN if sw.volume_confirmation else Colors.RED
-        print(f"     {sw_color}SWEEP DETECTED at {sw.sweep_direction.upper()}{Colors.RESET} (${sw.sweep_level:,.2f})")
+        print(
+            f"     {sw_color}SWEEP DETECTED at {sw.sweep_direction.upper()}{Colors.RESET} (${sw.sweep_level:,.2f})"
+        )
         print(f"     Volume Confirmation: {conf_color}{conf_icon}{Colors.RESET}")
     else:
         print(f"     {Colors.DIM}No sweep detected{Colors.RESET}")
@@ -151,7 +162,9 @@ def print_volume_deep_dive(summary: VolumeAnalysisSummary):
 
     print()
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Pro Insight:{Colors.RESET} {Colors.CYAN}Volume confirms ACCEPTANCE, not direction.{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}Pro Insight:{Colors.RESET} {Colors.CYAN}Volume confirms ACCEPTANCE, not direction.{Colors.RESET}"
+    )
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
 
 
@@ -159,7 +172,9 @@ def print_oi_deep_dive(summary: OIAnalysisSummary):
     """Print detailed OI analysis - 'Is money entering or leaving?'"""
     print()
     print(f"{Colors.BOLD}{Colors.CYAN}┌{'─' * 78}┐{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.CYAN}│  IS MONEY ENTERING OR LEAVING? - Open Interest Analysis{' ' * 21}│{Colors.RESET}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}│  IS MONEY ENTERING OR LEAVING? - Open Interest Analysis{' ' * 21}│{Colors.RESET}"
+    )
     print(f"{Colors.BOLD}{Colors.CYAN}└{'─' * 78}┘{Colors.RESET}")
     print()
 
@@ -181,8 +196,12 @@ def print_oi_deep_dive(summary: OIAnalysisSummary):
     signal_clr = signal_colors.get(overall_signal, Colors.YELLOW)
 
     print(f"  {Colors.BOLD}Verdict:{Colors.RESET} {verdict_color}{verdict}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Signal:{Colors.RESET}  {signal_clr}{overall_signal.upper()}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Confidence:{Colors.RESET} {strength_bar(summary.confidence)} {summary.confidence:.0f}%")
+    print(
+        f"  {Colors.BOLD}Signal:{Colors.RESET}  {signal_clr}{overall_signal.upper()}{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.BOLD}Confidence:{Colors.RESET} {strength_bar(summary.confidence)} {summary.confidence:.0f}%"
+    )
     print()
     print(f"  {Colors.DIM}{summary.summary}{Colors.RESET}")
     print()
@@ -192,9 +211,15 @@ def print_oi_deep_dive(summary: OIAnalysisSummary):
     print()
     print(f"  {Colors.BOLD}THE 4 OI REGIMES (Memorize This!){Colors.RESET}")
     print()
-    print(f"  {Colors.DIM}┌─────────┬────────┬─────────────────────┬────────────────────┐{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} Price   {Colors.DIM}│{Colors.RESET} OI     {Colors.DIM}│{Colors.RESET} Interpretation      {Colors.DIM}│{Colors.RESET} Trade Meaning      {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}├─────────┼────────┼─────────────────────┼────────────────────┤{Colors.RESET}")
+    print(
+        f"  {Colors.DIM}┌─────────┬────────┬─────────────────────┬────────────────────┐{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} Price   {Colors.DIM}│{Colors.RESET} OI     {Colors.DIM}│{Colors.RESET} Interpretation      {Colors.DIM}│{Colors.RESET} Trade Meaning      {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}├─────────┼────────┼─────────────────────┼────────────────────┤{Colors.RESET}"
+    )
 
     regime = summary.regime
     regimes_display = [
@@ -212,12 +237,16 @@ def print_oi_deep_dive(summary: OIAnalysisSummary):
             row_color = Colors.DIM
             marker = "  "
 
-        print(f"  {Colors.DIM}│{Colors.RESET}{marker}{row_color}{p:^7}{Colors.RESET}{Colors.DIM}│{Colors.RESET}"
-              f"{row_color}{o:^8}{Colors.RESET}{Colors.DIM}│{Colors.RESET}"
-              f"{row_color}{interp:<21}{Colors.RESET}{Colors.DIM}│{Colors.RESET}"
-              f"{row_color}{meaning:<20}{Colors.RESET}{Colors.DIM}│{Colors.RESET}")
+        print(
+            f"  {Colors.DIM}│{Colors.RESET}{marker}{row_color}{p:^7}{Colors.RESET}{Colors.DIM}│{Colors.RESET}"
+            f"{row_color}{o:^8}{Colors.RESET}{Colors.DIM}│{Colors.RESET}"
+            f"{row_color}{interp:<21}{Colors.RESET}{Colors.DIM}│{Colors.RESET}"
+            f"{row_color}{meaning:<20}{Colors.RESET}{Colors.DIM}│{Colors.RESET}"
+        )
 
-    print(f"  {Colors.DIM}└─────────┴────────┴─────────────────────┴────────────────────┘{Colors.RESET}")
+    print(
+        f"  {Colors.DIM}└─────────┴────────┴─────────────────────┴────────────────────┘{Colors.RESET}"
+    )
 
     # Current Regime Details
     print()
@@ -228,7 +257,7 @@ def print_oi_deep_dive(summary: OIAnalysisSummary):
         OIRegime.SHORT_COVERING: Colors.YELLOW,
         OIRegime.NEW_SHORTS: Colors.RED,
         OIRegime.LONG_LIQUIDATION: Colors.MAGENTA,
-        OIRegime.NEUTRAL: Colors.DIM
+        OIRegime.NEUTRAL: Colors.DIM,
     }
     r_color = regime_colors.get(regime.regime, Colors.YELLOW)
 
@@ -243,10 +272,20 @@ def print_oi_deep_dive(summary: OIAnalysisSummary):
     print(f"  {Colors.BOLD}2. RATE OF CHANGE{Colors.RESET}")
     print(f"     Current OI: {roc.current_oi:,.0f}  |  Previous: {roc.previous_oi:,.0f}")
 
-    change_color = Colors.GREEN if roc.oi_change_percent > 0 else Colors.RED if roc.oi_change_percent < 0 else Colors.YELLOW
-    print(f"     Change: {change_color}{roc.oi_change_percent:+.2f}%{Colors.RESET} ({roc.oi_change_absolute:+,.0f})")
+    change_color = (
+        Colors.GREEN
+        if roc.oi_change_percent > 0
+        else Colors.RED if roc.oi_change_percent < 0 else Colors.YELLOW
+    )
+    print(
+        f"     Change: {change_color}{roc.oi_change_percent:+.2f}%{Colors.RESET} ({roc.oi_change_absolute:+,.0f})"
+    )
 
-    rate_color = Colors.MAGENTA if roc.rate_vs_average > 1.5 else Colors.GREEN if roc.rate_vs_average > 1 else Colors.DIM
+    rate_color = (
+        Colors.MAGENTA
+        if roc.rate_vs_average > 1.5
+        else Colors.GREEN if roc.rate_vs_average > 1 else Colors.DIM
+    )
     print(f"     Rate vs Avg: {rate_color}{roc.rate_vs_average:.2f}x{Colors.RESET}")
 
     if roc.acceleration > 0.3:
@@ -281,17 +320,33 @@ def print_oi_deep_dive(summary: OIAnalysisSummary):
 
     # Key OI signals reference
     print()
-    print(f"  {Colors.DIM}┌─────────────────────────────────────────────────────────────────────┐{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} {Colors.BOLD}High-Edge Signals:{Colors.RESET}                                              {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} • {Colors.YELLOW}COMPRESSION{Colors.RESET}: OI rising, price stalls → Breakout coming     {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} • {Colors.MAGENTA}BREAKOUT TRAP{Colors.RESET}: OI drops after breakout → Fade the move   {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} • {Colors.GREEN}EXPANSION{Colors.RESET}: OI expanding at key level → Genuine interest    {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} • {Colors.RED}EXHAUSTION{Colors.RESET}: OI collapsing → Move is ending                 {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}└─────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+    print(
+        f"  {Colors.DIM}┌─────────────────────────────────────────────────────────────────────┐{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} {Colors.BOLD}High-Edge Signals:{Colors.RESET}                                              {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} • {Colors.YELLOW}COMPRESSION{Colors.RESET}: OI rising, price stalls → Breakout coming     {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} • {Colors.MAGENTA}BREAKOUT TRAP{Colors.RESET}: OI drops after breakout → Fade the move   {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} • {Colors.GREEN}EXPANSION{Colors.RESET}: OI expanding at key level → Genuine interest    {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} • {Colors.RED}EXHAUSTION{Colors.RESET}: OI collapsing → Move is ending                 {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}└─────────────────────────────────────────────────────────────────────┘{Colors.RESET}"
+    )
 
     print()
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Pro Insight:{Colors.RESET} {Colors.CYAN}OI measures ACTIVE CONTRACTS - not direction, not volume.{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}Pro Insight:{Colors.RESET} {Colors.CYAN}OI measures ACTIVE CONTRACTS - not direction, not volume.{Colors.RESET}"
+    )
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
 
 
@@ -299,7 +354,9 @@ def print_funding_deep_dive(summary: FundingAnalysisSummary, oi_change_pct: Opti
     """Print detailed Funding analysis - 'Where is the crowd leaning?'"""
     print()
     print(f"{Colors.BOLD}{Colors.CYAN}┌{'─' * 78}┐{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.CYAN}│  WHERE IS THE CROWD LEANING? - Funding Rate Analysis{' ' * 24}│{Colors.RESET}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}│  WHERE IS THE CROWD LEANING? - Funding Rate Analysis{' ' * 24}│{Colors.RESET}"
+    )
     print(f"{Colors.BOLD}{Colors.CYAN}└{'─' * 78}┘{Colors.RESET}")
     print()
 
@@ -316,13 +373,17 @@ def print_funding_deep_dive(summary: FundingAnalysisSummary, oi_change_pct: Opti
         "extreme": Colors.RED + Colors.BOLD,
         "high": Colors.MAGENTA,
         "medium": Colors.YELLOW,
-        "low": Colors.DIM
+        "low": Colors.DIM,
     }
     warn_color = severity_colors.get(summary.warning.severity, Colors.DIM)
 
     print(f"  {Colors.BOLD}Verdict:{Colors.RESET} {chase_color}{chase_verdict}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Warning:{Colors.RESET} {warn_color}{summary.warning.warning.value.upper()}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Confidence:{Colors.RESET} {strength_bar(summary.confidence)} {summary.confidence:.0f}%")
+    print(
+        f"  {Colors.BOLD}Warning:{Colors.RESET} {warn_color}{summary.warning.warning.value.upper()}{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.BOLD}Confidence:{Colors.RESET} {strength_bar(summary.confidence)} {summary.confidence:.0f}%"
+    )
     print()
     print(f"  {Colors.DIM}{summary.summary}{Colors.RESET}")
     print()
@@ -330,11 +391,21 @@ def print_funding_deep_dive(summary: FundingAnalysisSummary, oi_change_pct: Opti
 
     # Key concept box
     print()
-    print(f"  {Colors.DIM}┌─────────────────────────────────────────────────────────────────────┐{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} {Colors.BOLD}KEY CONCEPT:{Colors.RESET} Funding is a WARNING SYSTEM, not an entry trigger {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} • High funding = DON'T CHASE                                      {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} • Extreme funding = HUNT REVERSALS                                {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}└─────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+    print(
+        f"  {Colors.DIM}┌─────────────────────────────────────────────────────────────────────┐{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} {Colors.BOLD}KEY CONCEPT:{Colors.RESET} Funding is a WARNING SYSTEM, not an entry trigger {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} • High funding = DON'T CHASE                                      {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} • Extreme funding = HUNT REVERSALS                                {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}└─────────────────────────────────────────────────────────────────────┘{Colors.RESET}"
+    )
 
     # Percentile Analysis
     pct = summary.percentile
@@ -416,25 +487,45 @@ def print_funding_deep_dive(summary: FundingAnalysisSummary, oi_change_pct: Opti
         combo_color = combo_colors.get(combo.combo, Colors.YELLOW)
 
         print(f"     Combo: {combo_color}{combo.combo.value.upper()}{Colors.RESET}")
-        print(f"     Funding: {combo.funding_direction.upper()}  |  OI: {combo.oi_direction.upper()}")
+        print(
+            f"     Funding: {combo.funding_direction.upper()}  |  OI: {combo.oi_direction.upper()}"
+        )
         print(f"     Probability: {combo.probability:.0f}%")
         print(f"     {Colors.DIM}{combo.expected_outcome}{Colors.RESET}")
         print(f"     {Colors.BOLD}Trade:{Colors.RESET} {combo.trade_action}")
 
         # Combo reference table
         print()
-        print(f"  {Colors.DIM}┌────────────────┬──────────────┬─────────────────────────────┐{Colors.RESET}")
-        print(f"  {Colors.DIM}│{Colors.RESET} Funding        {Colors.DIM}│{Colors.RESET} OI           {Colors.DIM}│{Colors.RESET} Meaning                     {Colors.DIM}│{Colors.RESET}")
-        print(f"  {Colors.DIM}├────────────────┼──────────────┼─────────────────────────────┤{Colors.RESET}")
-        print(f"  {Colors.DIM}│{Colors.RESET} {Colors.RED}Very positive{Colors.RESET}  {Colors.DIM}│{Colors.RESET} Rising       {Colors.DIM}│{Colors.RESET} Crowded longs → downside    {Colors.DIM}│{Colors.RESET}")
-        print(f"  {Colors.DIM}│{Colors.RESET} {Colors.GREEN}Very negative{Colors.RESET}  {Colors.DIM}│{Colors.RESET} Rising       {Colors.DIM}│{Colors.RESET} Crowded shorts → upside     {Colors.DIM}│{Colors.RESET}")
-        print(f"  {Colors.DIM}│{Colors.RESET} {Colors.MAGENTA}Extreme{Colors.RESET}        {Colors.DIM}│{Colors.RESET} Flat         {Colors.DIM}│{Colors.RESET} Exhaustion                  {Colors.DIM}│{Colors.RESET}")
-        print(f"  {Colors.DIM}│{Colors.RESET} {Colors.MAGENTA}Extreme{Colors.RESET}        {Colors.DIM}│{Colors.RESET} Dropping     {Colors.DIM}│{Colors.RESET} Capitulation / flush        {Colors.DIM}│{Colors.RESET}")
-        print(f"  {Colors.DIM}└────────────────┴──────────────┴─────────────────────────────┘{Colors.RESET}")
+        print(
+            f"  {Colors.DIM}┌────────────────┬──────────────┬─────────────────────────────┐{Colors.RESET}"
+        )
+        print(
+            f"  {Colors.DIM}│{Colors.RESET} Funding        {Colors.DIM}│{Colors.RESET} OI           {Colors.DIM}│{Colors.RESET} Meaning                     {Colors.DIM}│{Colors.RESET}"
+        )
+        print(
+            f"  {Colors.DIM}├────────────────┼──────────────┼─────────────────────────────┤{Colors.RESET}"
+        )
+        print(
+            f"  {Colors.DIM}│{Colors.RESET} {Colors.RED}Very positive{Colors.RESET}  {Colors.DIM}│{Colors.RESET} Rising       {Colors.DIM}│{Colors.RESET} Crowded longs → downside    {Colors.DIM}│{Colors.RESET}"
+        )
+        print(
+            f"  {Colors.DIM}│{Colors.RESET} {Colors.GREEN}Very negative{Colors.RESET}  {Colors.DIM}│{Colors.RESET} Rising       {Colors.DIM}│{Colors.RESET} Crowded shorts → upside     {Colors.DIM}│{Colors.RESET}"
+        )
+        print(
+            f"  {Colors.DIM}│{Colors.RESET} {Colors.MAGENTA}Extreme{Colors.RESET}        {Colors.DIM}│{Colors.RESET} Flat         {Colors.DIM}│{Colors.RESET} Exhaustion                  {Colors.DIM}│{Colors.RESET}"
+        )
+        print(
+            f"  {Colors.DIM}│{Colors.RESET} {Colors.MAGENTA}Extreme{Colors.RESET}        {Colors.DIM}│{Colors.RESET} Dropping     {Colors.DIM}│{Colors.RESET} Capitulation / flush        {Colors.DIM}│{Colors.RESET}"
+        )
+        print(
+            f"  {Colors.DIM}└────────────────┴──────────────┴─────────────────────────────┘{Colors.RESET}"
+        )
 
     print()
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Pro Rules:{Colors.RESET} {Colors.CYAN}High funding = don't chase | Extreme funding = hunt reversals{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}Pro Rules:{Colors.RESET} {Colors.CYAN}High funding = don't chase | Extreme funding = hunt reversals{Colors.RESET}"
+    )
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
 
 
@@ -442,31 +533,45 @@ def print_volume_engine_deep_dive(result: VolumeEngineResult):
     """Print institutional-grade volume analysis - 'Who initiated, who absorbed, who is trapped?'"""
     print()
     print(f"{Colors.BOLD}{Colors.MAGENTA}┌{'─' * 78}┐{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.MAGENTA}│  WHO INITIATED, WHO ABSORBED, WHO IS TRAPPED? - Institutional Volume{' ' * 7}│{Colors.RESET}")
+    print(
+        f"{Colors.BOLD}{Colors.MAGENTA}│  WHO INITIATED, WHO ABSORBED, WHO IS TRAPPED? - Institutional Volume{' ' * 7}│{Colors.RESET}"
+    )
     print(f"{Colors.BOLD}{Colors.MAGENTA}└{'─' * 78}┘{Colors.RESET}")
     print()
 
     # The 3 core questions
-    init_color = Colors.GREEN if result.who_initiated == "BUYERS" else Colors.RED if result.who_initiated == "SELLERS" else Colors.YELLOW
-    print(f"  {Colors.BOLD}Who Initiated?{Colors.RESET}  {init_color}{result.who_initiated}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Who Absorbed?{Colors.RESET}   {Colors.CYAN}{result.who_absorbed}{Colors.RESET}")
+    init_color = (
+        Colors.GREEN
+        if result.who_initiated == "BUYERS"
+        else Colors.RED if result.who_initiated == "SELLERS" else Colors.YELLOW
+    )
+    print(
+        f"  {Colors.BOLD}Who Initiated?{Colors.RESET}  {init_color}{result.who_initiated}{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.BOLD}Who Absorbed?{Colors.RESET}   {Colors.CYAN}{result.who_absorbed}{Colors.RESET}"
+    )
 
     trap_color = Colors.MAGENTA if result.who_is_trapped != "NONE DETECTED" else Colors.DIM
-    print(f"  {Colors.BOLD}Who is Trapped?{Colors.RESET} {trap_color}{result.who_is_trapped}{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}Who is Trapped?{Colors.RESET} {trap_color}{result.who_is_trapped}{Colors.RESET}"
+    )
     print()
 
     # Quality assessment
-    quality_colors = {
-        "institutional": Colors.GREEN,
-        "retail": Colors.RED,
-        "mixed": Colors.YELLOW
-    }
+    quality_colors = {"institutional": Colors.GREEN, "retail": Colors.RED, "mixed": Colors.YELLOW}
     q_color = quality_colors.get(result.volume_quality, Colors.YELLOW)
     signal_clr = signal_color(result.signal)
 
-    print(f"  {Colors.BOLD}Volume Quality:{Colors.RESET} {q_color}{result.volume_quality.upper()}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Signal:{Colors.RESET}         {signal_clr}{signal_value(result.signal).upper()}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Confidence:{Colors.RESET}     {strength_bar(result.confidence)} {result.confidence:.0f}%")
+    print(
+        f"  {Colors.BOLD}Volume Quality:{Colors.RESET} {q_color}{result.volume_quality.upper()}{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.BOLD}Signal:{Colors.RESET}         {signal_clr}{signal_value(result.signal).upper()}{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.BOLD}Confidence:{Colors.RESET}     {strength_bar(result.confidence)} {result.confidence:.0f}%"
+    )
     print()
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
 
@@ -489,18 +594,32 @@ def print_volume_engine_deep_dive(result: VolumeEngineResult):
     print(f"     Strength: {strength_bar(delta.strength, 15)} {delta.strength:.0f}%")
 
     if delta.delta_divergence:
-        print(f"     {Colors.MAGENTA}⚠ DELTA DIVERGENCE - Price and delta moving opposite{Colors.RESET}")
+        print(
+            f"     {Colors.MAGENTA}⚠ DELTA DIVERGENCE - Price and delta moving opposite{Colors.RESET}"
+        )
 
     print(f"     {Colors.CYAN}{delta.interpretation}{Colors.RESET}")
 
     # Delta explanation box
     print()
-    print(f"     {Colors.DIM}┌────────────────────────────────────────────────────────────┐{Colors.RESET}")
-    print(f"     {Colors.DIM}│{Colors.RESET} {Colors.BOLD}Volume Delta Interpretation:{Colors.RESET}                                {Colors.DIM}│{Colors.RESET}")
-    print(f"     {Colors.DIM}│{Colors.RESET} • {Colors.GREEN}Positive delta{Colors.RESET} = Buyers lifting offers (aggressive)     {Colors.DIM}│{Colors.RESET}")
-    print(f"     {Colors.DIM}│{Colors.RESET} • {Colors.RED}Negative delta{Colors.RESET} = Sellers hitting bids (aggressive)      {Colors.DIM}│{Colors.RESET}")
-    print(f"     {Colors.DIM}│{Colors.RESET} • Divergence = Hidden accumulation/distribution           {Colors.DIM}│{Colors.RESET}")
-    print(f"     {Colors.DIM}└────────────────────────────────────────────────────────────┘{Colors.RESET}")
+    print(
+        f"     {Colors.DIM}┌────────────────────────────────────────────────────────────┐{Colors.RESET}"
+    )
+    print(
+        f"     {Colors.DIM}│{Colors.RESET} {Colors.BOLD}Volume Delta Interpretation:{Colors.RESET}                                {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"     {Colors.DIM}│{Colors.RESET} • {Colors.GREEN}Positive delta{Colors.RESET} = Buyers lifting offers (aggressive)     {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"     {Colors.DIM}│{Colors.RESET} • {Colors.RED}Negative delta{Colors.RESET} = Sellers hitting bids (aggressive)      {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"     {Colors.DIM}│{Colors.RESET} • Divergence = Hidden accumulation/distribution           {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"     {Colors.DIM}└────────────────────────────────────────────────────────────┘{Colors.RESET}"
+    )
 
     # 2. Volume Acceleration
     accel = result.acceleration
@@ -529,7 +648,9 @@ def print_volume_engine_deep_dive(result: VolumeEngineResult):
     if accel.bars_accelerating > 0:
         print(f"     {Colors.GREEN}Accelerating for {accel.bars_accelerating} bars{Colors.RESET}")
     elif accel.bars_accelerating < 0:
-        print(f"     {Colors.RED}Decelerating for {abs(accel.bars_accelerating)} bars{Colors.RESET}")
+        print(
+            f"     {Colors.RED}Decelerating for {abs(accel.bars_accelerating)} bars{Colors.RESET}"
+        )
 
     if accel.is_climax:
         print(f"     {Colors.MAGENTA}⚠ CLIMAX DETECTED - High reversal probability{Colors.RESET}")
@@ -551,7 +672,9 @@ def print_volume_engine_deep_dive(result: VolumeEngineResult):
         m_color = mtf_colors.get(mtf.agreement, Colors.YELLOW)
 
         print(f"     Agreement: {m_color}{mtf.agreement.value.upper()}{Colors.RESET}")
-        print(f"     LTF Volume: {mtf.ltf_volume_ratio:.1f}x avg  |  HTF Volume: {mtf.htf_volume_ratio:.1f}x avg")
+        print(
+            f"     LTF Volume: {mtf.ltf_volume_ratio:.1f}x avg  |  HTF Volume: {mtf.htf_volume_ratio:.1f}x avg"
+        )
 
         accepted_icon = "✓" if mtf.is_accepted else "✗"
         accepted_color = Colors.GREEN if mtf.is_accepted else Colors.RED
@@ -562,17 +685,29 @@ def print_volume_engine_deep_dive(result: VolumeEngineResult):
         # MTF table
         print()
         print(f"     {Colors.DIM}┌─────────────┬─────────────┬─────────────────────┐{Colors.RESET}")
-        print(f"     {Colors.DIM}│{Colors.RESET} LTF Volume  {Colors.DIM}│{Colors.RESET} HTF Volume  {Colors.DIM}│{Colors.RESET} Verdict             {Colors.DIM}│{Colors.RESET}")
+        print(
+            f"     {Colors.DIM}│{Colors.RESET} LTF Volume  {Colors.DIM}│{Colors.RESET} HTF Volume  {Colors.DIM}│{Colors.RESET} Verdict             {Colors.DIM}│{Colors.RESET}"
+        )
         print(f"     {Colors.DIM}├─────────────┼─────────────┼─────────────────────┤{Colors.RESET}")
-        print(f"     {Colors.DIM}│{Colors.RESET} {Colors.GREEN}High{Colors.RESET}        {Colors.DIM}│{Colors.RESET} {Colors.GREEN}High{Colors.RESET}        {Colors.DIM}│{Colors.RESET} {Colors.GREEN}CONFIRMED{Colors.RESET}           {Colors.DIM}│{Colors.RESET}")
-        print(f"     {Colors.DIM}│{Colors.RESET} {Colors.RED}High{Colors.RESET}        {Colors.DIM}│{Colors.RESET} {Colors.RED}Low{Colors.RESET}         {Colors.DIM}│{Colors.RESET} {Colors.MAGENTA}STOP RUN{Colors.RESET}            {Colors.DIM}│{Colors.RESET}")
-        print(f"     {Colors.DIM}│{Colors.RESET} Low         {Colors.DIM}│{Colors.RESET} High        {Colors.DIM}│{Colors.RESET} {Colors.CYAN}REACCUMULATION{Colors.RESET}      {Colors.DIM}│{Colors.RESET}")
-        print(f"     {Colors.DIM}│{Colors.RESET} Low         {Colors.DIM}│{Colors.RESET} Low         {Colors.DIM}│{Colors.RESET} NO INTEREST         {Colors.DIM}│{Colors.RESET}")
+        print(
+            f"     {Colors.DIM}│{Colors.RESET} {Colors.GREEN}High{Colors.RESET}        {Colors.DIM}│{Colors.RESET} {Colors.GREEN}High{Colors.RESET}        {Colors.DIM}│{Colors.RESET} {Colors.GREEN}CONFIRMED{Colors.RESET}           {Colors.DIM}│{Colors.RESET}"
+        )
+        print(
+            f"     {Colors.DIM}│{Colors.RESET} {Colors.RED}High{Colors.RESET}        {Colors.DIM}│{Colors.RESET} {Colors.RED}Low{Colors.RESET}         {Colors.DIM}│{Colors.RESET} {Colors.MAGENTA}STOP RUN{Colors.RESET}            {Colors.DIM}│{Colors.RESET}"
+        )
+        print(
+            f"     {Colors.DIM}│{Colors.RESET} Low         {Colors.DIM}│{Colors.RESET} High        {Colors.DIM}│{Colors.RESET} {Colors.CYAN}REACCUMULATION{Colors.RESET}      {Colors.DIM}│{Colors.RESET}"
+        )
+        print(
+            f"     {Colors.DIM}│{Colors.RESET} Low         {Colors.DIM}│{Colors.RESET} Low         {Colors.DIM}│{Colors.RESET} NO INTEREST         {Colors.DIM}│{Colors.RESET}"
+        )
         print(f"     {Colors.DIM}└─────────────┴─────────────┴─────────────────────┘{Colors.RESET}")
     else:
         print()
         print(f"  {Colors.BOLD}3. MULTI-TIMEFRAME AGREEMENT{Colors.RESET}")
-        print(f"     {Colors.DIM}(HTF data not available - single timeframe analysis){Colors.RESET}")
+        print(
+            f"     {Colors.DIM}(HTF data not available - single timeframe analysis){Colors.RESET}"
+        )
 
     # 4. Exhaustion Detection
     exhaust = result.exhaustion
@@ -623,8 +758,12 @@ def print_volume_engine_deep_dive(result: VolumeEngineResult):
     # Final insight
     print()
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Pro Insight:{Colors.RESET} {Colors.MAGENTA}Volume tells WHO moved the market. Delta tells WHO was aggressive.{Colors.RESET}")
-    print(f"              {Colors.MAGENTA}Exhaustion tells WHEN the move dies. MTF tells if it's ACCEPTED.{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}Pro Insight:{Colors.RESET} {Colors.MAGENTA}Volume tells WHO moved the market. Delta tells WHO was aggressive.{Colors.RESET}"
+    )
+    print(
+        f"              {Colors.MAGENTA}Exhaustion tells WHEN the move dies. MTF tells if it's ACCEPTED.{Colors.RESET}"
+    )
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
 
 
@@ -632,7 +771,9 @@ def print_orderbook_deep_dive(summary: OBAnalysisSummary):
     """Print detailed Orderbook analysis - 'Where is price FORCED to go?'"""
     print()
     print(f"{Colors.BOLD}{Colors.CYAN}┌{'─' * 78}┐{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.CYAN}│  WHERE IS PRICE FORCED TO GO? - Order Book Analysis{' ' * 25}│{Colors.RESET}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}│  WHERE IS PRICE FORCED TO GO? - Order Book Analysis{' ' * 25}│{Colors.RESET}"
+    )
     print(f"{Colors.BOLD}{Colors.CYAN}└{'─' * 78}┘{Colors.RESET}")
     print()
 
@@ -642,7 +783,7 @@ def print_orderbook_deep_dive(summary: OBAnalysisSummary):
         "DOWN": Colors.RED,
         "UP (based on flow)": Colors.GREEN,
         "DOWN (based on flow)": Colors.RED,
-        "UNCLEAR": Colors.YELLOW
+        "UNCLEAR": Colors.YELLOW,
     }
     path_color = path_colors.get(summary.where_price_forced, Colors.YELLOW)
 
@@ -655,9 +796,13 @@ def print_orderbook_deep_dive(summary: OBAnalysisSummary):
     overall_signal = signal_value(summary.overall_signal)
     sig_color = signal_colors.get(overall_signal, Colors.YELLOW)
 
-    print(f"  {Colors.BOLD}Path:{Colors.RESET}   {path_color}{summary.where_price_forced}{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}Path:{Colors.RESET}   {path_color}{summary.where_price_forced}{Colors.RESET}"
+    )
     print(f"  {Colors.BOLD}Signal:{Colors.RESET} {sig_color}{overall_signal.upper()}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Confidence:{Colors.RESET} {strength_bar(summary.confidence)} {summary.confidence:.0f}%")
+    print(
+        f"  {Colors.BOLD}Confidence:{Colors.RESET} {strength_bar(summary.confidence)} {summary.confidence:.0f}%"
+    )
     print()
     print(f"  {Colors.DIM}{summary.summary}{Colors.RESET}")
     print()
@@ -665,26 +810,42 @@ def print_orderbook_deep_dive(summary: OBAnalysisSummary):
 
     # Key concept box
     print()
-    print(f"  {Colors.DIM}┌─────────────────────────────────────────────────────────────────────┐{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} {Colors.BOLD}WHAT TO IGNORE:{Colors.RESET}                                                  {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} ❌ Single walls | ❌ Static snapshots | ❌ Pretty heatmaps         {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} {Colors.BOLD}WHAT MATTERS:{Colors.RESET}                                                    {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}│{Colors.RESET} ✓ Absorption | ✓ Imbalance+Volume | ✓ Spoofs | ✓ Liquidity path   {Colors.DIM}│{Colors.RESET}")
-    print(f"  {Colors.DIM}└─────────────────────────────────────────────────────────────────────┘{Colors.RESET}")
+    print(
+        f"  {Colors.DIM}┌─────────────────────────────────────────────────────────────────────┐{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} {Colors.BOLD}WHAT TO IGNORE:{Colors.RESET}                                                  {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} ❌ Single walls | ❌ Static snapshots | ❌ Pretty heatmaps         {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} {Colors.BOLD}WHAT MATTERS:{Colors.RESET}                                                    {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}│{Colors.RESET} ✓ Absorption | ✓ Imbalance+Volume | ✓ Spoofs | ✓ Liquidity path   {Colors.DIM}│{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.DIM}└─────────────────────────────────────────────────────────────────────┘{Colors.RESET}"
+    )
 
     # Snapshot info
     snap = summary.snapshot
     print()
     print(f"  {Colors.BOLD}ORDERBOOK SNAPSHOT{Colors.RESET}")
-    print(f"     Mid Price: ${snap.mid_price:,.2f}  |  Spread: ${snap.spread:.2f} ({snap.spread_percent:.4f}%)")
-    print(f"     Bid Depth (10): {snap.bid_depth_10:,.2f}  |  Ask Depth (10): {snap.ask_depth_10:,.2f}")
+    print(
+        f"     Mid Price: ${snap.mid_price:,.2f}  |  Spread: ${snap.spread:.2f} ({snap.spread_percent:.4f}%)"
+    )
+    print(
+        f"     Bid Depth (10): {snap.bid_depth_10:,.2f}  |  Ask Depth (10): {snap.ask_depth_10:,.2f}"
+    )
     print(f"     Bid Value: ${snap.bid_value_10:,.0f}  |  Ask Value: ${snap.ask_value_10:,.0f}")
 
     # 1. Absorption
     ab = summary.absorption
     print()
     print(f"  {Colors.BOLD}1. ABSORPTION DETECTION{Colors.RESET}")
-    print(f"     {Colors.DIM}\"Smart money defending a level\"{Colors.RESET}")
+    print(f'     {Colors.DIM}"Smart money defending a level"{Colors.RESET}')
 
     if ab.detected:
         ab_colors = {
@@ -706,7 +867,7 @@ def print_orderbook_deep_dive(summary: OBAnalysisSummary):
     imb = summary.imbalance
     print()
     print(f"  {Colors.BOLD}2. LIQUIDITY IMBALANCE{Colors.RESET}")
-    print(f"     {Colors.DIM}\"2-3x imbalance = directional pressure (with volume)\"{Colors.RESET}")
+    print(f'     {Colors.DIM}"2-3x imbalance = directional pressure (with volume)"{Colors.RESET}')
 
     imb_colors = {
         ImbalanceDirection.BID_HEAVY: Colors.GREEN,
@@ -721,7 +882,9 @@ def print_orderbook_deep_dive(summary: OBAnalysisSummary):
     if imb.is_actionable:
         print(f"     {Colors.GREEN}✓ ACTIONABLE - Volume confirms imbalance{Colors.RESET}")
     elif imb.is_bait:
-        print(f"     {Colors.MAGENTA}⚠ BAIT WARNING - Imbalance without volume = manipulation{Colors.RESET}")
+        print(
+            f"     {Colors.MAGENTA}⚠ BAIT WARNING - Imbalance without volume = manipulation{Colors.RESET}"
+        )
     else:
         print(f"     {Colors.DIM}Balanced - No actionable signal{Colors.RESET}")
 
@@ -731,7 +894,9 @@ def print_orderbook_deep_dive(summary: OBAnalysisSummary):
     sp = summary.spoof
     print()
     print(f"  {Colors.BOLD}3. SPOOF DETECTION{Colors.RESET}")
-    print(f"     {Colors.DIM}\"Behavioral patterns: Wall appears → Price approaches → Wall pulls\"{Colors.RESET}")
+    print(
+        f'     {Colors.DIM}"Behavioral patterns: Wall appears → Price approaches → Wall pulls"{Colors.RESET}'
+    )
 
     if sp.detected:
         sp_colors = {
@@ -755,20 +920,26 @@ def print_orderbook_deep_dive(summary: OBAnalysisSummary):
     lad = summary.liquidity_ladder
     print()
     print(f"  {Colors.BOLD}4. LIQUIDITY LADDERS{Colors.RESET}")
-    print(f"     {Colors.DIM}\"Price moves toward THIN zones, away from THICK zones\"{Colors.RESET}")
+    print(f'     {Colors.DIM}"Price moves toward THIN zones, away from THICK zones"{Colors.RESET}')
 
     path_display = {
         "up": f"{Colors.GREEN}UP ↑{Colors.RESET}",
         "down": f"{Colors.RED}DOWN ↓{Colors.RESET}",
-        "unclear": f"{Colors.YELLOW}UNCLEAR{Colors.RESET}"
+        "unclear": f"{Colors.YELLOW}UNCLEAR{Colors.RESET}",
     }
-    print(f"     Path of Least Resistance: {path_display.get(lad.path_of_least_resistance, 'UNCLEAR')}")
+    print(
+        f"     Path of Least Resistance: {path_display.get(lad.path_of_least_resistance, 'UNCLEAR')}"
+    )
 
     # Show zones
     if lad.nearest_thick_above:
-        print(f"     {Colors.RED}THICK above:{Colors.RESET} ${lad.nearest_thick_above:,.2f} (resistance)")
+        print(
+            f"     {Colors.RED}THICK above:{Colors.RESET} ${lad.nearest_thick_above:,.2f} (resistance)"
+        )
     if lad.nearest_thick_below:
-        print(f"     {Colors.GREEN}THICK below:{Colors.RESET} ${lad.nearest_thick_below:,.2f} (support)")
+        print(
+            f"     {Colors.GREEN}THICK below:{Colors.RESET} ${lad.nearest_thick_below:,.2f} (support)"
+        )
     if lad.nearest_thin_above:
         print(f"     Thin above: ${lad.nearest_thin_above:,.2f} (price attracted)")
     if lad.nearest_thin_below:
@@ -778,12 +949,18 @@ def print_orderbook_deep_dive(summary: OBAnalysisSummary):
 
     # Zones summary
     print()
-    print(f"     {Colors.DIM}Thick zones above: {len(lad.thick_zones_above)} | Thin zones above: {len(lad.thin_zones_above)}{Colors.RESET}")
-    print(f"     {Colors.DIM}Thick zones below: {len(lad.thick_zones_below)} | Thin zones below: {len(lad.thin_zones_below)}{Colors.RESET}")
+    print(
+        f"     {Colors.DIM}Thick zones above: {len(lad.thick_zones_above)} | Thin zones above: {len(lad.thin_zones_above)}{Colors.RESET}"
+    )
+    print(
+        f"     {Colors.DIM}Thick zones below: {len(lad.thick_zones_below)} | Thin zones below: {len(lad.thin_zones_below)}{Colors.RESET}"
+    )
 
     print()
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Pro Insight:{Colors.RESET} {Colors.CYAN}Orderbook is your SHARPEST weapon. Track behavior, not snapshots.{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}Pro Insight:{Colors.RESET} {Colors.CYAN}Orderbook is your SHARPEST weapon. Track behavior, not snapshots.{Colors.RESET}"
+    )
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
 
 
@@ -791,28 +968,36 @@ def print_unified_score(score: UnifiedScore):
     """Print unified market score - THE decisive signal."""
     print()
     print(f"{Colors.BOLD}{Colors.MAGENTA}{'═' * 80}{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.MAGENTA}  UNIFIED MARKET SCORE - ONE ACTIONABLE NUMBER{' ' * 31}{Colors.RESET}")
+    print(
+        f"{Colors.BOLD}{Colors.MAGENTA}  UNIFIED MARKET SCORE - ONE ACTIONABLE NUMBER{' ' * 31}{Colors.RESET}"
+    )
     print(f"{Colors.BOLD}{Colors.MAGENTA}{'═' * 80}{Colors.RESET}")
     print()
 
     # Main score display
-    score_color = Colors.GREEN if score.total_score > 0.25 else Colors.RED if score.total_score < -0.25 else Colors.YELLOW
+    score_color = (
+        Colors.GREEN
+        if score.total_score > 0.25
+        else Colors.RED if score.total_score < -0.25 else Colors.YELLOW
+    )
 
     # Big score display
     score_display = f"{score.total_score:+.2f}"
-    print(f"  {Colors.BOLD}TOTAL SCORE:{Colors.RESET} {score_color}{Colors.BOLD}{score_display:>6}{Colors.RESET}  "
-          f"(Range: -1.00 to +1.00)")
+    print(
+        f"  {Colors.BOLD}TOTAL SCORE:{Colors.RESET} {score_color}{Colors.BOLD}{score_display:>6}{Colors.RESET}  "
+        f"(Range: -1.00 to +1.00)"
+    )
 
     # Action
-    action_colors = {
-        "long": Colors.GREEN,
-        "short": Colors.RED,
-        "neutral": Colors.YELLOW
-    }
+    action_colors = {"long": Colors.GREEN, "short": Colors.RED, "neutral": Colors.YELLOW}
     action_color = action_colors.get(score.bias, Colors.YELLOW)
 
-    print(f"  {Colors.BOLD}ACTION:{Colors.RESET}      {action_color}{Colors.BOLD}{score.action}{Colors.RESET}")
-    print(f"  {Colors.BOLD}CONFIDENCE:{Colors.RESET}  {strength_bar(score.confidence, 30)} {score.confidence:.0f}%")
+    print(
+        f"  {Colors.BOLD}ACTION:{Colors.RESET}      {action_color}{Colors.BOLD}{score.action}{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.BOLD}CONFIDENCE:{Colors.RESET}  {strength_bar(score.confidence, 30)} {score.confidence:.0f}%"
+    )
     print()
     print(f"{Colors.DIM}{'─' * 80}{Colors.RESET}")
 
@@ -822,24 +1007,48 @@ def print_unified_score(score: UnifiedScore):
     print()
 
     # Volume
-    vol_color = Colors.GREEN if score.volume_score > 0.2 else Colors.RED if score.volume_score < -0.2 else Colors.YELLOW
+    vol_color = (
+        Colors.GREEN
+        if score.volume_score > 0.2
+        else Colors.RED if score.volume_score < -0.2 else Colors.YELLOW
+    )
     vol_bar = score_bar(score.volume_score)
-    print(f"    Volume/Delta ({score.volume_weight*100:.0f}%):  {vol_bar}  {vol_color}{score.volume_score:+.2f}{Colors.RESET}")
+    print(
+        f"    Volume/Delta ({score.volume_weight*100:.0f}%):  {vol_bar}  {vol_color}{score.volume_score:+.2f}{Colors.RESET}"
+    )
 
     # Orderbook
-    book_color = Colors.GREEN if score.orderbook_score > 0.2 else Colors.RED if score.orderbook_score < -0.2 else Colors.YELLOW
+    book_color = (
+        Colors.GREEN
+        if score.orderbook_score > 0.2
+        else Colors.RED if score.orderbook_score < -0.2 else Colors.YELLOW
+    )
     book_bar = score_bar(score.orderbook_score)
-    print(f"    Orderbook    ({score.orderbook_weight*100:.0f}%):  {book_bar}  {book_color}{score.orderbook_score:+.2f}{Colors.RESET}")
+    print(
+        f"    Orderbook    ({score.orderbook_weight*100:.0f}%):  {book_bar}  {book_color}{score.orderbook_score:+.2f}{Colors.RESET}"
+    )
 
     # OI
-    oi_color = Colors.GREEN if score.oi_score > 0.2 else Colors.RED if score.oi_score < -0.2 else Colors.YELLOW
+    oi_color = (
+        Colors.GREEN
+        if score.oi_score > 0.2
+        else Colors.RED if score.oi_score < -0.2 else Colors.YELLOW
+    )
     oi_bar = score_bar(score.oi_score)
-    print(f"    Open Interest({score.oi_weight*100:.0f}%):  {oi_bar}  {oi_color}{score.oi_score:+.2f}{Colors.RESET}")
+    print(
+        f"    Open Interest({score.oi_weight*100:.0f}%):  {oi_bar}  {oi_color}{score.oi_score:+.2f}{Colors.RESET}"
+    )
 
     # Funding
-    fund_color = Colors.GREEN if score.funding_score > 0.2 else Colors.RED if score.funding_score < -0.2 else Colors.YELLOW
+    fund_color = (
+        Colors.GREEN
+        if score.funding_score > 0.2
+        else Colors.RED if score.funding_score < -0.2 else Colors.YELLOW
+    )
     fund_bar = score_bar(score.funding_score)
-    print(f"    Funding      ({score.funding_weight*100:.0f}%):  {fund_bar}  {fund_color}{score.funding_score:+.2f}{Colors.RESET}")
+    print(
+        f"    Funding      ({score.funding_weight*100:.0f}%):  {fund_bar}  {fund_color}{score.funding_score:+.2f}{Colors.RESET}"
+    )
 
     print()
     print(f"{Colors.DIM}{'─' * 80}{Colors.RESET}")
@@ -852,7 +1061,9 @@ def print_unified_score(score: UnifiedScore):
     # Warning
     if score.warning:
         print()
-        print(f"  {Colors.BOLD}{Colors.MAGENTA}⚠ WARNING:{Colors.RESET} {Colors.YELLOW}{score.warning}{Colors.RESET}")
+        print(
+            f"  {Colors.BOLD}{Colors.MAGENTA}⚠ WARNING:{Colors.RESET} {Colors.YELLOW}{score.warning}{Colors.RESET}"
+        )
 
     # Action guide
     print()
@@ -871,7 +1082,9 @@ def print_breakout_validation(validation: Optional[BreakoutValidation]):
 
     print()
     print(f"{Colors.BOLD}{Colors.CYAN}┌{'─' * 78}┐{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.CYAN}│  BREAKOUT VALIDATION - Real or Fake?{' ' * 41}│{Colors.RESET}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}│  BREAKOUT VALIDATION - Real or Fake?{' ' * 41}│{Colors.RESET}"
+    )
     print(f"{Colors.BOLD}{Colors.CYAN}└{'─' * 78}┘{Colors.RESET}")
     print()
 
@@ -880,9 +1093,13 @@ def print_breakout_validation(validation: Optional[BreakoutValidation]):
 
     # Breakout type and level
     type_color = Colors.GREEN if event.breakout_type.value == "upward" else Colors.RED
-    print(f"  {Colors.BOLD}Breakout Type:{Colors.RESET} {type_color}{event.breakout_type.value.upper()}{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}Breakout Type:{Colors.RESET} {type_color}{event.breakout_type.value.upper()}{Colors.RESET}"
+    )
     print(f"  {Colors.BOLD}Breakout Level:{Colors.RESET} ${event.breakout_level:,.2f}")
-    print(f"  {Colors.BOLD}Breakout Price:{Colors.RESET} ${event.breakout_price:,.2f} ({event.breakout_margin_pct:+.2f}%)")
+    print(
+        f"  {Colors.BOLD}Breakout Price:{Colors.RESET} ${event.breakout_price:,.2f} ({event.breakout_margin_pct:+.2f}%)"
+    )
 
     # Hard veto check
     if validation.hard_veto:
@@ -895,16 +1112,16 @@ def print_breakout_validation(validation: Optional[BreakoutValidation]):
         return
 
     # Quality and confidence
-    quality_colors = {
-        "institutional": Colors.GREEN,
-        "retail": Colors.RED,
-        "mixed": Colors.YELLOW
-    }
+    quality_colors = {"institutional": Colors.GREEN, "retail": Colors.RED, "mixed": Colors.YELLOW}
     q_color = quality_colors.get(validation.quality.value, Colors.YELLOW)
 
     print()
-    print(f"  {Colors.BOLD}Quality:{Colors.RESET}     {q_color}{validation.quality.value.upper()}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Confidence:{Colors.RESET}  {strength_bar(validation.confidence, 25)} {validation.confidence:.0f}%")
+    print(
+        f"  {Colors.BOLD}Quality:{Colors.RESET}     {q_color}{validation.quality.value.upper()}{Colors.RESET}"
+    )
+    print(
+        f"  {Colors.BOLD}Confidence:{Colors.RESET}  {strength_bar(validation.confidence, 25)} {validation.confidence:.0f}%"
+    )
     print()
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
 
@@ -914,15 +1131,21 @@ def print_breakout_validation(validation: Optional[BreakoutValidation]):
 
     flow_icon = "✓" if validation.flow_aligned else "✗"
     flow_color = Colors.GREEN if validation.flow_aligned else Colors.RED
-    print(f"    {flow_color}{flow_icon} Flow/Delta{Colors.RESET}     (ΔVr: {features.delta_ratio:+.3f}, RV: {features.relative_volume:.1f}x)")
+    print(
+        f"    {flow_color}{flow_icon} Flow/Delta{Colors.RESET}     (ΔVr: {features.delta_ratio:+.3f}, RV: {features.relative_volume:.1f}x)"
+    )
 
     oi_icon = "✓" if validation.oi_aligned else "✗"
     oi_color = Colors.GREEN if validation.oi_aligned else Colors.RED
-    print(f"    {oi_color}{oi_icon} Open Interest{Colors.RESET}  (ΔOI: {features.oi_change_pct:+.1f}%)")
+    print(
+        f"    {oi_color}{oi_icon} Open Interest{Colors.RESET}  (ΔOI: {features.oi_change_pct:+.1f}%)"
+    )
 
     book_icon = "✓" if validation.book_aligned else "✗"
     book_color = Colors.GREEN if validation.book_aligned else Colors.RED
-    print(f"    {book_color}{book_icon} Orderbook{Colors.RESET}      (Imb: {features.depth_imbalance_25bps:+.2f})")
+    print(
+        f"    {book_color}{book_icon} Orderbook{Colors.RESET}      (Imb: {features.depth_imbalance_25bps:+.2f})"
+    )
 
     # Action
     print()
@@ -933,11 +1156,13 @@ def print_breakout_validation(validation: Optional[BreakoutValidation]):
         "enter_long": Colors.GREEN,
         "enter_short": Colors.RED,
         "avoid": Colors.YELLOW,
-        "wait": Colors.YELLOW
+        "wait": Colors.YELLOW,
     }
     action_color = action_colors.get(validation.action, Colors.YELLOW)
 
-    print(f"  {Colors.BOLD}ACTION:{Colors.RESET} {action_color}{validation.action.upper()}{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}ACTION:{Colors.RESET} {action_color}{validation.action.upper()}{Colors.RESET}"
+    )
 
     if validation.entry_price:
         print(f"  Entry:  ${validation.entry_price:,.2f}")
@@ -953,8 +1178,12 @@ def print_breakout_validation(validation: Optional[BreakoutValidation]):
 
     print()
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
-    print(f"  {Colors.BOLD}Insight:{Colors.RESET} {Colors.CYAN}Flow + OI alignment > Pattern recognition{Colors.RESET}")
-    print(f"           {Colors.CYAN}Price breaks level ≠ real breakout. Check the FLOW.{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}Insight:{Colors.RESET} {Colors.CYAN}Flow + OI alignment > Pattern recognition{Colors.RESET}"
+    )
+    print(
+        f"           {Colors.CYAN}Price breaks level ≠ real breakout. Check the FLOW.{Colors.RESET}"
+    )
     print(f"{Colors.DIM}{'─' * 78}{Colors.RESET}")
 
 
@@ -966,9 +1195,11 @@ def print_header(symbol: str, price: float, change_pct: float, timeframe: str):
     print(f"{Colors.BOLD}{'═' * 80}{Colors.RESET}")
 
     change_color = Colors.GREEN if change_pct >= 0 else Colors.RED
-    print(f"  Price: {Colors.BOLD}${price:,.2f}{Colors.RESET}  |  "
-          f"{timeframe} Change: {change_color}{change_pct:+.2f}%{Colors.RESET}  |  "
-          f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(
+        f"  Price: {Colors.BOLD}${price:,.2f}{Colors.RESET}  |  "
+        f"{timeframe} Change: {change_color}{change_pct:+.2f}%{Colors.RESET}  |  "
+        f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    )
     print(f"{Colors.DIM}{'─' * 80}{Colors.RESET}")
 
 
@@ -984,9 +1215,11 @@ def print_indicator(result: IndicatorResult):
     color = signal_color(result.signal)
     signal_display = signal_value(result.signal).upper()
 
-    print(f"  {Colors.BOLD}{result.name:<20}{Colors.RESET} "
-          f"{strength_bar(result.strength)} "
-          f"{color}{signal_display:^8}{Colors.RESET}")
+    print(
+        f"  {Colors.BOLD}{result.name:<20}{Colors.RESET} "
+        f"{strength_bar(result.strength)} "
+        f"{color}{signal_display:^8}{Colors.RESET}"
+    )
     print(f"  {Colors.DIM}{result.description}{Colors.RESET}")
     print()
 
@@ -1001,10 +1234,20 @@ def print_summary(results: List[IndicatorResult]):
     avg_strength = sum(r.strength for r in results) / total if total > 0 else 50
 
     # Calculate weighted bias
-    bias_score = sum(
-        r.strength * (1 if signal_value(r.signal) == Signal.BULLISH.value else -1 if signal_value(r.signal) == Signal.BEARISH.value else 0)
-        for r in results
-    ) / total if total > 0 else 0
+    bias_score = (
+        sum(
+            r.strength
+            * (
+                1
+                if signal_value(r.signal) == Signal.BULLISH.value
+                else -1 if signal_value(r.signal) == Signal.BEARISH.value else 0
+            )
+            for r in results
+        )
+        / total
+        if total > 0
+        else 0
+    )
 
     print()
     print(f"{Colors.BOLD}{'═' * 80}{Colors.RESET}")
@@ -1013,9 +1256,11 @@ def print_summary(results: List[IndicatorResult]):
     print()
 
     # Signal distribution
-    print(f"  {Colors.GREEN}Bullish: {bullish}/{total}{Colors.RESET}  |  "
-          f"{Colors.RED}Bearish: {bearish}/{total}{Colors.RESET}  |  "
-          f"{Colors.YELLOW}Neutral: {neutral}/{total}{Colors.RESET}")
+    print(
+        f"  {Colors.GREEN}Bullish: {bullish}/{total}{Colors.RESET}  |  "
+        f"{Colors.RED}Bearish: {bearish}/{total}{Colors.RESET}  |  "
+        f"{Colors.YELLOW}Neutral: {neutral}/{total}{Colors.RESET}"
+    )
     print()
 
     # Overall bias
@@ -1046,6 +1291,8 @@ def print_summary(results: List[IndicatorResult]):
         print(f"  {Colors.BOLD}Key Signals:{Colors.RESET}")
         for r in strong_signals:
             color = signal_color(r.signal)
-            print(f"    • {color}{r.name}: {signal_value(r.signal).upper()} ({r.strength:.0f}%){Colors.RESET}")
+            print(
+                f"    • {color}{r.name}: {signal_value(r.signal).upper()} ({r.strength:.0f}%){Colors.RESET}"
+            )
     print()
     print(f"{Colors.DIM}{'─' * 80}{Colors.RESET}")

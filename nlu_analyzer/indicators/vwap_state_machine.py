@@ -8,14 +8,15 @@ Robust state machine for classifying VWAP interaction patterns:
 - O(1) per update with deterministic priority rules
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, Optional, Deque
 from collections import deque
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Deque, Dict, Optional
 
 
 class Position(Enum):
     """Price position relative to VWAP"""
+
     ABOVE = "ABOVE"
     BELOW = "BELOW"
     AT = "AT"
@@ -23,6 +24,7 @@ class Position(Enum):
 
 class InteractionState(Enum):
     """VWAP interaction state"""
+
     NEUTRAL = "NEUTRAL"
     ACCEPT = "ACCEPT"
     REJECT = "REJECT"
@@ -32,6 +34,7 @@ class InteractionState(Enum):
 
 class Regime(Enum):
     """Market regime"""
+
     TREND = "TREND"
     RANGE = "RANGE"
 
@@ -44,20 +47,16 @@ class VWAPStateConfig:
     window_crossings: int = 20
 
     # Touch tolerances (base) - percentage of price
-    touch_pct_by_tf: Dict[str, float] = field(default_factory=lambda: {
-        "1m": 0.0001,
-        "5m": 0.00015,
-        "1h": 0.0003
-    })
+    touch_pct_by_tf: Dict[str, float] = field(
+        default_factory=lambda: {"1m": 0.0001, "5m": 0.00015, "1h": 0.0003}
+    )
     touch_sigma: float = 0.15  # Sigma units
     touch_atr_factor: float = 0.05  # 0.05 × ATR%
 
     # Reclaim/Loss buffers (hysteresis)
-    reclaim_buffer_pct_by_tf: Dict[str, float] = field(default_factory=lambda: {
-        "1m": 0.0002,
-        "5m": 0.00025,
-        "1h": 0.0006
-    })
+    reclaim_buffer_pct_by_tf: Dict[str, float] = field(
+        default_factory=lambda: {"1m": 0.0002, "5m": 0.00025, "1h": 0.0006}
+    )
     reclaim_buffer_atr_factor: float = 0.10  # 0.10 × ATR%
 
     # Confirmation thresholds
@@ -162,17 +161,19 @@ class VWAPStateMachine:
             self._states[tf] = _TimeframeState(self.config, tf)
         return self._states[tf]
 
-    def on_update(self,
-                  tf: str,
-                  timestamp: int,
-                  close: float,
-                  vwap: float,
-                  std: Optional[float] = None,
-                  atr_percent: Optional[float] = None,
-                  rv: Optional[float] = None,
-                  delta_ok: Optional[bool] = None,
-                  oi_ok: Optional[bool] = None,
-                  regime: Optional[str] = None) -> VWAPInteractionState:
+    def on_update(
+        self,
+        tf: str,
+        timestamp: int,
+        close: float,
+        vwap: float,
+        std: Optional[float] = None,
+        atr_percent: Optional[float] = None,
+        rv: Optional[float] = None,
+        delta_ok: Optional[bool] = None,
+        oi_ok: Optional[bool] = None,
+        regime: Optional[str] = None,
+    ) -> VWAPInteractionState:
         """
         Process VWAP update and return interaction state.
 
@@ -274,7 +275,7 @@ class VWAPStateMachine:
         reclaim_buffer = max(buffer_pct, buffer_atr if buffer_atr else 0.0)
 
         # H) Confirmations
-        rv_ok = (rv is not None and rv >= self.config.rv_confirm)
+        rv_ok = rv is not None and rv >= self.config.rv_confirm
         conf_ok = rv_ok or (delta_ok is True) or (oi_ok is True)
 
         # Track touch
@@ -282,8 +283,9 @@ class VWAPStateMachine:
             state.last_touch_index = state.bar_index
 
         # Recent touch check (allow up to 3 bars for REJECT to build)
-        recent_touch = (state.last_touch_index is not None and
-                       (state.bar_index - state.last_touch_index) <= 3)
+        recent_touch = (
+            state.last_touch_index is not None and (state.bar_index - state.last_touch_index) <= 3
+        )
 
         # I) State machine logic (deterministic priority)
         final_state = InteractionState.NEUTRAL.value
@@ -304,8 +306,7 @@ class VWAPStateMachine:
                 state.in_reclaim_process = False
 
         # Check RECLAIM trigger
-        if (state.reclaim_hold >= N_reclaim and
-            (regime_used == Regime.TREND.value or conf_ok)):
+        if state.reclaim_hold >= N_reclaim and (regime_used == Regime.TREND.value or conf_ok):
             final_state = InteractionState.RECLAIM.value
             # Reset other holds and exit their processes
             state.loss_hold = 0
@@ -336,8 +337,7 @@ class VWAPStateMachine:
                     state.in_loss_process = False
 
             # Check LOSS trigger
-            if (state.loss_hold >= N_loss and
-                (regime_used == Regime.TREND.value or conf_ok)):
+            if state.loss_hold >= N_loss and (regime_used == Regime.TREND.value or conf_ok):
                 final_state = InteractionState.LOSS.value
                 # Reset other holds and exit their processes
                 state.reclaim_hold = 0
@@ -356,8 +356,9 @@ class VWAPStateMachine:
             if not state.in_reclaim_process and not state.in_loss_process:
                 # REJECT requires recent touch throughout the building process
                 # If touch becomes non-recent, abandon REJECT (even if partially built)
-                reject_in_zone = ((position == Position.BELOW.value and dist_pct <= -touch_pct) or
-                                (position == Position.ABOVE.value and dist_pct >= touch_pct))
+                reject_in_zone = (position == Position.BELOW.value and dist_pct <= -touch_pct) or (
+                    position == Position.ABOVE.value and dist_pct >= touch_pct
+                )
 
                 # Only build REJECT while touch remains recent
                 if recent_touch and reject_in_zone:
@@ -381,7 +382,9 @@ class VWAPStateMachine:
         if final_state == InteractionState.NEUTRAL.value:
             # Don't process ACCEPT if higher priority states are building up
             # (RECLAIM/LOSS in process, or REJECT accumulating after recent touch)
-            reject_building = (recent_touch and state.reject_hold > 0 and state.reject_hold < N_reject)
+            reject_building = (
+                recent_touch and state.reject_hold > 0 and state.reject_hold < N_reject
+            )
 
             if not (state.in_reclaim_process or state.in_loss_process or reject_building):
                 # Update accept holds
@@ -397,9 +400,11 @@ class VWAPStateMachine:
 
                 # Check ACCEPT trigger
                 # Suppress in chop unless strong confirmation
-                chop_suppress = (crossings_20 >= self.config.crossings_chop_threshold and
-                               not (conf_ok and state.accept_hold_above >= N_accept + 1 and
-                                   state.accept_hold_below >= N_accept + 1))
+                chop_suppress = crossings_20 >= self.config.crossings_chop_threshold and not (
+                    conf_ok
+                    and state.accept_hold_above >= N_accept + 1
+                    and state.accept_hold_below >= N_accept + 1
+                )
 
                 if not chop_suppress:
                     if state.accept_hold_above >= N_accept:
@@ -432,23 +437,23 @@ class VWAPStateMachine:
 
         # Build debug info
         debug_info = {
-            'regime_used': regime_used,
-            'touch_pct': touch_pct,
-            'touch_atr': touch_atr,
-            'reclaim_buffer': reclaim_buffer,
-            'is_touch': is_touch,
-            'recent_touch': recent_touch,
-            'rv_ok': rv_ok,
-            'conf_ok': conf_ok,
-            'N_reclaim': N_reclaim,
-            'N_loss': N_loss,
-            'N_accept': N_accept,
-            'N_reject': N_reject,
-            'reclaim_hold': state.reclaim_hold,
-            'loss_hold': state.loss_hold,
-            'reject_hold': state.reject_hold,
-            'accept_hold_above': state.accept_hold_above,
-            'accept_hold_below': state.accept_hold_below
+            "regime_used": regime_used,
+            "touch_pct": touch_pct,
+            "touch_atr": touch_atr,
+            "reclaim_buffer": reclaim_buffer,
+            "is_touch": is_touch,
+            "recent_touch": recent_touch,
+            "rv_ok": rv_ok,
+            "conf_ok": conf_ok,
+            "N_reclaim": N_reclaim,
+            "N_loss": N_loss,
+            "N_accept": N_accept,
+            "N_reject": N_reject,
+            "reclaim_hold": state.reclaim_hold,
+            "loss_hold": state.loss_hold,
+            "reject_hold": state.reject_hold,
+            "accept_hold_above": state.accept_hold_above,
+            "accept_hold_below": state.accept_hold_below,
         }
 
         # Create result
@@ -461,7 +466,7 @@ class VWAPStateMachine:
             dist_sigma=dist_sigma,
             crossings_20=crossings_20,
             last_touch_age=last_touch_age,
-            debug=debug_info
+            debug=debug_info,
         )
 
         # Update state for next iteration
@@ -486,13 +491,19 @@ def format_vwap_interaction_output(state: VWAPInteractionState, compact: bool = 
     """
     if compact:
         sigma_str = f"σ={state.dist_sigma:.2f}" if state.dist_sigma is not None else "σ=N/A"
-        touch_age_str = f"touch_age={state.last_touch_age}" if state.last_touch_age is not None else "never_touched"
+        touch_age_str = (
+            f"touch_age={state.last_touch_age}"
+            if state.last_touch_age is not None
+            else "never_touched"
+        )
 
-        line = (f"VWAP: {state.position} {state.state} "
-               f"dist={state.dist_pct*100:.3f}% {sigma_str} "
-               f"hold={state.hold_count} xings={state.crossings_20} {touch_age_str}")
+        line = (
+            f"VWAP: {state.position} {state.state} "
+            f"dist={state.dist_pct*100:.3f}% {sigma_str} "
+            f"hold={state.hold_count} xings={state.crossings_20} {touch_age_str}"
+        )
 
-        if state.debug.get('regime_used'):
+        if state.debug.get("regime_used"):
             line += f" regime={state.debug['regime_used']}"
 
         return line
@@ -513,8 +524,13 @@ def format_vwap_interaction_output(state: VWAPInteractionState, compact: bool = 
         if state.debug:
             lines.append("  Debug:")
             for key, val in state.debug.items():
-                if key not in ['reclaim_hold', 'loss_hold', 'reject_hold',
-                              'accept_hold_above', 'accept_hold_below']:
+                if key not in [
+                    "reclaim_hold",
+                    "loss_hold",
+                    "reject_hold",
+                    "accept_hold_above",
+                    "accept_hold_below",
+                ]:
                     lines.append(f"    {key}: {val}")
 
         return "\n".join(lines)

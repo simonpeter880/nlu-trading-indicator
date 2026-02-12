@@ -11,15 +11,17 @@ Verifies:
 - Warmup behavior
 """
 
-import pytest
 import math
+
+import pytest
+
 from choppiness import (
-    ChoppinessEngine,
-    ChoppinessConfig,
     Candle,
-    print_choppiness,
+    ChoppinessConfig,
+    ChoppinessEngine,
     format_chop_state,
     interpret_chop,
+    print_choppiness,
 )
 
 
@@ -37,6 +39,7 @@ def config():
 # ============================================================================
 # TEST 1: TRUE RANGE CORRECTNESS
 # ============================================================================
+
 
 def test_true_range_first_candle():
     """TR for first candle is just high - low."""
@@ -88,14 +91,15 @@ def test_true_range_gap_down():
 # TEST 2: ROLLING SUM CORRECTNESS
 # ============================================================================
 
+
 def test_rolling_sum_tr():
     """TR rolling sum matches sum of last n TRs."""
     config = ChoppinessConfig(default_period=3)
     engine = ChoppinessEngine(config)
 
     candles = [
-        Candle(1000, 100, 120, 80, 100, 1000),   # TR = 40
-        Candle(2000, 100, 130, 90, 110, 1000),   # TR = 40
+        Candle(1000, 100, 120, 80, 100, 1000),  # TR = 40
+        Candle(2000, 100, 130, 90, 110, 1000),  # TR = 40
         Candle(3000, 110, 140, 100, 120, 1000),  # TR = 40
         Candle(4000, 120, 145, 115, 125, 1000),  # TR = 30
     ]
@@ -133,13 +137,16 @@ def test_rolling_sum_maintains_window():
 
         # After period candles, check rolling sum
         if i >= 4:  # period = 5, so index 4 onwards
-            expected_sum = sum(trs[max(0, i - 4):i + 1])
-            assert abs(state.sum_tr - expected_sum) < 1e-6, f"At index {i}, expected {expected_sum}, got {state.sum_tr}"
+            expected_sum = sum(trs[max(0, i - 4) : i + 1])
+            assert (
+                abs(state.sum_tr - expected_sum) < 1e-6
+            ), f"At index {i}, expected {expected_sum}, got {state.sum_tr}"
 
 
 # ============================================================================
 # TEST 3: HH/LL MONOTONIC DEQUE CORRECTNESS
 # ============================================================================
+
 
 def test_highest_high_rolling_max():
     """HH correctly tracks rolling maximum high."""
@@ -147,8 +154,8 @@ def test_highest_high_rolling_max():
     engine = ChoppinessEngine(config)
 
     candles = [
-        Candle(1000, 100, 110, 90, 100, 1000),   # HH over [0:1] = 110
-        Candle(2000, 100, 120, 95, 110, 1000),   # HH over [0:2] = 120
+        Candle(1000, 100, 110, 90, 100, 1000),  # HH over [0:1] = 110
+        Candle(2000, 100, 120, 95, 110, 1000),  # HH over [0:2] = 120
         Candle(3000, 110, 115, 105, 112, 1000),  # HH over [0:3] = 120
         Candle(4000, 112, 125, 110, 120, 1000),  # HH over [1:4] = 125 (window slides)
     ]
@@ -171,10 +178,10 @@ def test_lowest_low_rolling_min():
     engine = ChoppinessEngine(config)
 
     candles = [
-        Candle(1000, 100, 110, 90, 100, 1000),   # LL over [0:1] = 90
-        Candle(2000, 100, 120, 85, 110, 1000),   # LL over [0:2] = 85
-        Candle(3000, 110, 115, 95, 112, 1000),   # LL over [0:3] = 85
-        Candle(4000, 112, 125, 80, 120, 1000),   # LL over [1:4] = 80 (window slides)
+        Candle(1000, 100, 110, 90, 100, 1000),  # LL over [0:1] = 90
+        Candle(2000, 100, 120, 85, 110, 1000),  # LL over [0:2] = 85
+        Candle(3000, 110, 115, 95, 112, 1000),  # LL over [0:3] = 85
+        Candle(4000, 112, 125, 80, 120, 1000),  # LL over [1:4] = 80 (window slides)
     ]
 
     states = []
@@ -213,6 +220,7 @@ def test_hh_ll_range_calculation():
 # TEST 4: CHOP FORMULA CORRECTNESS
 # ============================================================================
 
+
 def test_chop_formula_calculation():
     """CHOP formula matches manual calculation."""
     config = ChoppinessConfig(default_period=3)
@@ -220,9 +228,9 @@ def test_chop_formula_calculation():
 
     # Create candles with known values
     candles = [
-        Candle(1000, 100, 120, 80, 100, 1000),   # TR = 40, HH=120, LL=80
-        Candle(2000, 100, 130, 90, 110, 1000),   # TR = 40, HH=130, LL=80
-        Candle(3000, 110, 125, 95, 115, 1000),   # TR = 30, HH=130, LL=80
+        Candle(1000, 100, 120, 80, 100, 1000),  # TR = 40, HH=120, LL=80
+        Candle(2000, 100, 130, 90, 110, 1000),  # TR = 40, HH=130, LL=80
+        Candle(3000, 110, 125, 95, 115, 1000),  # TR = 30, HH=130, LL=80
     ]
 
     for candle in candles:
@@ -278,6 +286,7 @@ def test_chop_incremental_vs_batch():
 # TEST 5: STATE THRESHOLDS
 # ============================================================================
 
+
 def test_state_chop_high():
     """CHOP >= 61.8 => CHOP state."""
     config = ChoppinessConfig(default_period=3, chop_high=61.8, chop_low=38.2)
@@ -312,9 +321,9 @@ def test_state_trend_low():
     # Create trending candles (low CHOP)
     # Large range with small sum(TR) => low CHOP
     candles = [
-        Candle(1000, 100, 105, 95, 103, 1000),    # TR small
-        Candle(2000, 103, 108, 98, 106, 1000),    # TR small
-        Candle(3000, 106, 130, 101, 125, 1000),   # Big directional move
+        Candle(1000, 100, 105, 95, 103, 1000),  # TR small
+        Candle(2000, 103, 108, 98, 106, 1000),  # TR small
+        Candle(3000, 106, 130, 101, 125, 1000),  # Big directional move
     ]
 
     for candle in candles:
@@ -348,6 +357,7 @@ def test_state_transition():
 # ============================================================================
 # TEST 6: TREND VS RANGE DETECTION
 # ============================================================================
+
 
 def test_trending_produces_low_chop():
     """Trending series produces lower CHOP than sideways."""
@@ -415,15 +425,13 @@ def test_range_bound_produces_high_chop():
 # TEST 7: WARMUP BEHAVIOR
 # ============================================================================
 
+
 def test_warmup_state():
     """Engine returns WARMUP until n bars processed."""
     config = ChoppinessConfig(default_period=5)
     engine = ChoppinessEngine(config)
 
-    candles = [
-        Candle(i * 1000, 100, 110, 90, 105, 1000)
-        for i in range(10)
-    ]
+    candles = [Candle(i * 1000, 100, 110, 90, 105, 1000) for i in range(10)]
 
     for i, candle in enumerate(candles):
         state = engine.on_candle_close("1m", candle)
@@ -454,12 +462,10 @@ def test_warmup_insufficient_data():
 # TEST 8: MULTI-TIMEFRAME SUPPORT
 # ============================================================================
 
+
 def test_multi_timeframe():
     """Engine handles multiple timeframes independently."""
-    config = ChoppinessConfig(
-        timeframes=["1m", "5m"],
-        period_by_tf={"1m": 3, "5m": 5}
-    )
+    config = ChoppinessConfig(timeframes=["1m", "5m"], period_by_tf={"1m": 3, "5m": 5})
     engine = ChoppinessEngine(config)
 
     # Feed different candles to different timeframes
@@ -482,16 +488,14 @@ def test_multi_timeframe():
 # TEST 9: EDGE CASES
 # ============================================================================
 
+
 def test_zero_range():
     """Handles zero range (all same price) gracefully."""
     config = ChoppinessConfig(default_period=3)
     engine = ChoppinessEngine(config)
 
     # All candles at same price
-    candles = [
-        Candle(i * 1000, 100, 100, 100, 100, 1000)
-        for i in range(5)
-    ]
+    candles = [Candle(i * 1000, 100, 100, 100, 100, 1000) for i in range(5)]
 
     for candle in candles:
         state = engine.on_candle_close("1m", candle)
@@ -532,15 +536,13 @@ def test_reset():
 # TEST 10: HELPER FUNCTIONS
 # ============================================================================
 
+
 def test_print_choppiness():
     """print_choppiness produces expected output."""
     config = ChoppinessConfig(default_period=3)
     engine = ChoppinessEngine(config)
 
-    candles = [
-        Candle(i * 1000, 100, 110 + i, 90, 105, 1000)
-        for i in range(5)
-    ]
+    candles = [Candle(i * 1000, 100, 110 + i, 90, 105, 1000) for i in range(5)]
 
     states = engine.warmup({"1m": candles})
 
@@ -581,15 +583,13 @@ def test_interpret_chop():
 # TEST 11: SLOPE CALCULATION
 # ============================================================================
 
+
 def test_chop_slope():
     """CHOP slope is computed correctly."""
     config = ChoppinessConfig(default_period=3)
     engine = ChoppinessEngine(config)
 
-    candles = [
-        Candle(i * 1000, 100, 110 + i * 2, 90, 105, 1000)
-        for i in range(10)
-    ]
+    candles = [Candle(i * 1000, 100, 110 + i * 2, 90, 105, 1000) for i in range(10)]
 
     states = []
     for candle in candles:
@@ -608,6 +608,7 @@ def test_chop_slope():
 # TEST 12: REALISTIC SCENARIO
 # ============================================================================
 
+
 def test_realistic_chop_transition():
     """Test realistic scenario: range -> breakout -> trend."""
     config = ChoppinessConfig(default_period=5)
@@ -617,7 +618,9 @@ def test_realistic_chop_transition():
     range_candles = []
     for i in range(10):
         price = 100 + (i % 2) * 2
-        range_candles.append(Candle(i * 1000, price, price + 3, price - 3, 100 + ((i + 1) % 2) * 2, 1000))
+        range_candles.append(
+            Candle(i * 1000, price, price + 3, price - 3, 100 + ((i + 1) % 2) * 2, 1000)
+        )
 
     # Phase 2: Breakout and trend (low CHOP)
     trend_candles = []

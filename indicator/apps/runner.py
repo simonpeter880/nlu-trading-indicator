@@ -8,53 +8,49 @@ import logging
 from typing import List, Optional
 
 from indicator.engines.data_fetcher import (
-    BinanceIndicatorFetcher,
-    OHLCVData,
     BinanceAPIError,
-    BinanceTimeoutError,
     BinanceConnectionError,
+    BinanceIndicatorFetcher,
+    BinanceTimeoutError,
+    OHLCVData,
 )
 
 logger = logging.getLogger(__name__)
-from indicator.engines.indicators import (
-    VolumeIndicators,
-    TrendIndicators,
-    MomentumIndicators,
-    VolatilityIndicators,
-    IndicatorResult
+from indicator.display import (
+    Colors,
+    print_breakout_validation,
+    print_funding_deep_dive,
+    print_header,
+    print_indicator,
+    print_oi_deep_dive,
+    print_orderbook_deep_dive,
+    print_section,
+    print_summary,
+    print_unified_score,
+    print_volume_deep_dive,
+    print_volume_engine_deep_dive,
 )
-from indicator.engines.volume_analysis import AdvancedVolumeAnalyzer
-from indicator.engines.volume_engine import InstitutionalVolumeEngine
-from indicator.engines.unified_score import calculate_unified_score
-from indicator.engines.breakout_validation import (
-    BreakoutValidator,
-    BreakoutFeatures,
-)
-from indicator.engines.oi_analysis import AdvancedOIAnalyzer
-from indicator.engines.funding_analysis import AdvancedFundingAnalyzer
-from indicator.engines.orderbook_analysis import AdvancedOrderbookAnalyzer, AbsorptionSide
 from indicator.engines.atr_expansion import (
-    ATRExpansionEngine,
     ATRExpansionConfig,
+    ATRExpansionEngine,
     Candle,
     print_atr_expansion,
 )
-
-from indicator.display import (
-    Colors,
-    print_volume_deep_dive,
-    print_oi_deep_dive,
-    print_funding_deep_dive,
-    print_volume_engine_deep_dive,
-    print_orderbook_deep_dive,
-    print_unified_score,
-    print_breakout_validation,
-    print_header,
-    print_section,
-    print_indicator,
-    print_summary,
+from indicator.engines.breakout_validation import BreakoutFeatures, BreakoutValidator
+from indicator.engines.funding_analysis import AdvancedFundingAnalyzer
+from indicator.engines.indicators import (
+    IndicatorResult,
+    MomentumIndicators,
+    TrendIndicators,
+    VolatilityIndicators,
+    VolumeIndicators,
 )
+from indicator.engines.oi_analysis import AdvancedOIAnalyzer
+from indicator.engines.orderbook_analysis import AbsorptionSide, AdvancedOrderbookAnalyzer
 from indicator.engines.signals import Signal, coerce_signal
+from indicator.engines.unified_score import calculate_unified_score
+from indicator.engines.volume_analysis import AdvancedVolumeAnalyzer
+from indicator.engines.volume_engine import InstitutionalVolumeEngine
 
 
 def _period_for_timeframe(timeframe: str) -> str:
@@ -147,7 +143,7 @@ async def _fetch_agg_trades_window(
     start_time: int,
     end_time: int,
     futures: bool = True,
-    limit: int = 1000
+    limit: int = 1000,
 ) -> List:
     """Fetch aggTrades covering the full time window, paginating as needed."""
     agg_trades = []
@@ -157,19 +153,11 @@ async def _fetch_agg_trades_window(
     while next_start <= end_time:
         if next_from_id is None:
             batch = await fetcher.get_agg_trades(
-                symbol,
-                limit=limit,
-                start_time=next_start,
-                end_time=end_time,
-                futures=futures
+                symbol, limit=limit, start_time=next_start, end_time=end_time, futures=futures
             )
         else:
             batch = await fetcher.get_agg_trades(
-                symbol,
-                limit=limit,
-                from_id=next_from_id,
-                end_time=end_time,
-                futures=futures
+                symbol, limit=limit, from_id=next_from_id, end_time=end_time, futures=futures
             )
         if not batch:
             break
@@ -196,7 +184,7 @@ async def analyze_pair(
     symbol: str,
     timeframe: str = "1h",
     kline_limit: Optional[int] = 100,
-    oi_history_limit: Optional[int] = 30
+    oi_history_limit: Optional[int] = 30,
 ):
     """
     Perform full indicator analysis on a trading pair.
@@ -211,7 +199,9 @@ async def analyze_pair(
         # Validate symbol
         print(f"\n{Colors.DIM}Validating symbol...{Colors.RESET}")
         if not await fetcher.validate_symbol(symbol, futures=True):
-            print(f"{Colors.RED}Error: Symbol '{symbol}' not found on Binance Futures.{Colors.RESET}")
+            print(
+                f"{Colors.RED}Error: Symbol '{symbol}' not found on Binance Futures.{Colors.RESET}"
+            )
             print(f"{Colors.DIM}Try formats like: BTCUSDT, ETHUSDT, SOLUSDT{Colors.RESET}")
             return
 
@@ -223,14 +213,14 @@ async def analyze_pair(
             timeframe,
             kline_limit,
             ls_ratio_period=history_period,
-            taker_volume_period=history_period
+            taker_volume_period=history_period,
         )
 
-        if data['errors']['klines']:
+        if data["errors"]["klines"]:
             print(f"{Colors.RED}Error fetching klines: {data['errors']['klines']}{Colors.RESET}")
             return
 
-        klines: List[OHLCVData] = data['klines']
+        klines: List[OHLCVData] = data["klines"]
 
         # Extract price arrays
         opens = [k.open for k in klines]
@@ -247,17 +237,12 @@ async def analyze_pair(
         if htf_timeframe:
             htf_limit = 200 if kline_limit is None else max(5, min(kline_limit, 200))
             htf_task = asyncio.create_task(
-                fetcher.get_klines(
-                    symbol,
-                    interval=htf_timeframe,
-                    limit=htf_limit,
-                    futures=True
-                )
+                fetcher.get_klines(symbol, interval=htf_timeframe, limit=htf_limit, futures=True)
             )
 
         # Get current price info
-        ticker = data['ticker']
-        current_price = ticker['last_price'] if ticker else closes[-1]
+        ticker = data["ticker"]
+        current_price = ticker["last_price"] if ticker else closes[-1]
 
         # OI history (use selected timeframe period)
         oi_hist_period = history_period
@@ -267,19 +252,17 @@ async def analyze_pair(
         oi_history = []
         oi_hist_data = []
         oi_hist_task = None
-        if data['open_interest']:
+        if data["open_interest"]:
             oi_hist_task = asyncio.create_task(
                 fetcher.get_open_interest_history(
-                    symbol,
-                    period=oi_hist_period,
-                    limit=oi_hist_limit
+                    symbol, period=oi_hist_period, limit=oi_hist_limit
                 )
             )
 
         # Funding history (for percentile calculation)
         funding_history = []
         funding_hist_task = None
-        if data['funding_rate']:
+        if data["funding_rate"]:
             funding_hist_task = asyncio.create_task(
                 fetcher.get_funding_rate_history(symbol, limit=100)
             )
@@ -292,11 +275,7 @@ async def analyze_pair(
         end_time = klines[-1].timestamp + bar_size_ms - 1
         agg_task = asyncio.create_task(
             _fetch_agg_trades_window(
-                fetcher,
-                symbol,
-                start_time=start_time,
-                end_time=end_time,
-                futures=True
+                fetcher, symbol, start_time=start_time, end_time=end_time, futures=True
             )
         )
 
@@ -324,7 +303,7 @@ async def analyze_pair(
                     else:
                         oi_hist_data = result
                         try:
-                            oi_history = [d['sum_open_interest'] for d in oi_hist_data]
+                            oi_history = [d["sum_open_interest"] for d in oi_hist_data]
                         except (KeyError, TypeError) as e:
                             logger.debug(f"OI history data parsing failed: {e}")
                             oi_history = []
@@ -333,14 +312,16 @@ async def analyze_pair(
                         logger.debug(f"Funding rate history fetch failed: {result}")
                     else:
                         try:
-                            funding_history = [d['funding_rate'] for d in result]
+                            funding_history = [d["funding_rate"] for d in result]
                         except (KeyError, TypeError) as e:
                             logger.debug(f"Funding rate history data parsing failed: {e}")
                             funding_history = []
                 elif key == "agg_trades":
                     if isinstance(result, Exception):
                         logger.debug(f"aggTrades fetch failed: {result}")
-                        print(f"  {Colors.DIM}[aggTrades unavailable, using candle approximation]{Colors.RESET}")
+                        print(
+                            f"  {Colors.DIM}[aggTrades unavailable, using candle approximation]{Colors.RESET}"
+                        )
                     else:
                         agg_trades = result
                         if agg_trades:
@@ -349,7 +330,9 @@ async def analyze_pair(
                             window_span = max(1, end_time - start_time)
                             trade_span = max(0, trade_end - trade_start)
                             agg_trade_coverage = trade_span / window_span
-                        print(f"  {Colors.CYAN}[Using PRECISE delta from {len(agg_trades)} aggTrades]{Colors.RESET}")
+                        print(
+                            f"  {Colors.CYAN}[Using PRECISE delta from {len(agg_trades)} aggTrades]{Colors.RESET}"
+                        )
 
         # Timeframe-aligned price change (match OI history window when available)
         if len(oi_history) >= 2:
@@ -379,7 +362,7 @@ async def analyze_pair(
             value=volume_summary.relative_volume.relative_ratio,
             signal=vol_signal,
             strength=volume_summary.confidence,
-            description=volume_summary.summary
+            description=volume_summary.summary,
         )
         all_results.append(vol_deep_result)
 
@@ -387,15 +370,19 @@ async def analyze_pair(
         # INSTITUTIONAL VOLUME ENGINE - "Who initiated, who absorbed, who trapped?"
         # =================================================================
         # Get OI change for exhaustion detection (will try to fetch later if not available)
-        oi_change_for_engine = _oi_change_percent(oi_history) if data['open_interest'] else None
+        oi_change_for_engine = _oi_change_percent(oi_history) if data["open_interest"] else None
 
         # Run institutional volume engine
         volume_engine = InstitutionalVolumeEngine()
 
         min_coverage = 0.8
-        has_precise_window = agg_trades and len(agg_trades) >= 10 and agg_trade_coverage >= min_coverage
+        has_precise_window = (
+            agg_trades and len(agg_trades) >= 10 and agg_trade_coverage >= min_coverage
+        )
         if agg_trades and len(agg_trades) >= 10 and agg_trade_coverage < min_coverage:
-            print(f"  {Colors.DIM}[aggTrades window coverage {agg_trade_coverage:.0%} too low, using candle approximation]{Colors.RESET}")
+            print(
+                f"  {Colors.DIM}[aggTrades window coverage {agg_trade_coverage:.0%} too low, using candle approximation]{Colors.RESET}"
+            )
 
         if has_precise_window:
             # Use precise delta calculation with aggTrades
@@ -410,7 +397,7 @@ async def analyze_pair(
                 htf_volumes=htf_volumes,
                 oi_change_percent=oi_change_for_engine,
                 window_start_ms=start_time,
-                window_end_ms=end_time
+                window_end_ms=end_time,
             )
         else:
             # Fallback to candle-based approximation
@@ -421,7 +408,7 @@ async def analyze_pair(
                 closes=closes,
                 volumes=volumes,
                 htf_volumes=htf_volumes,
-                oi_change_percent=oi_change_for_engine
+                oi_change_percent=oi_change_for_engine,
             )
 
         print_volume_engine_deep_dive(engine_result)
@@ -436,15 +423,15 @@ async def analyze_pair(
             value=engine_result.delta.delta_percent,
             signal=engine_signal,
             strength=engine_result.confidence,
-            description=f"{engine_result.who_initiated} initiated | {engine_result.volume_quality} quality"
+            description=f"{engine_result.who_initiated} initiated | {engine_result.volume_quality} quality",
         )
         all_results.append(engine_indicator)
 
         # =================================================================
         # DEEP OI ANALYSIS - "Is money entering or leaving?"
         # =================================================================
-        if data['open_interest']:
-            oi = data['open_interest']
+        if data["open_interest"]:
+            oi = data["open_interest"]
             if oi_history:
                 oi_analyzer = AdvancedOIAnalyzer()
                 oi_summary = oi_analyzer.full_analysis(
@@ -452,7 +439,7 @@ async def analyze_pair(
                     oi_history=oi_history,
                     highs=highs,
                     lows=lows,
-                    price_change_percent=price_change_pct
+                    price_change_percent=price_change_pct,
                 )
                 print_oi_deep_dive(oi_summary)
 
@@ -466,15 +453,13 @@ async def analyze_pair(
                     value=oi_summary.rate_of_change.oi_change_percent,
                     signal=oi_signal,
                     strength=oi_summary.confidence,
-                    description=oi_summary.summary
+                    description=oi_summary.summary,
                 )
                 all_results.append(oi_deep_result)
             else:
                 # Fallback to basic OI analysis
                 oi_result = VolumeIndicators.analyze_open_interest(
-                    oi.open_interest,
-                    [],
-                    price_change_pct
+                    oi.open_interest, [], price_change_pct
                 )
                 print_section("OPEN INTEREST", "📊")
                 print_indicator(oi_result)
@@ -488,14 +473,14 @@ async def analyze_pair(
         oi_change_for_funding = oi_change_for_engine  # Reuse OI change for Funding+OI combo
 
         # Funding Rate Deep Analysis
-        if data['funding_rate']:
-            fr = data['funding_rate']
+        if data["funding_rate"]:
+            fr = data["funding_rate"]
 
             funding_analyzer = AdvancedFundingAnalyzer()
             funding_summary = funding_analyzer.full_analysis(
                 current_rate=fr.funding_rate,
                 historical_rates=funding_history if funding_history else None,
-                oi_change_percent=oi_change_for_funding
+                oi_change_percent=oi_change_for_funding,
             )
             print_funding_deep_dive(funding_summary, oi_change_for_funding)
 
@@ -509,7 +494,7 @@ async def analyze_pair(
                 value=funding_summary.percentile.current_rate_percent,
                 signal=fr_signal,
                 strength=funding_summary.confidence,
-                description=funding_summary.summary
+                description=funding_summary.summary,
             )
             all_results.append(fr_deep_result)
         else:
@@ -519,11 +504,11 @@ async def analyze_pair(
         # DEEP ORDERBOOK ANALYSIS - "Where is price FORCED to go?"
         # =================================================================
         ob_summary = None
-        if data['orderbook']:
-            ob = data['orderbook']
+        if data["orderbook"]:
+            ob = data["orderbook"]
 
             # Get recent volume from ticker
-            recent_volume = ticker['volume'] if ticker else 0
+            recent_volume = ticker["volume"] if ticker else 0
 
             orderbook_analyzer = AdvancedOrderbookAnalyzer()
             ob_summary = orderbook_analyzer.full_analysis(
@@ -532,7 +517,7 @@ async def analyze_pair(
                 recent_volume=recent_volume,
                 price_change_percent=price_change_pct,
                 oi_change_percent=oi_change_for_funding,  # Reuse OI change from earlier
-                previous_snapshots=None  # Would need history for spoof detection
+                previous_snapshots=None,  # Would need history for spoof detection
             )
             print_orderbook_deep_dive(ob_summary)
 
@@ -546,7 +531,7 @@ async def analyze_pair(
                 value=ob_summary.imbalance.ratio,
                 signal=ob_signal,
                 strength=ob_summary.confidence,
-                description=f"Path: {ob_summary.where_price_forced} | {ob_summary.summary}"
+                description=f"Path: {ob_summary.where_price_forced} | {ob_summary.summary}",
             )
             all_results.append(ob_deep_result)
         else:
@@ -620,7 +605,7 @@ async def analyze_pair(
                 high=k.high,
                 low=k.low,
                 close=k.close,
-                volume=k.volume
+                volume=k.volume,
             )
             for k in klines
         ]
@@ -643,19 +628,31 @@ async def analyze_pair(
         if timeframe in atr_states:
             atr_state = atr_states[timeframe]
             if atr_state.vol_state == "EXPANSION":
-                print(f"  {Colors.GREEN}✅ TIMING: Volatility expanding - good for breakout attempts{Colors.RESET}")
+                print(
+                    f"  {Colors.GREEN}✅ TIMING: Volatility expanding - good for breakout attempts{Colors.RESET}"
+                )
             elif atr_state.vol_state == "EXTREME":
-                print(f"  {Colors.YELLOW}⚡ TIMING: Extreme volatility - move is ON, use tight stops{Colors.RESET}")
+                print(
+                    f"  {Colors.YELLOW}⚡ TIMING: Extreme volatility - move is ON, use tight stops{Colors.RESET}"
+                )
             elif atr_state.vol_state == "SQUEEZE":
-                print(f"  {Colors.DIM}⏸️  TIMING: Low volatility squeeze - wait for expansion{Colors.RESET}")
+                print(
+                    f"  {Colors.DIM}⏸️  TIMING: Low volatility squeeze - wait for expansion{Colors.RESET}"
+                )
             elif atr_state.vol_state == "FADE_RISK":
-                print(f"  {Colors.RED}⚠️  TIMING: Expansion fading - consider taking profits{Colors.RESET}")
+                print(
+                    f"  {Colors.RED}⚠️  TIMING: Expansion fading - consider taking profits{Colors.RESET}"
+                )
             else:  # NORMAL
-                print(f"  {Colors.CYAN}➡️  TIMING: Normal volatility - standard risk management{Colors.RESET}")
+                print(
+                    f"  {Colors.CYAN}➡️  TIMING: Normal volatility - standard risk management{Colors.RESET}"
+                )
 
             # Show TR shock if detected
             if atr_state.debug.get("shock_now"):
-                print(f"  {Colors.BOLD}{Colors.YELLOW}🔥 TR SHOCK DETECTED - Immediate volatility spike!{Colors.RESET}")
+                print(
+                    f"  {Colors.BOLD}{Colors.YELLOW}🔥 TR SHOCK DETECTED - Immediate volatility spike!{Colors.RESET}"
+                )
 
         print()  # Add spacing
 
@@ -674,8 +671,8 @@ async def analyze_pair(
         # Funding data (pass historical funding for advanced analysis)
         current_funding = None
         historical_funding = None
-        if data['funding_rate']:
-            current_funding = data['funding_rate'].funding_rate
+        if data["funding_rate"]:
+            current_funding = data["funding_rate"].funding_rate
             # Pass funding history if available (for percentile-based analysis)
             if funding_history and len(funding_history) >= 10:
                 historical_funding = funding_history
@@ -684,10 +681,10 @@ async def analyze_pair(
         depth_imbalance = None
         absorption_bullish = False
         absorption_bearish = False
-        if data['orderbook']:
+        if data["orderbook"]:
             # Calculate near-price depth imbalance (top 10 levels)
-            bid_depth = data['orderbook'].bid_depth(10)
-            ask_depth = data['orderbook'].ask_depth(10)
+            bid_depth = data["orderbook"].bid_depth(10)
+            ask_depth = data["orderbook"].ask_depth(10)
             total_depth = bid_depth + ask_depth
             if total_depth > 0:
                 depth_imbalance = (bid_depth - ask_depth) / total_depth
@@ -713,7 +710,7 @@ async def analyze_pair(
             historical_funding=historical_funding,
             depth_imbalance=depth_imbalance,
             absorption_bullish=absorption_bullish,
-            absorption_bearish=absorption_bearish
+            absorption_bearish=absorption_bearish,
         )
 
         # Display unified score
@@ -741,31 +738,44 @@ async def analyze_pair(
             timestamps=timestamps,
             swing_high=swing_high,
             swing_low=swing_low,
-            atr_pct=atr_pct
+            atr_pct=atr_pct,
         )
 
         if breakout_event:
             # Build features for validation
             breakout_features = BreakoutFeatures(
                 relative_volume=relative_volume,
-                volume_acceleration=engine_result.acceleration.rate if engine_result.acceleration else 1.0,
+                volume_acceleration=(
+                    engine_result.acceleration.rate if engine_result.acceleration else 1.0
+                ),
                 delta_ratio=delta_ratio,
-                cvd_slope=engine_result.delta.cumulative_delta / len(closes) if len(closes) > 0 else 0,
+                cvd_slope=(
+                    engine_result.delta.cumulative_delta / len(closes) if len(closes) > 0 else 0
+                ),
                 oi_change_pct=oi_change_pct if oi_change_pct is not None else 0.0,
                 oi_acceleration=1.0,  # Would need OI history for this
                 funding_z_score=(
                     (current_funding - funding_mean) / funding_std
-                    if (current_funding is not None and funding_mean is not None and funding_std is not None and funding_std > 0)
+                    if (
+                        current_funding is not None
+                        and funding_mean is not None
+                        and funding_std is not None
+                        and funding_std > 0
+                    )
                     else 0.0
                 ),
                 depth_imbalance_25bps=depth_imbalance if depth_imbalance is not None else 0.0,
                 depth_imbalance_50bps=depth_imbalance if depth_imbalance is not None else 0.0,
                 absorption_present=absorption_bullish or absorption_bearish,
-                absorption_side='bid' if absorption_bullish else 'ask' if absorption_bearish else None,
-                exhaustion_risk=engine_result.exhaustion.risk.value if engine_result.exhaustion else 'low',
+                absorption_side=(
+                    "bid" if absorption_bullish else "ask" if absorption_bearish else None
+                ),
+                exhaustion_risk=(
+                    engine_result.exhaustion.risk.value if engine_result.exhaustion else "low"
+                ),
                 volume_score=unified.volume_score,
                 oi_score=unified.oi_score,
-                orderbook_score=unified.orderbook_score
+                orderbook_score=unified.orderbook_score,
             )
 
             # Validate breakout
@@ -774,7 +784,7 @@ async def analyze_pair(
                 features=breakout_features,
                 volume_score=unified.volume_score,
                 oi_score=unified.oi_score,
-                orderbook_score=unified.orderbook_score
+                orderbook_score=unified.orderbook_score,
             )
 
             # Display validation

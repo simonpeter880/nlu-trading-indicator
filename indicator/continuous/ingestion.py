@@ -12,30 +12,30 @@ import asyncio
 import json
 import logging
 import time
-from typing import Optional, Callable, List, Dict, Any, Awaitable
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 import aiohttp
 
 from .data_types import (
-    TradeEvent,
-    OrderbookSnapshot,
-    OrderbookLevel,
-    OIUpdate,
     FundingUpdate,
     IngestionConfig,
+    OIUpdate,
+    OrderbookLevel,
+    OrderbookSnapshot,
+    TradeEvent,
 )
-from .rolling_window import MultiTimeframeWindows, OrderbookHistory
 from .ring_buffer import TimestampedRingBuffer
-
+from .rolling_window import MultiTimeframeWindows, OrderbookHistory
 
 logger = logging.getLogger(__name__)
 
 
 class StreamState(Enum):
     """State of a data stream."""
+
     DISCONNECTED = "disconnected"
     CONNECTING = "connecting"
     CONNECTED = "connected"
@@ -46,6 +46,7 @@ class StreamState(Enum):
 @dataclass
 class StreamStats:
     """Statistics for a data stream."""
+
     messages_received: int = 0
     bytes_received: int = 0
     last_message_time: Optional[int] = None
@@ -292,8 +293,7 @@ class OrderbookStream(BaseStream):
                 start = time.time()
 
                 async with self._session.get(
-                    url,
-                    params={"symbol": self.symbol, "limit": self._depth}
+                    url, params={"symbol": self.symbol, "limit": self._depth}
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
@@ -391,16 +391,14 @@ class OIStream(BaseStream):
 
                 # Fetch OI
                 async with self._session.get(
-                    f"{self.REST_BASE}/fapi/v1/openInterest",
-                    params={"symbol": self.symbol}
+                    f"{self.REST_BASE}/fapi/v1/openInterest", params={"symbol": self.symbol}
                 ) as resp:
                     if resp.status == 200:
                         oi_data = await resp.json()
 
                         # Fetch mark price for OI value
                         async with self._session.get(
-                            f"{self.REST_BASE}/fapi/v1/premiumIndex",
-                            params={"symbol": self.symbol}
+                            f"{self.REST_BASE}/fapi/v1/premiumIndex", params={"symbol": self.symbol}
                         ) as mark_resp:
                             if mark_resp.status == 200:
                                 mark_data = await mark_resp.json()
@@ -496,8 +494,7 @@ class FundingStream(BaseStream):
                 start = time.time()
 
                 async with self._session.get(
-                    f"{self.REST_BASE}/fapi/v1/premiumIndex",
-                    params={"symbol": self.symbol}
+                    f"{self.REST_BASE}/fapi/v1/premiumIndex", params={"symbol": self.symbol}
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
@@ -523,8 +520,7 @@ class FundingStream(BaseStream):
 
             # Only notify if funding time changed (new period)
             is_new_period = (
-                self._last_funding_time is None or
-                next_funding_time != self._last_funding_time
+                self._last_funding_time is None or next_funding_time != self._last_funding_time
             )
 
             update = FundingUpdate(
@@ -587,15 +583,9 @@ class DataIngestionManager:
 
         # Storage
         self.trade_windows = MultiTimeframeWindows()
-        self.orderbook_history = OrderbookHistory(
-            self.config.orderbook_buffer_size
-        )
-        self.oi_history = TimestampedRingBuffer[OIUpdate](
-            self.config.oi_buffer_size
-        )
-        self.funding_history = TimestampedRingBuffer[FundingUpdate](
-            self.config.funding_buffer_size
-        )
+        self.orderbook_history = OrderbookHistory(self.config.orderbook_buffer_size)
+        self.oi_history = TimestampedRingBuffer[OIUpdate](self.config.oi_buffer_size)
+        self.funding_history = TimestampedRingBuffer[FundingUpdate](self.config.funding_buffer_size)
 
         # Latest values
         self._latest_price: float = 0.0

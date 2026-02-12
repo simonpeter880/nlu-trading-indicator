@@ -10,6 +10,5 @@ if str(_REPO_ROOT) not in sys.path:
 
 from indicator.examples.example_market_structure import *  # noqa: F401,F403
 
-
 if __name__ == "__main__":
     runpy.run_module("indicator.examples.example_market_structure", run_name="__main__")

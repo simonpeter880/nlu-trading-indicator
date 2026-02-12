@@ -5,27 +5,24 @@ Bridges the ATR Expansion engine with the continuous analysis architecture,
 providing volatility regime signals for the state machine.
 """
 
-from typing import Optional, Dict, List
-from dataclasses import dataclass
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, List, Optional
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from atr_expansion import (
-    ATRExpansionEngine,
-    ATRExpansionConfig,
-    ATRExpansionState,
-    Candle,
-)
-from .data_types import TradeEvent, SignalDirection
+from atr_expansion import ATRExpansionConfig, ATRExpansionEngine, ATRExpansionState, Candle
+
+from .data_types import SignalDirection, TradeEvent
 from .rolling_window import TradeWindow
 
 
 @dataclass
 class ATRSignal:
     """ATR expansion signal for state machine."""
+
     timestamp_ms: int
     timeframe: str
     vol_state: str  # SQUEEZE / NORMAL / EXPANSION / EXTREME / FADE_RISK
@@ -97,10 +94,7 @@ class ATRExpansionAdapter:
 
         return signal
 
-    def warmup(
-        self,
-        candles_by_tf: Dict[str, List[Candle]]
-    ) -> Dict[str, ATRSignal]:
+    def warmup(self, candles_by_tf: Dict[str, List[Candle]]) -> Dict[str, ATRSignal]:
         """
         Warmup engine with historical candles.
 
@@ -158,11 +152,7 @@ class ATRExpansionAdapter:
 
         return candle
 
-    def _state_to_signal(
-        self,
-        timeframe: str,
-        state: ATRExpansionState
-    ) -> ATRSignal:
+    def _state_to_signal(self, timeframe: str, state: ATRExpansionState) -> ATRSignal:
         """
         Convert ATR expansion state to signal.
 
@@ -183,14 +173,14 @@ class ATRExpansionAdapter:
         strength = state.vol_score_0_100 if state.vol_score_0_100 is not None else 0.0
 
         return ATRSignal(
-            timestamp_ms=int(state.debug.get('prev_close', 0) * 1000),  # Placeholder
+            timestamp_ms=int(state.debug.get("prev_close", 0) * 1000),  # Placeholder
             timeframe=timeframe,
             vol_state=state.vol_state,
             vol_score=strength,
             atr_exp=state.atr_exp,
             atr_exp_slope=state.atr_exp_slope,
             tr_spike=state.tr_spike,
-            shock_now=state.debug.get('shock_now', False),
+            shock_now=state.debug.get("shock_now", False),
             direction=direction,
             strength=strength,
         )

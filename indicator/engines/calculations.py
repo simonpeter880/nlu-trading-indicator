@@ -2,8 +2,8 @@
 Shared math utilities for indicator calculations.
 """
 
-from typing import Iterable, List, Tuple
 import math
+from typing import Iterable, List, Tuple
 
 
 def simple_average(values: Iterable[float], default: float = 0.0) -> float:

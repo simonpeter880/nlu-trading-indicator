@@ -4,11 +4,11 @@ Ring Buffer - Fixed-size circular buffer for streaming data.
 Memory-efficient storage for time-series data with O(1) append and O(1) access.
 """
 
-from typing import Generic, TypeVar, List, Optional, Iterator, Callable
-from dataclasses import dataclass, field
 import time
+from dataclasses import dataclass, field
+from typing import Callable, Generic, Iterator, List, Optional, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class RingBuffer(Generic[T]):
@@ -25,7 +25,7 @@ class RingBuffer(Generic[T]):
         all_data = buf.to_list()  # [1.0, 2.0]
     """
 
-    __slots__ = ('_buffer', '_maxlen', '_head', '_size')
+    __slots__ = ("_buffer", "_maxlen", "_head", "_size")
 
     def __init__(self, maxlen: int):
         """
@@ -131,6 +131,7 @@ class RingBuffer(Generic[T]):
 @dataclass
 class TimestampedItem(Generic[T]):
     """Item with timestamp."""
+
     timestamp_ms: int
     value: T
 
@@ -250,7 +251,7 @@ class SumBuffer:
     Useful for volume totals, trade counts, etc.
     """
 
-    __slots__ = ('_buffer', '_sum')
+    __slots__ = ("_buffer", "_sum")
 
     def __init__(self, maxlen: int):
         self._buffer = RingBuffer[float](maxlen)
@@ -292,7 +293,7 @@ class DeltaBuffer:
     Maintains separate sums for buy and sell volume.
     """
 
-    __slots__ = ('_buy_buffer', '_sell_buffer', '_buy_sum', '_sell_sum')
+    __slots__ = ("_buy_buffer", "_sell_buffer", "_buy_sum", "_sell_sum")
 
     def __init__(self, maxlen: int):
         self._buy_buffer = RingBuffer[float](maxlen)

@@ -9,18 +9,18 @@ Always combine with price action, volume, and market structure.
 """
 
 from indicator.engines.rsi_timing import (
-    RSITimingEngine,
-    RSITimingConfig,
     Candle,
-    print_rsi_timing,
+    RSITimingConfig,
+    RSITimingEngine,
     format_rsi_state,
     interpret_rsi,
+    print_rsi_timing,
 )
-
 
 # ============================================================================
 # EXAMPLE 1: Continuous Runner Integration
 # ============================================================================
+
 
 def example_continuous_integration():
     """
@@ -67,6 +67,7 @@ def example_continuous_integration():
 # ============================================================================
 # EXAMPLE 2: Batch Analysis Integration (runner.py)
 # ============================================================================
+
 
 def example_batch_integration():
     """
@@ -122,6 +123,7 @@ def example_batch_integration():
 # EXAMPLE 3: Combined with Market Structure for Swing Detection
 # ============================================================================
 
+
 def example_combined_market_structure():
     """
     Example: Combine RSI with market structure module for swing-based divergence.
@@ -168,6 +170,7 @@ def example_combined_market_structure():
 # EXAMPLE 4: Multi-Timeframe Divergence Confirmation
 # ============================================================================
 
+
 def example_multi_timeframe_divergence():
     """
     Example: Use multi-timeframe RSI for stronger divergence signals.
@@ -198,6 +201,7 @@ def example_multi_timeframe_divergence():
 # ============================================================================
 # EXAMPLE 5: RSI Regime as Bias Filter
 # ============================================================================
+
 
 def example_regime_bias():
     """
@@ -234,6 +238,7 @@ def example_regime_bias():
 # EXAMPLE 6: Divergence Strength for Position Sizing
 # ============================================================================
 
+
 def example_divergence_strength():
     """
     Example: Use divergence strength to scale positions.
@@ -263,6 +268,7 @@ def example_divergence_strength():
 # EXAMPLE 7: Compact Print Block for Display
 # ============================================================================
 
+
 def example_compact_display():
     """
     Example: Display RSI timing in deep-dive or batch analysis.
@@ -287,16 +293,16 @@ def example_compact_display():
     for i in range(30):
         change = 2 if i % 3 == 0 else -1
         price += change
-        example_candles.append(Candle(
-            i * 60000, price - 1, price + 2, price - 2, price, 1000
-        ))
+        example_candles.append(Candle(i * 60000, price - 1, price + 2, price - 2, price, 1000))
 
     # Warmup
-    states = engine.warmup({
-        "1m": example_candles,
-        "5m": example_candles[::5],
-        "1h": example_candles[::60] if len(example_candles) >= 60 else example_candles[:5],
-    })
+    states = engine.warmup(
+        {
+            "1m": example_candles,
+            "5m": example_candles[::5],
+            "1h": example_candles[::60] if len(example_candles) >= 60 else example_candles[:5],
+        }
+    )
 
     # Add some swing events for divergence
     engine.on_swing_high("1m", 10000, 105.0)
@@ -322,6 +328,7 @@ def example_compact_display():
 # ============================================================================
 # EXAMPLE 8: Real-time Continuous Updates
 # ============================================================================
+
 
 def example_realtime_updates():
     """
@@ -351,7 +358,7 @@ def example_realtime_updates():
             high=price + 1,
             low=price - 2,
             close=price,
-            volume=1000 + i * 10
+            volume=1000 + i * 10,
         )
 
         # O(1) update

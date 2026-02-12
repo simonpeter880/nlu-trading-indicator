@@ -7,7 +7,7 @@ def test_calculate_unified_score_long_bias():
         relative_volume=3.0,
         price_change_pct=1.5,
         oi_change_pct=2.0,
-        depth_imbalance=0.5
+        depth_imbalance=0.5,
     )
     assert score.bias == "long"
     assert score.total_score > 0.55

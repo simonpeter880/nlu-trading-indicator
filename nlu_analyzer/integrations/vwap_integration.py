@@ -5,15 +5,16 @@ Demonstrates how to integrate the VWAP Engine into a streaming trading system.
 Shows warmup, incremental updates, anchored VWAP creation, and output formatting.
 """
 
-from nlu_analyzer.indicators.vwap_engine import (
-    VWAPEngine,
-    VWAPConfig,
-    Candle,
-    PriceSource,
-    format_vwap_output
-)
 from datetime import datetime, timezone
 from typing import Dict, Optional
+
+from nlu_analyzer.indicators.vwap_engine import (
+    Candle,
+    PriceSource,
+    VWAPConfig,
+    VWAPEngine,
+    format_vwap_output,
+)
 
 
 def example_streaming_integration():
@@ -40,7 +41,7 @@ def example_streaming_integration():
         hold_bars=3,
         touch_tolerance=0.0001,
         reclaim_tolerance=0.0002,
-        max_anchors_per_tf=3
+        max_anchors_per_tf=3,
     )
 
     # Alternative: Use close price only
@@ -56,15 +57,11 @@ def example_streaming_integration():
     historical_candles_by_tf = {
         "1m": generate_test_candles(100.0, 100, 0.002),
         "5m": generate_test_candles(100.0, 80, 0.003),
-        "1h": generate_test_candles(100.0, 60, 0.004)
+        "1h": generate_test_candles(100.0, 60, 0.004),
     }
 
     # Optional: ATR% values if available
-    atr_percent_by_tf = {
-        "1m": 0.008,
-        "5m": 0.012,
-        "1h": 0.020
-    }
+    atr_percent_by_tf = {"1m": 0.008, "5m": 0.012, "1h": 0.020}
 
     # Warmup all timeframes
     engine.warmup(historical_candles_by_tf, atr_percent_by_tf)
@@ -82,14 +79,10 @@ def example_streaming_integration():
         high=110.8,
         low=110.3,
         close=110.7,
-        volume=50000.0
+        volume=50000.0,
     )
 
-    result_1m = engine.on_candle_close(
-        tf="1m",
-        candle=new_candle_1m,
-        atr_percent=0.008
-    )
+    result_1m = engine.on_candle_close(tf="1m", candle=new_candle_1m, atr_percent=0.008)
 
     print(f"\n[1m CANDLE CLOSED] Price: {new_candle_1m.close:.2f}")
     print(format_vwap_output(result_1m, compact=False))
@@ -102,23 +95,14 @@ def example_streaming_integration():
     # Example: BOS (Break of Structure) detected at current time
     bos_time = new_candle_1m.timestamp
     anchor = engine.add_anchor(
-        tf="1m",
-        anchor_time=bos_time,
-        anchor_id="BOS_110.7",
-        note="BOS@110.7",
-        kind="BOS"
+        tf="1m", anchor_time=bos_time, anchor_id="BOS_110.7", note="BOS@110.7", kind="BOS"
     )
 
     print(f"Added anchored VWAP: {anchor.anchor_id} at {bos_time}")
 
     # Process next candle
     next_candle = Candle(
-        timestamp=bos_time + 60,
-        open=111.0,
-        high=111.5,
-        low=110.8,
-        close=111.2,
-        volume=45000.0
+        timestamp=bos_time + 60, open=111.0, high=111.5, low=110.8, close=111.2, volume=45000.0
     )
 
     result_with_anchor = engine.on_candle_close("1m", next_candle, atr_percent=0.008)
@@ -133,28 +117,19 @@ def example_streaming_integration():
 
     latest_candles = {
         "1m": [next_candle],
-        "5m": [Candle(
-            timestamp=bos_time,
-            open=110.5,
-            high=111.5,
-            low=110.0,
-            close=111.0,
-            volume=250000.0
-        )],
-        "1h": [Candle(
-            timestamp=bos_time,
-            open=109.0,
-            high=112.0,
-            low=108.5,
-            close=111.5,
-            volume=3000000.0
-        )]
+        "5m": [
+            Candle(
+                timestamp=bos_time, open=110.5, high=111.5, low=110.0, close=111.0, volume=250000.0
+            )
+        ],
+        "1h": [
+            Candle(
+                timestamp=bos_time, open=109.0, high=112.0, low=108.5, close=111.5, volume=3000000.0
+            )
+        ],
     }
 
-    all_results = engine.update(
-        candles_by_tf=latest_candles,
-        atr_percent_by_tf=atr_percent_by_tf
-    )
+    all_results = engine.update(candles_by_tf=latest_candles, atr_percent_by_tf=atr_percent_by_tf)
 
     print(format_vwap_output(all_results, compact=True))
 
@@ -171,7 +146,7 @@ def example_streaming_integration():
     print(f"  Interaction State: {session_1m.interaction_state.value}")
     print(f"  Distance: {session_1m.distance.get('pct', 0)*100:+.2f}%")
 
-    if session_1m.distance.get('sigma') is not None:
+    if session_1m.distance.get("sigma") is not None:
         print(f"  Sigma Distance: {session_1m.distance['sigma']:+.2f}σ")
 
     print(f"  Bar Count: {session_1m.bar_count}")
@@ -206,11 +181,15 @@ def example_streaming_integration():
                 signals.append("✗ ACCEPTING BELOW - Bearish continuation")
 
         # Weekly VWAP alignment
-        if (session_state.price_position.value == "ABOVE" and
-            weekly_state.price_position.value == "ABOVE"):
+        if (
+            session_state.price_position.value == "ABOVE"
+            and weekly_state.price_position.value == "ABOVE"
+        ):
             signals.append("✓ ALIGNED ABOVE - Multi-timeframe bullish")
-        elif (session_state.price_position.value == "BELOW" and
-              weekly_state.price_position.value == "BELOW"):
+        elif (
+            session_state.price_position.value == "BELOW"
+            and weekly_state.price_position.value == "BELOW"
+        ):
             signals.append("✗ ALIGNED BELOW - Multi-timeframe bearish")
 
         # Anchored VWAP
@@ -219,8 +198,8 @@ def example_streaming_integration():
                 signals.append(f"✓ {anchor.anchor_note} RECLAIMED - Local bullish reversal")
 
         # Distance warnings
-        if session_state.distance.get('sigma'):
-            sigma_dist = abs(session_state.distance['sigma'])
+        if session_state.distance.get("sigma"):
+            sigma_dist = abs(session_state.distance["sigma"])
             if sigma_dist > 2.0:
                 signals.append(f"⚠ EXTENDED {sigma_dist:.1f}σ - Mean reversion risk")
 
@@ -258,14 +237,16 @@ def generate_test_candles(start_price: float, count: int, trend: float):
         low = price * 0.998
         close = price * (1 + trend)
 
-        candles.append(Candle(
-            timestamp=base_time + i * 60,
-            open=price,
-            high=high,
-            low=low,
-            close=close,
-            volume=100000.0
-        ))
+        candles.append(
+            Candle(
+                timestamp=base_time + i * 60,
+                open=price,
+                high=high,
+                low=low,
+                close=close,
+                volume=100000.0,
+            )
+        )
 
         price = close
 
@@ -273,6 +254,7 @@ def generate_test_candles(start_price: float, count: int, trend: float):
 
 
 # ========== PRODUCTION INTEGRATION TEMPLATE ==========
+
 
 class ProductionVWAPIntegration:
     """
@@ -283,11 +265,13 @@ class ProductionVWAPIntegration:
 
     def __init__(self):
         # Initialize VWAP engine
-        self.vwap_engine = VWAPEngine(VWAPConfig(
-            price_source=PriceSource.TYPICAL,
-            timeframes=["1m", "5m", "1h"],
-            max_anchors_per_tf=3
-        ))
+        self.vwap_engine = VWAPEngine(
+            VWAPConfig(
+                price_source=PriceSource.TYPICAL,
+                timeframes=["1m", "5m", "1h"],
+                max_anchors_per_tf=3,
+            )
+        )
 
         # Track warmed up timeframes
         self.warmed_up_tfs = set()
@@ -321,9 +305,7 @@ class ProductionVWAPIntegration:
 
         # Update VWAP
         vwap_result = self.vwap_engine.on_candle_close(
-            tf=tf,
-            candle=candle,
-            atr_percent=atr_percent
+            tf=tf, candle=candle, atr_percent=atr_percent
         )
 
         # Process VWAP context
@@ -343,11 +325,7 @@ class ProductionVWAPIntegration:
         note = f"{event_type}@{price:.2f}"
 
         self.vwap_engine.add_anchor(
-            tf=tf,
-            anchor_time=timestamp,
-            anchor_id=anchor_id,
-            note=note,
-            kind=event_type
+            tf=tf, anchor_time=timestamp, anchor_id=anchor_id, note=note, kind=event_type
         )
 
         print(f"Added anchor: {note} on {tf}")
@@ -355,20 +333,12 @@ class ProductionVWAPIntegration:
     def fetch_historical_candles(self) -> Dict[str, list]:
         """Fetch historical candles from your data source"""
         # TODO: Replace with actual data fetching
-        return {
-            "1m": [],
-            "5m": [],
-            "1h": []
-        }
+        return {"1m": [], "5m": [], "1h": []}
 
     def fetch_current_atr_percent(self) -> Dict[str, float]:
         """Fetch current ATR% values"""
         # TODO: Replace with actual ATR calculation
-        return {
-            "1m": 0.008,
-            "5m": 0.012,
-            "1h": 0.020
-        }
+        return {"1m": 0.008, "5m": 0.012, "1h": 0.020}
 
     def get_current_atr_percent(self, tf: str) -> Optional[float]:
         """Get current ATR% for a timeframe"""

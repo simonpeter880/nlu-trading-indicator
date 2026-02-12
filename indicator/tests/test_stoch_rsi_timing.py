@@ -11,13 +11,14 @@ Verifies:
 """
 
 import pytest
+
 from stoch_rsi_timing import (
-    StochRSITimingEngine,
-    StochRSIConfig,
     Candle,
-    print_stoch_rsi_timing,
+    StochRSIConfig,
+    StochRSITimingEngine,
     format_stoch_rsi_state,
     interpret_stoch_rsi,
+    print_stoch_rsi_timing,
 )
 
 
@@ -40,6 +41,7 @@ def config():
 # TEST 1: STOCHRSI FORMULA
 # ============================================================================
 
+
 def test_stochrsi_formula():
     """StochRSI = (RSI - min(RSI)) / (max(RSI) - min(RSI))."""
     config = StochRSIConfig(
@@ -47,7 +49,7 @@ def test_stochrsi_formula():
         stoch_period=5,
         k_smooth=1,  # No smoothing for direct test
         d_smooth=1,
-        use_external_rsi=True  # Use external RSI for controlled test
+        use_external_rsi=True,  # Use external RSI for controlled test
     )
     engine = StochRSITimingEngine(config)
 
@@ -89,14 +91,11 @@ def test_stochrsi_stays_in_range():
 # TEST 2: ROLLING MIN/MAX CORRECTNESS
 # ============================================================================
 
+
 def test_rsi_min_max_monotonic_deques():
     """RSI min/max should match batch computation."""
     config = StochRSIConfig(
-        rsi_period=5,
-        stoch_period=5,
-        k_smooth=1,
-        d_smooth=1,
-        use_external_rsi=True
+        rsi_period=5, stoch_period=5, k_smooth=1, d_smooth=1, use_external_rsi=True
     )
     engine = StochRSITimingEngine(config)
 
@@ -109,29 +108,26 @@ def test_rsi_min_max_monotonic_deques():
 
         if i >= 4:  # After stoch_period candles
             # Get expected min/max from last 5 RSI values
-            window = rsi_sequence[max(0, i - 4):i + 1]
+            window = rsi_sequence[max(0, i - 4) : i + 1]
             expected_min = min(window)
             expected_max = max(window)
 
             # Check debug values
-            if state.debug.get('rsi_min') is not None:
-                assert abs(state.debug['rsi_min'] - expected_min) < 0.01
-            if state.debug.get('rsi_max') is not None:
-                assert abs(state.debug['rsi_max'] - expected_max) < 0.01
+            if state.debug.get("rsi_min") is not None:
+                assert abs(state.debug["rsi_min"] - expected_min) < 0.01
+            if state.debug.get("rsi_max") is not None:
+                assert abs(state.debug["rsi_max"] - expected_max) < 0.01
 
 
 # ============================================================================
 # TEST 3: K/D SMOOTHING
 # ============================================================================
 
+
 def test_k_smoothing():
     """%K should be SMA of StochRSI over k_smooth period."""
     config = StochRSIConfig(
-        rsi_period=5,
-        stoch_period=5,
-        k_smooth=3,
-        d_smooth=1,
-        use_external_rsi=True
+        rsi_period=5, stoch_period=5, k_smooth=3, d_smooth=1, use_external_rsi=True
     )
     engine = StochRSITimingEngine(config)
 
@@ -150,11 +146,7 @@ def test_k_smoothing():
 def test_d_smoothing():
     """%D should be SMA of %K over d_smooth period."""
     config = StochRSIConfig(
-        rsi_period=5,
-        stoch_period=5,
-        k_smooth=3,
-        d_smooth=3,
-        use_external_rsi=True
+        rsi_period=5, stoch_period=5, k_smooth=3, d_smooth=3, use_external_rsi=True
     )
     engine = StochRSITimingEngine(config)
 
@@ -172,6 +164,7 @@ def test_d_smoothing():
 # TEST 4: BULL PULLBACK COMPLETION
 # ============================================================================
 
+
 def test_bull_pullback_completion():
     """K crosses above oversold with rising K => PULLBACK_DONE_UP."""
     config = StochRSIConfig(
@@ -181,7 +174,7 @@ def test_bull_pullback_completion():
         d_smooth=3,
         oversold=0.20,
         confirm_bars=2,
-        use_external_rsi=True
+        use_external_rsi=True,
     )
     engine = StochRSITimingEngine(config)
 
@@ -209,6 +202,7 @@ def test_bull_pullback_completion():
 # TEST 5: BEAR PULLBACK COMPLETION
 # ============================================================================
 
+
 def test_bear_pullback_completion():
     """K crosses below overbought with falling K => PULLBACK_DONE_DOWN."""
     config = StochRSIConfig(
@@ -218,7 +212,7 @@ def test_bear_pullback_completion():
         d_smooth=3,
         overbought=0.80,
         confirm_bars=2,
-        use_external_rsi=True
+        use_external_rsi=True,
     )
     engine = StochRSITimingEngine(config)
 
@@ -244,15 +238,11 @@ def test_bear_pullback_completion():
 # TEST 6: GATING MECHANISMS
 # ============================================================================
 
+
 def test_no_trend_permission():
     """No micro timing when trend_permission=False."""
     config = StochRSIConfig(
-        rsi_period=5,
-        stoch_period=5,
-        k_smooth=3,
-        d_smooth=3,
-        confirm_bars=1,
-        use_external_rsi=True
+        rsi_period=5, stoch_period=5, k_smooth=3, d_smooth=3, confirm_bars=1, use_external_rsi=True
     )
     engine = StochRSITimingEngine(config)
 
@@ -262,9 +252,7 @@ def test_no_trend_permission():
 
     for candle, rsi in zip(candles, rsi_sequence):
         state = engine.on_candle_close(
-            "1m", candle, rsi_value=rsi,
-            trend_permission=False,  # No permission
-            bias=1
+            "1m", candle, rsi_value=rsi, trend_permission=False, bias=1  # No permission
         )
 
     # Should NOT trigger micro timing
@@ -274,12 +262,7 @@ def test_no_trend_permission():
 def test_neutral_bias():
     """No micro timing when bias=0 (neutral)."""
     config = StochRSIConfig(
-        rsi_period=5,
-        stoch_period=5,
-        k_smooth=3,
-        d_smooth=3,
-        confirm_bars=1,
-        use_external_rsi=True
+        rsi_period=5, stoch_period=5, k_smooth=3, d_smooth=3, confirm_bars=1, use_external_rsi=True
     )
     engine = StochRSITimingEngine(config)
 
@@ -288,9 +271,7 @@ def test_neutral_bias():
 
     for candle, rsi in zip(candles, rsi_sequence):
         state = engine.on_candle_close(
-            "1m", candle, rsi_value=rsi,
-            trend_permission=True,
-            bias=0  # Neutral
+            "1m", candle, rsi_value=rsi, trend_permission=True, bias=0  # Neutral
         )
 
     # Should NOT trigger micro timing
@@ -306,7 +287,7 @@ def test_chop_gate():
         d_smooth=3,
         confirm_bars=1,
         disable_when_chop=True,
-        use_external_rsi=True
+        use_external_rsi=True,
     )
     engine = StochRSITimingEngine(config)
 
@@ -315,10 +296,12 @@ def test_chop_gate():
 
     for candle, rsi in zip(candles, rsi_sequence):
         state = engine.on_candle_close(
-            "1m", candle, rsi_value=rsi,
+            "1m",
+            candle,
+            rsi_value=rsi,
             trend_permission=True,
             bias=1,
-            chop_state="CHOP"  # Choppy market
+            chop_state="CHOP",  # Choppy market
         )
 
     # Should NOT trigger micro timing
@@ -334,7 +317,7 @@ def test_atr_squeeze_gate():
         d_smooth=3,
         confirm_bars=1,
         disable_when_atr_squeeze=True,
-        use_external_rsi=True
+        use_external_rsi=True,
     )
     engine = StochRSITimingEngine(config)
 
@@ -343,10 +326,12 @@ def test_atr_squeeze_gate():
 
     for candle, rsi in zip(candles, rsi_sequence):
         state = engine.on_candle_close(
-            "1m", candle, rsi_value=rsi,
+            "1m",
+            candle,
+            rsi_value=rsi,
             trend_permission=True,
             bias=1,
-            atr_exp_state="SQUEEZE"  # Low volatility
+            atr_exp_state="SQUEEZE",  # Low volatility
         )
 
     # Should NOT trigger micro timing
@@ -357,6 +342,7 @@ def test_atr_squeeze_gate():
 # TEST 7: CONFIRMATION STABILITY
 # ============================================================================
 
+
 def test_confirmation_bars_required():
     """Micro timing should require confirm_bars consecutive occurrences."""
     config = StochRSIConfig(
@@ -365,7 +351,7 @@ def test_confirmation_bars_required():
         k_smooth=3,
         d_smooth=3,
         confirm_bars=3,  # Require 3 bars
-        use_external_rsi=True
+        use_external_rsi=True,
     )
     engine = StochRSITimingEngine(config)
 
@@ -376,38 +362,30 @@ def test_confirmation_bars_required():
             Candle(i * 1000, 100, 105, 95, 100, 1000),
             rsi_value=25 + i,
             trend_permission=True,
-            bias=1
+            bias=1,
         )
 
     # Now create condition that would trigger
     # But interrupt it before confirm_bars reached
     state1 = engine.on_candle_close(
-        "1m",
-        Candle(11000, 100, 105, 95, 100, 1000),
-        rsi_value=35,
-        trend_permission=True,
-        bias=1
+        "1m", Candle(11000, 100, 105, 95, 100, 1000), rsi_value=35, trend_permission=True, bias=1
     )
 
     # After 1 bar, should NOT trigger yet (needs 3)
     # Check via debug
-    if state1.debug.get('confirm_count') is not None:
-        assert state1.debug['confirm_count'] < 3
+    if state1.debug.get("confirm_count") is not None:
+        assert state1.debug["confirm_count"] < 3
 
 
 # ============================================================================
 # TEST 8: ZONE CLASSIFICATION
 # ============================================================================
 
+
 def test_zone_oversold():
     """K <= oversold => OVERSOLD zone."""
     config = StochRSIConfig(
-        rsi_period=5,
-        stoch_period=5,
-        k_smooth=3,
-        d_smooth=3,
-        oversold=0.20,
-        use_external_rsi=True
+        rsi_period=5, stoch_period=5, k_smooth=3, d_smooth=3, oversold=0.20, use_external_rsi=True
     )
     engine = StochRSITimingEngine(config)
 
@@ -427,12 +405,7 @@ def test_zone_oversold():
 def test_zone_overbought():
     """K >= overbought => OVERBOUGHT zone."""
     config = StochRSIConfig(
-        rsi_period=5,
-        stoch_period=5,
-        k_smooth=3,
-        d_smooth=3,
-        overbought=0.80,
-        use_external_rsi=True
+        rsi_period=5, stoch_period=5, k_smooth=3, d_smooth=3, overbought=0.80, use_external_rsi=True
     )
     engine = StochRSITimingEngine(config)
 
@@ -452,6 +425,7 @@ def test_zone_overbought():
 # ============================================================================
 # TEST 9: INCREMENTAL BEHAVIOR
 # ============================================================================
+
 
 def test_incremental_updates():
     """Engine should process candles incrementally with O(1) updates."""
@@ -495,6 +469,7 @@ def test_incremental_vs_batch():
 # TEST 10: MULTI-TIMEFRAME
 # ============================================================================
 
+
 def test_multi_timeframe():
     """Engine handles multiple timeframes independently."""
     config = StochRSIConfig(timeframes=["1m", "5m"], use_external_rsi=True)
@@ -522,23 +497,18 @@ def test_multi_timeframe():
 # TEST 11: EDGE CASES
 # ============================================================================
 
+
 def test_constant_rsi():
     """Handle constant RSI (no range)."""
     config = StochRSIConfig(
-        rsi_period=5,
-        stoch_period=5,
-        k_smooth=3,
-        d_smooth=3,
-        use_external_rsi=True
+        rsi_period=5, stoch_period=5, k_smooth=3, d_smooth=3, use_external_rsi=True
     )
     engine = StochRSITimingEngine(config)
 
     # All same RSI
     for i in range(20):
         state = engine.on_candle_close(
-            "1m",
-            Candle(i * 1000, 100, 105, 95, 100, 1000),
-            rsi_value=50.0
+            "1m", Candle(i * 1000, 100, 105, 95, 100, 1000), rsi_value=50.0
         )
 
     # Should handle gracefully (StochRSI = 0.5 when no range)
@@ -554,9 +524,7 @@ def test_warmup_state():
     # Feed less than required candles
     for i in range(10):
         state = engine.on_candle_close(
-            "1m",
-            Candle(i * 1000, 100, 105, 95, 100, 1000),
-            rsi_value=50.0
+            "1m", Candle(i * 1000, 100, 105, 95, 100, 1000), rsi_value=50.0
         )
 
     # Should be WARMUP
@@ -571,27 +539,20 @@ def test_reset():
 
     # Feed candles
     for i in range(20):
-        engine.on_candle_close(
-            "1m",
-            Candle(i * 1000, 100, 105, 95, 100, 1000),
-            rsi_value=50 + i
-        )
+        engine.on_candle_close("1m", Candle(i * 1000, 100, 105, 95, 100, 1000), rsi_value=50 + i)
 
     # Reset
     engine.reset("1m")
 
     # Next candle should start fresh
-    state = engine.on_candle_close(
-        "1m",
-        Candle(21000, 100, 105, 95, 100, 1000),
-        rsi_value=50.0
-    )
+    state = engine.on_candle_close("1m", Candle(21000, 100, 105, 95, 100, 1000), rsi_value=50.0)
     assert state.zone == "WARMUP"
 
 
 # ============================================================================
 # TEST 12: HELPER FUNCTIONS
 # ============================================================================
+
 
 def test_print_stoch_rsi_timing():
     """print_stoch_rsi_timing produces expected output."""
@@ -613,9 +574,7 @@ def test_format_stoch_rsi_state():
 
     for i in range(20):
         state = engine.on_candle_close(
-            "1m",
-            Candle(i * 1000, 100, 105, 95, 100, 1000),
-            rsi_value=30 + i
+            "1m", Candle(i * 1000, 100, 105, 95, 100, 1000), rsi_value=30 + i
         )
 
     formatted = format_stoch_rsi_state("1m", state)
@@ -630,9 +589,7 @@ def test_interpret_stoch_rsi():
 
     for i in range(20):
         state = engine.on_candle_close(
-            "1m",
-            Candle(i * 1000, 100, 105, 95, 100, 1000),
-            rsi_value=30 + i
+            "1m", Candle(i * 1000, 100, 105, 95, 100, 1000), rsi_value=30 + i
         )
 
     interpretation = interpret_stoch_rsi(state)

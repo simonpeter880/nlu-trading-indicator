@@ -13,44 +13,48 @@ BEFORE: "Was the move real?"
 AFTER:  "Who initiated, who absorbed, and who is trapped?"
 """
 
-from dataclasses import dataclass
-from typing import List, Optional, Tuple, Dict, TYPE_CHECKING
-from enum import Enum
 import math
+from dataclasses import dataclass
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from .signals import Signal
+
 if TYPE_CHECKING:
     from .data_fetcher import AggTradeData
     from .precise_volume_delta import (
         PreciseVolumeDeltaResult,
         BarVolumeDelta,
-        AbsorptionDetectionResult
+        AbsorptionDetectionResult,
     )
     from .indicator_config import IndicatorConfig
 
-from .indicator_config import DEFAULT_CONFIG, safe_divide
 from .calculations import average_last
+from .indicator_config import DEFAULT_CONFIG, safe_divide
 
 
 class AggressionBias(Enum):
     """Who is aggressive - buyers or sellers."""
-    STRONG_BUY = "strong_buy"      # Buyers lifting aggressively
-    BUY = "buy"                     # Moderate buy aggression
-    NEUTRAL = "neutral"             # Balanced
-    SELL = "sell"                   # Moderate sell aggression
-    STRONG_SELL = "strong_sell"    # Sellers hitting aggressively
+
+    STRONG_BUY = "strong_buy"  # Buyers lifting aggressively
+    BUY = "buy"  # Moderate buy aggression
+    NEUTRAL = "neutral"  # Balanced
+    SELL = "sell"  # Moderate sell aggression
+    STRONG_SELL = "strong_sell"  # Sellers hitting aggressively
 
 
 class VolumeAcceleration(Enum):
     """Volume momentum state."""
-    ACCELERATING = "accelerating"   # Volume increasing
-    STEADY = "steady"               # Volume stable
-    DECELERATING = "decelerating"   # Volume decreasing
-    CLIMAX = "climax"               # Extreme volume spike (potential reversal)
+
+    ACCELERATING = "accelerating"  # Volume increasing
+    STEADY = "steady"  # Volume stable
+    DECELERATING = "decelerating"  # Volume decreasing
+    CLIMAX = "climax"  # Extreme volume spike (potential reversal)
 
 
 class ExhaustionRisk(Enum):
     """Risk of move exhaustion."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -59,8 +63,9 @@ class ExhaustionRisk(Enum):
 
 class MTFAgreement(Enum):
     """Multi-timeframe volume agreement."""
-    CONFIRMED = "confirmed"         # LTF + HTF agree
-    STOP_RUN = "stop_run"          # LTF high, HTF low
+
+    CONFIRMED = "confirmed"  # LTF + HTF agree
+    STOP_RUN = "stop_run"  # LTF high, HTF low
     REACCUMULATION = "reaccumulation"  # LTF low, HTF high
     UNCLEAR = "unclear"
 
@@ -68,12 +73,13 @@ class MTFAgreement(Enum):
 @dataclass
 class VolumeDeltaResult:
     """Volume Delta analysis - Who is aggressive."""
-    delta: float                    # buy_volume - sell_volume
-    delta_percent: float            # As percentage of total
+
+    delta: float  # buy_volume - sell_volume
+    delta_percent: float  # As percentage of total
     aggression_bias: AggressionBias
-    strength: float                 # 0-100
-    cumulative_delta: float         # Running total
-    delta_divergence: bool          # Delta diverging from price?
+    strength: float  # 0-100
+    cumulative_delta: float  # Running total
+    delta_divergence: bool  # Delta diverging from price?
     description: str
     interpretation: str
 
@@ -81,21 +87,23 @@ class VolumeDeltaResult:
 @dataclass
 class AccelerationResult:
     """Volume acceleration/deceleration analysis."""
+
     acceleration: VolumeAcceleration
-    rate: float                     # Current / Previous ratio
-    momentum: float                 # First derivative
-    is_climax: bool                 # Potential reversal signal
-    bars_accelerating: int          # Consecutive bars
+    rate: float  # Current / Previous ratio
+    momentum: float  # First derivative
+    is_climax: bool  # Potential reversal signal
+    bars_accelerating: int  # Consecutive bars
     description: str
 
 
 @dataclass
 class MTFAgreementResult:
     """Multi-timeframe volume agreement."""
+
     agreement: MTFAgreement
-    ltf_volume_ratio: float         # LTF vs its average
-    htf_volume_ratio: float         # HTF vs its average
-    is_accepted: bool               # Volume accepted across TFs
+    ltf_volume_ratio: float  # LTF vs its average
+    htf_volume_ratio: float  # HTF vs its average
+    is_accepted: bool  # Volume accepted across TFs
     confidence: float
     description: str
 
@@ -103,12 +111,13 @@ class MTFAgreementResult:
 @dataclass
 class ExhaustionResult:
     """Volume exhaustion detection."""
+
     risk: ExhaustionRisk
-    signals_present: List[str]      # Which exhaustion signals triggered
-    body_shrinking: bool            # Candle bodies getting smaller
-    volume_declining: bool          # Volume falling
-    failed_continuation: bool       # Price failed to continue
-    oi_stagnant: bool              # OI not growing
+    signals_present: List[str]  # Which exhaustion signals triggered
+    body_shrinking: bool  # Candle bodies getting smaller
+    volume_declining: bool  # Volume falling
+    failed_continuation: bool  # Price failed to continue
+    oi_stagnant: bool  # OI not growing
     confidence: float
     description: str
     action: str
@@ -117,10 +126,11 @@ class ExhaustionResult:
 @dataclass
 class VolumeEngineResult:
     """Complete institutional-grade volume analysis."""
+
     # Core question answers
-    who_initiated: str              # Buyers, Sellers, or Unclear
-    who_absorbed: str               # Bids, Asks, or None
-    who_is_trapped: str             # Longs, Shorts, or None
+    who_initiated: str  # Buyers, Sellers, or Unclear
+    who_absorbed: str  # Bids, Asks, or None
+    who_is_trapped: str  # Longs, Shorts, or None
 
     # Components
     delta: VolumeDeltaResult
@@ -129,7 +139,7 @@ class VolumeEngineResult:
     exhaustion: ExhaustionResult
 
     # Overall assessment
-    volume_quality: str             # 'institutional', 'retail', 'mixed'
+    volume_quality: str  # 'institutional', 'retail', 'mixed'
     confidence: float
     signal: Signal
     summary: str
@@ -145,7 +155,7 @@ class InstitutionalVolumeEngine:
     3. Who is trapped?
     """
 
-    def __init__(self, config: Optional['IndicatorConfig'] = None):
+    def __init__(self, config: Optional["IndicatorConfig"] = None):
         """
         Initialize with optional config.
 
@@ -202,7 +212,7 @@ class InstitutionalVolumeEngine:
         lows: List[float],
         closes: List[float],
         volumes: List[float],
-        min_length: int = 2
+        min_length: int = 2,
     ) -> None:
         """
         Validate OHLCV data arrays.
@@ -219,7 +229,7 @@ class InstitutionalVolumeEngine:
             ValueError: If validation fails
         """
         arrays = [opens, highs, lows, closes, volumes]
-        names = ['opens', 'highs', 'lows', 'closes', 'volumes']
+        names = ["opens", "highs", "lows", "closes", "volumes"]
 
         # Check all arrays have same length
         lengths = [len(arr) for arr in arrays]
@@ -246,7 +256,7 @@ class InstitutionalVolumeEngine:
         highs: List[float],
         lows: List[float],
         closes: List[float],
-        volumes: List[float]
+        volumes: List[float],
     ) -> VolumeDeltaResult:
         """
         Calculate Volume Delta - approximation without order flow data.
@@ -265,12 +275,14 @@ class InstitutionalVolumeEngine:
 
         if len(closes) < 2:
             return VolumeDeltaResult(
-                delta=0, delta_percent=0,
+                delta=0,
+                delta_percent=0,
                 aggression_bias=AggressionBias.NEUTRAL,
-                strength=50, cumulative_delta=0,
+                strength=50,
+                cumulative_delta=0,
                 delta_divergence=False,
                 description="Insufficient data",
-                interpretation="Need more bars for delta calculation"
+                interpretation="Need more bars for delta calculation",
             )
 
         deltas = []
@@ -311,23 +323,41 @@ class InstitutionalVolumeEngine:
         cfg = self.config.delta
         if delta_percent > self.DELTA_STRONG_THRESHOLD:
             bias = AggressionBias.STRONG_BUY
-            strength = min(cfg.strong_max_strength, cfg.strong_base_strength + (delta_percent - cfg.strong_threshold_pct) * cfg.strong_strength_multiplier)
+            strength = min(
+                cfg.strong_max_strength,
+                cfg.strong_base_strength
+                + (delta_percent - cfg.strong_threshold_pct) * cfg.strong_strength_multiplier,
+            )
         elif delta_percent > self.DELTA_WEAK_THRESHOLD:
             bias = AggressionBias.BUY
-            strength = cfg.weak_base_strength + (delta_percent - cfg.weak_threshold_pct) * cfg.weak_strength_multiplier
+            strength = (
+                cfg.weak_base_strength
+                + (delta_percent - cfg.weak_threshold_pct) * cfg.weak_strength_multiplier
+            )
         elif delta_percent < -self.DELTA_STRONG_THRESHOLD:
             bias = AggressionBias.STRONG_SELL
-            strength = min(cfg.strong_max_strength, cfg.strong_base_strength + (abs(delta_percent) - cfg.strong_threshold_pct) * cfg.strong_strength_multiplier)
+            strength = min(
+                cfg.strong_max_strength,
+                cfg.strong_base_strength
+                + (abs(delta_percent) - cfg.strong_threshold_pct) * cfg.strong_strength_multiplier,
+            )
         elif delta_percent < -self.DELTA_WEAK_THRESHOLD:
             bias = AggressionBias.SELL
-            strength = cfg.weak_base_strength + (abs(delta_percent) - cfg.weak_threshold_pct) * cfg.weak_strength_multiplier
+            strength = (
+                cfg.weak_base_strength
+                + (abs(delta_percent) - cfg.weak_threshold_pct) * cfg.weak_strength_multiplier
+            )
         else:
             bias = AggressionBias.NEUTRAL
-            strength = cfg.neutral_base_strength + abs(delta_percent) * cfg.neutral_strength_multiplier
+            strength = (
+                cfg.neutral_base_strength + abs(delta_percent) * cfg.neutral_strength_multiplier
+            )
 
         # Check for delta divergence (price going one way, delta the other)
         price_change = closes[-1] - closes[-5] if len(closes) >= 5 else closes[-1] - closes[0]
-        delta_divergence = (price_change > 0 and recent_delta < 0) or (price_change < 0 and recent_delta > 0)
+        delta_divergence = (price_change > 0 and recent_delta < 0) or (
+            price_change < 0 and recent_delta > 0
+        )
 
         # Interpretation based on delta + price
         if delta_divergence:
@@ -353,14 +383,10 @@ class InstitutionalVolumeEngine:
             cumulative_delta=cumulative,
             delta_divergence=delta_divergence,
             description=desc,
-            interpretation=interp
+            interpretation=interp,
         )
 
-    def analyze_acceleration(
-        self,
-        volumes: List[float],
-        lookback: int = 10
-    ) -> AccelerationResult:
+    def analyze_acceleration(self, volumes: List[float], lookback: int = 10) -> AccelerationResult:
         """
         Analyze volume acceleration/deceleration.
 
@@ -372,16 +398,18 @@ class InstitutionalVolumeEngine:
         if len(volumes) < 3:
             return AccelerationResult(
                 acceleration=VolumeAcceleration.STEADY,
-                rate=1.0, momentum=0, is_climax=False,
+                rate=1.0,
+                momentum=0,
+                is_climax=False,
                 bars_accelerating=0,
-                description="Insufficient data"
+                description="Insufficient data",
             )
 
         # Calculate volume ratios (current / previous)
         ratios = []
         for i in range(1, min(lookback, len(volumes))):
-            if volumes[-(i+1)] > 0:
-                ratios.append(volumes[-i] / volumes[-(i+1)])
+            if volumes[-(i + 1)] > 0:
+                ratios.append(volumes[-i] / volumes[-(i + 1)])
             else:
                 ratios.append(1.0)
 
@@ -433,8 +461,10 @@ class InstitutionalVolumeEngine:
             rate=current_ratio,
             momentum=momentum,
             is_climax=is_climax,
-            bars_accelerating=bars_accel if state == VolumeAcceleration.ACCELERATING else -bars_decel,
-            description=desc
+            bars_accelerating=(
+                bars_accel if state == VolumeAcceleration.ACCELERATING else -bars_decel
+            ),
+            description=desc,
         )
 
     def analyze_mtf_agreement(
@@ -442,7 +472,7 @@ class InstitutionalVolumeEngine:
         ltf_volumes: List[float],
         htf_volumes: List[float],
         ltf_lookback: int = 20,
-        htf_lookback: int = 20
+        htf_lookback: int = 20,
     ) -> MTFAgreementResult:
         """
         Multi-timeframe volume agreement.
@@ -465,7 +495,7 @@ class InstitutionalVolumeEngine:
                 htf_volume_ratio=1.0,
                 is_accepted=False,
                 confidence=30,
-                description="Insufficient MTF data"
+                description="Insufficient MTF data",
             )
 
         # Calculate LTF ratio vs average
@@ -511,7 +541,7 @@ class InstitutionalVolumeEngine:
             htf_volume_ratio=htf_ratio,
             is_accepted=is_accepted,
             confidence=confidence,
-            description=desc
+            description=desc,
         )
 
     def detect_exhaustion(
@@ -522,7 +552,7 @@ class InstitutionalVolumeEngine:
         closes: List[float],
         volumes: List[float],
         oi_change_percent: Optional[float] = None,
-        lookback: int = 5
+        lookback: int = 5,
     ) -> ExhaustionResult:
         """
         Detect volume exhaustion - offense dying.
@@ -547,7 +577,7 @@ class InstitutionalVolumeEngine:
                 oi_stagnant=False,
                 confidence=30,
                 description="Insufficient data for exhaustion detection",
-                action="Need more bars"
+                action="Need more bars",
             )
 
         signals = []
@@ -576,8 +606,12 @@ class InstitutionalVolumeEngine:
             confidence += 20
 
         # 3. Check for volume declining
-        vol_early = sum(volumes[-lookback:-lookback//2]) / (lookback//2) if lookback > 1 else volumes[-lookback]
-        vol_late = sum(volumes[-lookback//2:]) / (lookback//2 + lookback%2)
+        vol_early = (
+            sum(volumes[-lookback : -lookback // 2]) / (lookback // 2)
+            if lookback > 1
+            else volumes[-lookback]
+        )
+        vol_late = sum(volumes[-lookback // 2 :]) / (lookback // 2 + lookback % 2)
         volume_declining = vol_late < vol_early * exh_cfg.volume_decline
 
         if volume_declining:
@@ -585,7 +619,7 @@ class InstitutionalVolumeEngine:
             confidence += 15
 
         # 4. Check for failed continuation
-        price_direction = closes[-lookback] - closes[-lookback-1] if len(closes) > lookback else 0
+        price_direction = closes[-lookback] - closes[-lookback - 1] if len(closes) > lookback else 0
         recent_progress = closes[-1] - closes[-lookback]
 
         # Failed continuation: initial move but couldn't continue
@@ -593,10 +627,14 @@ class InstitutionalVolumeEngine:
         if abs(price_direction) > 0:
             if price_direction > 0:
                 # Was going up, check if it continued
-                failed_continuation = recent_progress < price_direction * exh_cfg.continuation_failure
+                failed_continuation = (
+                    recent_progress < price_direction * exh_cfg.continuation_failure
+                )
             else:
                 # Was going down, check if it continued
-                failed_continuation = recent_progress > price_direction * exh_cfg.continuation_failure
+                failed_continuation = (
+                    recent_progress > price_direction * exh_cfg.continuation_failure
+                )
 
         if failed_continuation and had_volume_spike:
             signals.append("Failed continuation")
@@ -605,7 +643,9 @@ class InstitutionalVolumeEngine:
         # 5. Check OI stagnation
         oi_stagnant = False
         if oi_change_percent is not None:
-            oi_stagnant = abs(oi_change_percent) < exh_cfg.oi_stagnant_pct  # Less than threshold change
+            oi_stagnant = (
+                abs(oi_change_percent) < exh_cfg.oi_stagnant_pct
+            )  # Less than threshold change
             if oi_stagnant and had_volume_spike:
                 signals.append("OI stagnant despite volume")
                 confidence += 15
@@ -641,12 +681,12 @@ class InstitutionalVolumeEngine:
             oi_stagnant=oi_stagnant,
             confidence=min(95, confidence),
             description=desc,
-            action=action
+            action=action,
         )
 
     def full_analysis_with_precise_delta(
         self,
-        agg_trades: List['AggTradeData'],
+        agg_trades: List["AggTradeData"],
         opens: List[float],
         highs: List[float],
         lows: List[float],
@@ -656,7 +696,7 @@ class InstitutionalVolumeEngine:
         htf_volumes: Optional[List[float]] = None,
         oi_change_percent: Optional[float] = None,
         window_start_ms: Optional[int] = None,
-        window_end_ms: Optional[int] = None
+        window_end_ms: Optional[int] = None,
     ) -> VolumeEngineResult:
         """
         Complete institutional-grade volume analysis using PRECISE delta from aggTrades.
@@ -685,7 +725,9 @@ class InstitutionalVolumeEngine:
             from precise_volume_delta import PreciseVolumeDeltaEngine
         except ImportError:
             # Fallback to approximation if precise module not available
-            return self.full_analysis(opens, highs, lows, closes, volumes, htf_volumes, oi_change_percent)
+            return self.full_analysis(
+                opens, highs, lows, closes, volumes, htf_volumes, oi_change_percent
+            )
 
         if bar_size_ms <= 0:
             raise ValueError("bar_size_ms must be positive")
@@ -697,10 +739,12 @@ class InstitutionalVolumeEngine:
             bar_size_ms,
             apply_filters=True,
             start_time_ms=window_start_ms,
-            end_time_ms=window_end_ms
+            end_time_ms=window_end_ms,
         )
         if not bars:
-            return self.full_analysis(opens, highs, lows, closes, volumes, htf_volumes, oi_change_percent)
+            return self.full_analysis(
+                opens, highs, lows, closes, volumes, htf_volumes, oi_change_percent
+            )
         precise_result = precise_engine.analyze_volume_delta(bars)
 
         # Map precise delta to our VolumeDeltaResult format
@@ -712,7 +756,9 @@ class InstitutionalVolumeEngine:
             "sell": AggressionBias.SELL,
             "strong_sell": AggressionBias.STRONG_SELL,
         }
-        aggression_bias = bias_mapping.get(precise_result.aggression_bias.value, AggressionBias.NEUTRAL)
+        aggression_bias = bias_mapping.get(
+            precise_result.aggression_bias.value, AggressionBias.NEUTRAL
+        )
 
         delta_result = VolumeDeltaResult(
             delta=precise_result.delta,
@@ -722,7 +768,7 @@ class InstitutionalVolumeEngine:
             cumulative_delta=precise_result.cvd,
             delta_divergence=precise_result.delta_divergence,
             description=precise_result.description,
-            interpretation=precise_result.interpretation
+            interpretation=precise_result.interpretation,
         )
 
         # Use standard acceleration analysis
@@ -734,9 +780,7 @@ class InstitutionalVolumeEngine:
             mtf = self.analyze_mtf_agreement(volumes, htf_volumes)
 
         # Exhaustion detection
-        exhaustion = self.detect_exhaustion(
-            opens, highs, lows, closes, volumes, oi_change_percent
-        )
+        exhaustion = self.detect_exhaustion(opens, highs, lows, closes, volumes, oi_change_percent)
 
         # Determine WHO INITIATED
         if aggression_bias in [AggressionBias.STRONG_BUY, AggressionBias.BUY]:
@@ -823,7 +867,7 @@ class InstitutionalVolumeEngine:
             volume_quality=volume_quality,
             confidence=confidence,
             signal=signal,
-            summary=summary
+            summary=summary,
         )
 
     def full_analysis(
@@ -834,7 +878,7 @@ class InstitutionalVolumeEngine:
         closes: List[float],
         volumes: List[float],
         htf_volumes: Optional[List[float]] = None,
-        oi_change_percent: Optional[float] = None
+        oi_change_percent: Optional[float] = None,
     ) -> VolumeEngineResult:
         """
         Complete institutional-grade volume analysis.
@@ -853,9 +897,7 @@ class InstitutionalVolumeEngine:
         if htf_volumes and len(htf_volumes) >= 5:
             mtf = self.analyze_mtf_agreement(volumes, htf_volumes)
 
-        exhaustion = self.detect_exhaustion(
-            opens, highs, lows, closes, volumes, oi_change_percent
-        )
+        exhaustion = self.detect_exhaustion(opens, highs, lows, closes, volumes, oi_change_percent)
 
         # Determine WHO INITIATED
         if delta.aggression_bias in [AggressionBias.STRONG_BUY, AggressionBias.BUY]:
@@ -943,7 +985,7 @@ class InstitutionalVolumeEngine:
             volume_quality=volume_quality,
             confidence=confidence,
             signal=signal,
-            summary=summary
+            summary=summary,
         )
 
 
@@ -954,7 +996,7 @@ def get_aggression_bias(
     lows: List[float],
     closes: List[float],
     volumes: List[float],
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> Tuple[AggressionBias, float]:
     """Quick check: Who is aggressive?"""
     engine = InstitutionalVolumeEngine(config)
@@ -969,7 +1011,7 @@ def is_volume_exhausted(
     closes: List[float],
     volumes: List[float],
     oi_change: Optional[float] = None,
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> Tuple[bool, ExhaustionRisk]:
     """Quick check: Is the move exhausted?"""
     engine = InstitutionalVolumeEngine(config)

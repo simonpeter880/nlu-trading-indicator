@@ -16,19 +16,20 @@ Features:
 Author: Generated for NLU trading system
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Tuple
-from collections import deque
 import math
-
+from collections import deque
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
 
 # =============================================================================
 # DATA STRUCTURES
 # =============================================================================
 
+
 @dataclass
 class Candle:
     """OHLCV candle."""
+
     timestamp: float
     open: float
     high: float
@@ -46,11 +47,13 @@ class ROCConfig:
 
     # ROC lookbacks by timeframe (fast, mid, slow)
     # Format: {"tf": [fast, mid, slow]}
-    roc_lookbacks_by_tf: Dict[str, List[int]] = field(default_factory=lambda: {
-        "1m": [5, 20, 60],
-        "5m": [3, 12, 36],
-        "1h": [3, 6, 12],
-    })
+    roc_lookbacks_by_tf: Dict[str, List[int]] = field(
+        default_factory=lambda: {
+            "1m": [5, 20, 60],
+            "5m": [3, 12, 36],
+            "1h": [3, 6, 12],
+        }
+    )
 
     # Fallback lookbacks for unlisted timeframes
     fallback_lookbacks: List[int] = field(default_factory=lambda: [5, 20, 60])
@@ -67,12 +70,12 @@ class ROCConfig:
 
     # Normalization parameters
     norm_atrp_factor: float = 1.0  # ROC_norm = ROC / (factor * atrp)
-    clip_norm: float = 3.0         # Clip normalized ROC to [-clip, +clip]
+    clip_norm: float = 3.0  # Clip normalized ROC to [-clip, +clip]
 
     # State thresholds (applied to ROC_norm_fast)
-    noise_norm_threshold: float = 0.3     # Below this -> NOISE
-    impulse_norm_threshold: float = 0.8   # Above this -> IMPULSE candidate
-    blowoff_norm_threshold: float = 1.5   # Warning threshold
+    noise_norm_threshold: float = 0.3  # Below this -> NOISE
+    impulse_norm_threshold: float = 0.8  # Above this -> IMPULSE candidate
+    blowoff_norm_threshold: float = 1.5  # Warning threshold
 
     # Epsilon for safe division
     eps: float = 1e-10
@@ -112,6 +115,7 @@ class ROCState:
 # =============================================================================
 # INTERNAL STATE TRACKER
 # =============================================================================
+
 
 class _TimeframeState:
     """Internal state for a single timeframe - O(1) updates."""
@@ -156,7 +160,7 @@ class _TimeframeState:
             tr = max(
                 candle.high - candle.low,
                 abs(candle.high - self.prev_close),
-                abs(candle.low - self.prev_close)
+                abs(candle.low - self.prev_close),
             )
         else:
             tr = candle.high - candle.low
@@ -182,6 +186,7 @@ class _TimeframeState:
 # =============================================================================
 # ROC MOMENTUM ENGINE
 # =============================================================================
+
 
 class ROCMomentumEngine:
     """
@@ -219,13 +224,13 @@ class ROCMomentumEngine:
                 lookbacks=lookbacks,
                 atr_period=config.atr_period,
                 accel_smooth_period=config.accel_smooth_period,
-                eps=config.eps
+                eps=config.eps,
             )
 
     def warmup(
         self,
         candles_by_tf: Dict[str, List[Candle]],
-        atr_percent_by_tf: Optional[Dict[str, List[float]]] = None
+        atr_percent_by_tf: Optional[Dict[str, List[float]]] = None,
     ) -> None:
         """
         Warmup engine with historical candles.
@@ -249,7 +254,7 @@ class ROCMomentumEngine:
         tf: str,
         candle: Candle,
         atr_percent: Optional[float] = None,
-        bias: Optional[int] = None
+        bias: Optional[int] = None,
     ) -> Optional[ROCState]:
         """
         Process new candle close. O(1) update.
@@ -314,8 +319,7 @@ class ROCMomentumEngine:
                     state.roc_ema[lb] = roc
                 else:
                     state.roc_ema[lb] = (
-                        state.ema_alpha * roc +
-                        (1 - state.ema_alpha) * state.roc_ema[lb]
+                        state.ema_alpha * roc + (1 - state.ema_alpha) * state.roc_ema[lb]
                     )
                 roc_smooth_dict[lb] = state.roc_ema[lb]
             else:
@@ -361,7 +365,9 @@ class ROCMomentumEngine:
         )
 
         # Compute momentum score
-        momentum_score = self._compute_momentum_score(rf, rm, af, roc_dict.get(fast_lb, 0.0), momentum_state)
+        momentum_score = self._compute_momentum_score(
+            rf, rm, af, roc_dict.get(fast_lb, 0.0), momentum_state
+        )
 
         # Check divergence
         self._check_divergence(state, candle.close, rf, debug)
@@ -377,7 +383,7 @@ class ROCMomentumEngine:
             debug=debug,
             latest_close=current_close,
             latest_atrp=atr_percent,
-            timestamp=candle.timestamp
+            timestamp=candle.timestamp,
         )
 
         state.current_state = roc_state
@@ -390,7 +396,7 @@ class ROCMomentumEngine:
         rs: float,  # ROC_norm_slow
         af: float,  # ACC_fast
         bias: Optional[int],
-        roc_fast_raw: float
+        roc_fast_raw: float,
     ) -> Tuple[str, Dict]:
         """Classify momentum state with direction-aware logic."""
         debug = {}
@@ -457,12 +463,7 @@ class ROCMomentumEngine:
         return "NOISE", debug
 
     def _compute_momentum_score(
-        self,
-        rf: float,
-        rm: float,
-        af: float,
-        roc_fast_raw: float,
-        momentum_state: str
+        self, rf: float, rm: float, af: float, roc_fast_raw: float, momentum_state: str
     ) -> float:
         """
         Compute momentum score (0-100).
@@ -496,11 +497,7 @@ class ROCMomentumEngine:
         return score
 
     def _check_divergence(
-        self,
-        state: _TimeframeState,
-        current_price: float,
-        roc_norm_fast: float,
-        debug: Dict
+        self, state: _TimeframeState, current_price: float, roc_norm_fast: float, debug: Dict
     ) -> None:
         """Check for price/momentum divergence."""
         debug["divergence"] = "NONE"
@@ -537,6 +534,7 @@ class ROCMomentumEngine:
 # =============================================================================
 # DISPLAY UTILITIES
 # =============================================================================
+
 
 def print_roc_momentum(engine: ROCMomentumEngine, timeframes: Optional[List[str]] = None) -> None:
     """
@@ -608,9 +606,7 @@ def print_roc_momentum(engine: ROCMomentumEngine, timeframes: Optional[List[str]
 if __name__ == "__main__":
     # Example: synthetic trending data
     config = ROCConfig(
-        timeframes=["1m"],
-        roc_lookbacks_by_tf={"1m": [5, 20, 60]},
-        accel_smooth_period=3
+        timeframes=["1m"], roc_lookbacks_by_tf={"1m": [5, 20, 60]}, accel_smooth_period=3
     )
 
     engine = ROCMomentumEngine(config)
@@ -625,12 +621,7 @@ if __name__ == "__main__":
         low = close - 0.2
 
         candle = Candle(
-            timestamp=float(i),
-            open=close - 0.05,
-            high=high,
-            low=low,
-            close=close,
-            volume=1000.0
+            timestamp=float(i), open=close - 0.05, high=high, low=low, close=close, volume=1000.0
         )
         candles.append(candle)
 

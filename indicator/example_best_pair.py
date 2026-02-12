@@ -10,6 +10,5 @@ if str(_REPO_ROOT) not in sys.path:
 
 from indicator.examples.example_best_pair import *  # noqa: F401,F403
 
-
 if __name__ == "__main__":
     runpy.run_module("indicator.examples.example_best_pair", run_name="__main__")

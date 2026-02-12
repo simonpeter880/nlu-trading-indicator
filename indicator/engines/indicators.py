@@ -3,11 +3,11 @@ Technical Indicators Module
 Implements all indicator calculations for trading analysis.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, TYPE_CHECKING
 import math
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
-from .calculations import calculate_ema, calculate_sma, calculate_rolling_mean_std
+from .calculations import calculate_ema, calculate_rolling_mean_std, calculate_sma
 from .signals import Signal
 
 if TYPE_CHECKING:
@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 
 from .indicator_config import (
     DEFAULT_CONFIG,
-    VolumeThresholds,
-    OpenInterestThresholds,
     FundingThresholds,
+    OpenInterestThresholds,
     OrderbookThresholds,
+    VolumeThresholds,
     safe_divide,
 )
 
@@ -26,6 +26,7 @@ from .indicator_config import (
 @dataclass
 class IndicatorResult:
     """Base result for indicator calculations."""
+
     name: str
     value: float
     signal: Signal
@@ -37,6 +38,7 @@ class IndicatorResult:
 # VOLUME INDICATORS
 # =============================================================================
 
+
 class VolumeIndicators:
     """Volume-based indicators: Volume analysis, OI, Funding, Liquidity."""
 
@@ -45,7 +47,7 @@ class VolumeIndicators:
         volumes: List[float],
         closes: List[float],
         period: int = 20,
-        config: Optional['IndicatorConfig'] = None
+        config: Optional["IndicatorConfig"] = None,
     ) -> IndicatorResult:
         """
         Analyze volume patterns.
@@ -61,7 +63,7 @@ class VolumeIndicators:
                 value=volumes[-1] if volumes else 0,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data"
+                description="Insufficient data",
             )
 
         current_vol = volumes[-1]
@@ -73,16 +75,24 @@ class VolumeIndicators:
         vol_change = volumes[-1] - volumes[-2] if len(volumes) >= 2 else 0
 
         # Volume expanding with price = confirmation
-        vol_confirms = (price_change > 0 and vol_change > 0) or (price_change < 0 and vol_change > 0)
+        vol_confirms = (price_change > 0 and vol_change > 0) or (
+            price_change < 0 and vol_change > 0
+        )
 
         if vol_ratio > cfg.high_ratio:
             signal = Signal.BULLISH if price_change > 0 else Signal.BEARISH
-            strength = min(cfg.high_volume_max_strength, cfg.high_volume_base_strength + (vol_ratio - 1) * cfg.high_volume_strength_multiplier)
+            strength = min(
+                cfg.high_volume_max_strength,
+                cfg.high_volume_base_strength
+                + (vol_ratio - 1) * cfg.high_volume_strength_multiplier,
+            )
             if vol_confirms:
                 desc = f"Very high volume ({vol_ratio:.1f}x avg) - Strong {signal.value} conviction (CONFIRMED)"
             else:
                 desc = f"Very high volume ({vol_ratio:.1f}x avg) - Strong {signal.value} conviction (divergence warning)"
-                strength = max(60, strength - cfg.divergence_strength_penalty)  # Reduce strength on divergence
+                strength = max(
+                    60, strength - cfg.divergence_strength_penalty
+                )  # Reduce strength on divergence
         elif vol_ratio > cfg.moderate_ratio:
             signal = Signal.BULLISH if price_change > 0 else Signal.BEARISH
             strength = cfg.moderate_volume_strength
@@ -101,11 +111,7 @@ class VolumeIndicators:
             desc = f"Normal volume ({vol_ratio:.1f}x avg)"
 
         return IndicatorResult(
-            name="Volume",
-            value=vol_ratio,
-            signal=signal,
-            strength=strength,
-            description=desc
+            name="Volume", value=vol_ratio, signal=signal, strength=strength, description=desc
         )
 
     @staticmethod
@@ -113,7 +119,7 @@ class VolumeIndicators:
         current_oi: float,
         oi_history: List[float],
         price_change_percent: float,
-        config: Optional['IndicatorConfig'] = None
+        config: Optional["IndicatorConfig"] = None,
     ) -> IndicatorResult:
         """
         Analyze open interest changes.
@@ -131,7 +137,7 @@ class VolumeIndicators:
                 value=current_oi,
                 signal=Signal.NEUTRAL,
                 strength=cfg.neutral_strength,
-                description="No historical OI data"
+                description="No historical OI data",
             )
 
         oi_change = safe_divide(current_oi - oi_history[0], oi_history[0], default=0.0) * 100
@@ -162,14 +168,14 @@ class VolumeIndicators:
             value=oi_change,
             signal=signal,
             strength=strength,
-            description=desc
+            description=desc,
         )
 
     @staticmethod
     def analyze_funding_rate(
         funding_rate: float,
         funding_history: Optional[List[float]] = None,
-        config: Optional['IndicatorConfig'] = None
+        config: Optional["IndicatorConfig"] = None,
     ) -> IndicatorResult:
         """
         Analyze perpetual funding rate.
@@ -186,7 +192,10 @@ class VolumeIndicators:
         # Check for extreme funding
         if rate_percent > cfg.extreme_positive_pct:  # Very positive
             signal = Signal.BEARISH  # Contrarian - too many longs
-            strength = min(cfg.extreme_max_strength, cfg.extreme_base_strength + abs(rate_percent) * cfg.extreme_strength_multiplier)
+            strength = min(
+                cfg.extreme_max_strength,
+                cfg.extreme_base_strength + abs(rate_percent) * cfg.extreme_strength_multiplier,
+            )
             desc = f"Very positive funding ({rate_percent:.4f}%) - Crowded long, reversal risk"
         elif rate_percent > cfg.positive_pct:
             signal = Signal.NEUTRAL
@@ -194,7 +203,10 @@ class VolumeIndicators:
             desc = f"Positive funding ({rate_percent:.4f}%) - Longs paying shorts"
         elif rate_percent < cfg.extreme_negative_pct:  # Very negative
             signal = Signal.BULLISH  # Contrarian - too many shorts
-            strength = min(cfg.extreme_max_strength, cfg.extreme_base_strength + abs(rate_percent) * cfg.extreme_strength_multiplier)
+            strength = min(
+                cfg.extreme_max_strength,
+                cfg.extreme_base_strength + abs(rate_percent) * cfg.extreme_strength_multiplier,
+            )
             desc = f"Very negative funding ({rate_percent:.4f}%) - Crowded short, squeeze risk"
         elif rate_percent < cfg.negative_pct:
             signal = Signal.NEUTRAL
@@ -210,7 +222,7 @@ class VolumeIndicators:
             value=rate_percent,
             signal=signal,
             strength=strength,
-            description=desc + f" | Annualized: {annualized:.1f}%"
+            description=desc + f" | Annualized: {annualized:.1f}%",
         )
 
     @staticmethod
@@ -220,7 +232,7 @@ class VolumeIndicators:
         bid_depth_value: float,
         ask_depth_value: float,
         spread_percent: float,
-        config: Optional['IndicatorConfig'] = None
+        config: Optional["IndicatorConfig"] = None,
     ) -> IndicatorResult:
         """
         Analyze orderbook liquidity and imbalance.
@@ -237,7 +249,10 @@ class VolumeIndicators:
         # Determine signal based on imbalance
         if imbalance > cfg.strong_imbalance:
             signal = Signal.BULLISH
-            strength = min(cfg.strong_imbalance_max_strength, cfg.strong_imbalance_base_strength + imbalance * cfg.strong_imbalance_multiplier)
+            strength = min(
+                cfg.strong_imbalance_max_strength,
+                cfg.strong_imbalance_base_strength + imbalance * cfg.strong_imbalance_multiplier,
+            )
             desc = f"Strong bid support ({imbalance_percent:.1f}% imbalance) - Buyers dominating"
         elif imbalance > cfg.moderate_imbalance:
             signal = Signal.BULLISH
@@ -245,7 +260,11 @@ class VolumeIndicators:
             desc = f"Moderate bid support ({imbalance_percent:.1f}% imbalance)"
         elif imbalance < -cfg.strong_imbalance:
             signal = Signal.BEARISH
-            strength = min(cfg.strong_imbalance_max_strength, cfg.strong_imbalance_base_strength + abs(imbalance) * cfg.strong_imbalance_multiplier)
+            strength = min(
+                cfg.strong_imbalance_max_strength,
+                cfg.strong_imbalance_base_strength
+                + abs(imbalance) * cfg.strong_imbalance_multiplier,
+            )
             desc = f"Strong ask pressure ({imbalance_percent:.1f}% imbalance) - Sellers dominating"
         elif imbalance < -cfg.moderate_imbalance:
             signal = Signal.BEARISH
@@ -267,13 +286,14 @@ class VolumeIndicators:
             value=imbalance_percent,
             signal=signal,
             strength=strength,
-            description=desc
+            description=desc,
         )
 
 
 # =============================================================================
 # TREND INDICATORS
 # =============================================================================
+
 
 class TrendIndicators:
     """Trend-following indicators: MA, VWAP, Supertrend."""
@@ -290,9 +310,7 @@ class TrendIndicators:
 
     @staticmethod
     def analyze_moving_averages(
-        closes: List[float],
-        short_period: int = 20,
-        long_period: int = 50
+        closes: List[float], short_period: int = 20, long_period: int = 50
     ) -> IndicatorResult:
         """
         Analyze moving average crossovers and price position.
@@ -303,7 +321,7 @@ class TrendIndicators:
                 value=0,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data for MA analysis"
+                description="Insufficient data for MA analysis",
             )
 
         current_price = closes[-1]
@@ -316,7 +334,7 @@ class TrendIndicators:
                 value=0,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data"
+                description="Insufficient data",
             )
 
         short_current = short_ma[-1]
@@ -336,7 +354,9 @@ class TrendIndicators:
         death_cross = short_prev >= long_prev and short_current < long_current
 
         # Distance from short MA
-        distance_percent = safe_divide(current_price - short_current, short_current, default=0.0) * 100
+        distance_percent = (
+            safe_divide(current_price - short_current, short_current, default=0.0) * 100
+        )
 
         if golden_cross:
             signal = Signal.BULLISH
@@ -368,15 +388,12 @@ class TrendIndicators:
             value=distance_percent,
             signal=signal,
             strength=strength,
-            description=desc
+            description=desc,
         )
 
     @staticmethod
     def calculate_vwap(
-        highs: List[float],
-        lows: List[float],
-        closes: List[float],
-        volumes: List[float]
+        highs: List[float], lows: List[float], closes: List[float], volumes: List[float]
     ) -> Tuple[float, List[float]]:
         """
         Calculate Volume Weighted Average Price.
@@ -402,10 +419,7 @@ class TrendIndicators:
 
     @staticmethod
     def analyze_vwap(
-        highs: List[float],
-        lows: List[float],
-        closes: List[float],
-        volumes: List[float]
+        highs: List[float], lows: List[float], closes: List[float], volumes: List[float]
     ) -> IndicatorResult:
         """
         Analyze price relative to VWAP.
@@ -418,7 +432,7 @@ class TrendIndicators:
                 value=0,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data for VWAP"
+                description="Insufficient data for VWAP",
             )
 
         current_price = closes[-1]
@@ -428,7 +442,7 @@ class TrendIndicators:
         crosses = 0
         for i in range(1, min(20, len(closes))):
             if len(vwap_values) > i:
-                if (closes[-i] > vwap_values[-i]) != (closes[-i-1] > vwap_values[-i-1]):
+                if (closes[-i] > vwap_values[-i]) != (closes[-i - 1] > vwap_values[-i - 1]):
                     crosses += 1
 
         if distance_percent > 2:
@@ -453,11 +467,7 @@ class TrendIndicators:
             desc = f"Price at VWAP ({distance_percent:.2f}%) - Fair value zone"
 
         return IndicatorResult(
-            name="VWAP",
-            value=distance_percent,
-            signal=signal,
-            strength=strength,
-            description=desc
+            name="VWAP", value=distance_percent, signal=signal, strength=strength, description=desc
         )
 
     @staticmethod
@@ -466,7 +476,7 @@ class TrendIndicators:
         lows: List[float],
         closes: List[float],
         period: int = 10,
-        multiplier: float = 3.0
+        multiplier: float = 3.0,
     ) -> Tuple[List[float], List[bool]]:
         """
         Calculate Supertrend indicator.
@@ -479,9 +489,7 @@ class TrendIndicators:
         tr_values = []
         for i in range(1, len(closes)):
             tr = max(
-                highs[i] - lows[i],
-                abs(highs[i] - closes[i-1]),
-                abs(lows[i] - closes[i-1])
+                highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1])
             )
             tr_values.append(tr)
 
@@ -536,7 +544,7 @@ class TrendIndicators:
         lows: List[float],
         closes: List[float],
         period: int = 10,
-        multiplier: float = 3.0
+        multiplier: float = 3.0,
     ) -> IndicatorResult:
         """
         Analyze Supertrend for trend direction and signals.
@@ -551,7 +559,7 @@ class TrendIndicators:
                 value=0,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data for Supertrend"
+                description="Insufficient data for Supertrend",
             )
 
         current_price = closes[-1]
@@ -581,24 +589,29 @@ class TrendIndicators:
         elif current_trend:
             signal = Signal.BULLISH
             strength = min(75, 55 + consecutive * 2)
-            desc = f"Supertrend bullish ({consecutive} bars) | Price {distance_percent:+.1f}% above ST"
+            desc = (
+                f"Supertrend bullish ({consecutive} bars) | Price {distance_percent:+.1f}% above ST"
+            )
         else:
             signal = Signal.BEARISH
             strength = min(75, 55 + consecutive * 2)
-            desc = f"Supertrend bearish ({consecutive} bars) | Price {distance_percent:+.1f}% below ST"
+            desc = (
+                f"Supertrend bearish ({consecutive} bars) | Price {distance_percent:+.1f}% below ST"
+            )
 
         return IndicatorResult(
             name="Supertrend",
             value=1 if current_trend else -1,
             signal=signal,
             strength=strength,
-            description=desc
+            description=desc,
         )
 
 
 # =============================================================================
 # MOMENTUM INDICATORS
 # =============================================================================
+
 
 class MomentumIndicators:
     """Momentum indicators: RSI, MACD, Stochastic RSI."""
@@ -609,7 +622,7 @@ class MomentumIndicators:
         if len(closes) < period + 1:
             return []
 
-        deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
+        deltas = [closes[i] - closes[i - 1] for i in range(1, len(closes))]
 
         gains = [d if d > 0 else 0 for d in deltas]
         losses = [-d if d < 0 else 0 for d in deltas]
@@ -624,8 +637,8 @@ class MomentumIndicators:
             avg_gain = (avg_gain * (period - 1) + gains[i]) / period
             avg_loss = (avg_loss * (period - 1) + losses[i]) / period
 
-            rs = safe_divide(avg_gain, avg_loss, default=float('inf'))
-            if rs == float('inf'):
+            rs = safe_divide(avg_gain, avg_loss, default=float("inf"))
+            if rs == float("inf"):
                 rsi_values.append(100)
             else:
                 rsi_values.append(100 - (100 / (1 + rs)))
@@ -633,10 +646,7 @@ class MomentumIndicators:
         return rsi_values
 
     @staticmethod
-    def analyze_rsi(
-        closes: List[float],
-        period: int = 14
-    ) -> IndicatorResult:
+    def analyze_rsi(closes: List[float], period: int = 14) -> IndicatorResult:
         """
         Analyze RSI for overbought/oversold conditions and divergences.
         """
@@ -648,7 +658,7 @@ class MomentumIndicators:
                 value=50,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data for RSI"
+                description="Insufficient data for RSI",
             )
 
         current_rsi = rsi_values[-1]
@@ -691,19 +701,12 @@ class MomentumIndicators:
                 desc = f"RSI {current_rsi:.1f} - Neutral"
 
         return IndicatorResult(
-            name="RSI",
-            value=current_rsi,
-            signal=signal,
-            strength=strength,
-            description=desc
+            name="RSI", value=current_rsi, signal=signal, strength=strength, description=desc
         )
 
     @staticmethod
     def calculate_macd(
-        closes: List[float],
-        fast: int = 12,
-        slow: int = 26,
-        signal_period: int = 9
+        closes: List[float], fast: int = 12, slow: int = 26, signal_period: int = 9
     ) -> Tuple[List[float], List[float], List[float]]:
         """
         Calculate MACD, Signal line, and Histogram.
@@ -732,10 +735,7 @@ class MomentumIndicators:
 
     @staticmethod
     def analyze_macd_histogram(
-        closes: List[float],
-        fast: int = 12,
-        slow: int = 26,
-        signal_period: int = 9
+        closes: List[float], fast: int = 12, slow: int = 26, signal_period: int = 9
     ) -> IndicatorResult:
         """
         Analyze MACD histogram for momentum and crossovers.
@@ -750,7 +750,7 @@ class MomentumIndicators:
                 value=0,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data for MACD"
+                description="Insufficient data for MACD",
             )
 
         current_hist = histogram[-1]
@@ -804,7 +804,7 @@ class MomentumIndicators:
             value=current_hist,
             signal=signal,
             strength=strength,
-            description=desc
+            description=desc,
         )
 
     @staticmethod
@@ -813,7 +813,7 @@ class MomentumIndicators:
         rsi_period: int = 14,
         stoch_period: int = 14,
         k_period: int = 3,
-        d_period: int = 3
+        d_period: int = 3,
     ) -> Tuple[List[float], List[float]]:
         """
         Calculate Stochastic RSI (%K and %D).
@@ -874,7 +874,7 @@ class MomentumIndicators:
         rsi_period: int = 14,
         stoch_period: int = 14,
         k_period: int = 3,
-        d_period: int = 3
+        d_period: int = 3,
     ) -> IndicatorResult:
         """
         Analyze Stochastic RSI for momentum extremes and crossovers.
@@ -889,7 +889,7 @@ class MomentumIndicators:
                 value=50,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data for Stochastic RSI"
+                description="Insufficient data for Stochastic RSI",
             )
 
         current_k = stoch_k[-1]
@@ -904,7 +904,9 @@ class MomentumIndicators:
         if bullish_cross and current_k < 30:
             signal = Signal.BULLISH
             strength = 85
-            desc = f"StochRSI bullish crossover in oversold zone! K:{current_k:.1f} D:{current_d:.1f}"
+            desc = (
+                f"StochRSI bullish crossover in oversold zone! K:{current_k:.1f} D:{current_d:.1f}"
+            )
         elif bearish_cross and current_k > 70:
             signal = Signal.BEARISH
             strength = 85
@@ -943,7 +945,7 @@ class MomentumIndicators:
             value=current_k,
             signal=signal,
             strength=strength,
-            description=desc
+            description=desc,
         )
 
 
@@ -951,15 +953,13 @@ class MomentumIndicators:
 # VOLATILITY INDICATORS
 # =============================================================================
 
+
 class VolatilityIndicators:
     """Volatility indicators: ATR, Bollinger Bands."""
 
     @staticmethod
     def calculate_atr(
-        highs: List[float],
-        lows: List[float],
-        closes: List[float],
-        period: int = 14
+        highs: List[float], lows: List[float], closes: List[float], period: int = 14
     ) -> List[float]:
         """Calculate Average True Range."""
         if len(closes) < period + 1:
@@ -968,9 +968,7 @@ class VolatilityIndicators:
         tr_values = []
         for i in range(1, len(closes)):
             tr = max(
-                highs[i] - lows[i],
-                abs(highs[i] - closes[i-1]),
-                abs(lows[i] - closes[i-1])
+                highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1])
             )
             tr_values.append(tr)
 
@@ -984,10 +982,7 @@ class VolatilityIndicators:
 
     @staticmethod
     def analyze_atr(
-        highs: List[float],
-        lows: List[float],
-        closes: List[float],
-        period: int = 14
+        highs: List[float], lows: List[float], closes: List[float], period: int = 14
     ) -> IndicatorResult:
         """
         Analyze ATR for volatility assessment.
@@ -1000,7 +995,7 @@ class VolatilityIndicators:
                 value=0,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data for ATR"
+                description="Insufficient data for ATR",
             )
 
         current_atr = atr_values[-1]
@@ -1033,18 +1028,12 @@ class VolatilityIndicators:
             desc = f"ATR {current_atr:.2f} ({atr_percent:.2f}%) - Normal volatility"
 
         return IndicatorResult(
-            name="ATR",
-            value=atr_percent,
-            signal=signal,
-            strength=strength,
-            description=desc
+            name="ATR", value=atr_percent, signal=signal, strength=strength, description=desc
         )
 
     @staticmethod
     def calculate_bollinger_bands(
-        closes: List[float],
-        period: int = 20,
-        std_dev: float = 2.0
+        closes: List[float], period: int = 20, std_dev: float = 2.0
     ) -> Tuple[List[float], List[float], List[float], List[float]]:
         """
         Calculate Bollinger Bands.
@@ -1071,9 +1060,7 @@ class VolatilityIndicators:
 
     @staticmethod
     def analyze_bollinger_bands(
-        closes: List[float],
-        period: int = 20,
-        std_dev: float = 2.0
+        closes: List[float], period: int = 20, std_dev: float = 2.0
     ) -> IndicatorResult:
         """
         Analyze Bollinger Bands for volatility and price position.
@@ -1088,7 +1075,7 @@ class VolatilityIndicators:
                 value=0,
                 signal=Signal.NEUTRAL,
                 strength=50,
-                description="Insufficient data for Bollinger Bands"
+                description="Insufficient data for Bollinger Bands",
             )
 
         current_price = closes[-1]
@@ -1139,5 +1126,5 @@ class VolatilityIndicators:
             value=percent_b,
             signal=signal,
             strength=strength,
-            description=desc
+            description=desc,
         )

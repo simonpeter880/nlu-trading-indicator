@@ -15,20 +15,22 @@ Features:
 - Hysteresis for stability
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Deque
 from collections import deque
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Deque, Dict, List, Optional
 
 
 class Direction(Enum):
     """Supertrend direction"""
+
     UP = "UP"
     DOWN = "DOWN"
 
 
 class Regime(Enum):
     """Market regime classification"""
+
     TREND = "TREND"
     CHOP = "CHOP"
     TRANSITION = "TRANSITION"
@@ -37,6 +39,7 @@ class Regime(Enum):
 @dataclass
 class Candle:
     """OHLCV candle structure"""
+
     timestamp: float
     open: float
     high: float
@@ -73,13 +76,13 @@ class SupertrendConfig:
     def get_atr_period(self, tf: str) -> int:
         """Get ATR period for timeframe (with override support)"""
         if tf in self.per_tf_overrides:
-            return self.per_tf_overrides[tf].get('atr_period', self.atr_period)
+            return self.per_tf_overrides[tf].get("atr_period", self.atr_period)
         return self.atr_period
 
     def get_multiplier(self, tf: str) -> float:
         """Get multiplier for timeframe (with override support)"""
         if tf in self.per_tf_overrides:
-            return self.per_tf_overrides[tf].get('multiplier', self.multiplier)
+            return self.per_tf_overrides[tf].get("multiplier", self.multiplier)
         return self.multiplier
 
 
@@ -240,14 +243,12 @@ class SupertrendEngine:
             state.final_lower = basic_lower
         else:
             # Upper band locking
-            if (basic_upper < state.final_upper or
-                state.prev_close > state.final_upper):
+            if basic_upper < state.final_upper or state.prev_close > state.final_upper:
                 state.final_upper = basic_upper
             # else: keep prev_final_upper
 
             # Lower band locking
-            if (basic_lower > state.final_lower or
-                state.prev_close < state.final_lower):
+            if basic_lower > state.final_lower or state.prev_close < state.final_lower:
                 state.final_lower = basic_lower
             # else: keep prev_final_lower
 
@@ -271,7 +272,7 @@ class SupertrendEngine:
         # else: persist previous direction
 
         # Check for flip
-        flip_event = (state.direction != state.prev_direction)
+        flip_event = state.direction != state.prev_direction
 
         # Update hold count
         if flip_event:
@@ -308,7 +309,9 @@ class SupertrendEngine:
         state.distance_deque.append(distance)
 
         # Average distance
-        distance_avg = sum(state.distance_deque) / len(state.distance_deque) if state.distance_deque else 0.0
+        distance_avg = (
+            sum(state.distance_deque) / len(state.distance_deque) if state.distance_deque else 0.0
+        )
 
         # Classify regime
         is_chop = False
@@ -327,9 +330,9 @@ class SupertrendEngine:
 
         # Check for TREND criteria
         is_trend = (
-            flip_rate < self.config.flip_rate_trend and
-            state.direction_hold_count >= self.config.min_hold_bars and
-            distance_avg >= self.config.st_distance_factor * atr_percent
+            flip_rate < self.config.flip_rate_trend
+            and state.direction_hold_count >= self.config.min_hold_bars
+            and distance_avg >= self.config.st_distance_factor * atr_percent
         )
 
         if is_chop:
@@ -342,12 +345,14 @@ class SupertrendEngine:
         # Compute strength
         hold_comp = min(1.0, state.direction_hold_count / (self.config.min_hold_bars * 2))
         flip_comp = 1.0 - min(1.0, flip_rate / self.config.flip_rate_chop)
-        dist_comp = min(1.0, distance_avg / (2 * self.config.st_distance_factor * atr_percent + eps))
+        dist_comp = min(
+            1.0, distance_avg / (2 * self.config.st_distance_factor * atr_percent + eps)
+        )
 
         strength = 100.0 * (
-            self.config.strength_weight_hold * hold_comp +
-            self.config.strength_weight_flip * flip_comp +
-            self.config.strength_weight_dist * dist_comp
+            self.config.strength_weight_hold * hold_comp
+            + self.config.strength_weight_flip * flip_comp
+            + self.config.strength_weight_dist * dist_comp
         )
 
         # Cap strength for CHOP
@@ -417,20 +422,21 @@ class SupertrendEngine:
         flips_count = sum(state.flip_deque) if state.flip_deque else 0
         flip_rate = flips_count / self.config.flip_window if state.flip_deque else 0.0
 
-        distance_avg = (sum(state.distance_deque) / len(state.distance_deque)
-                       if state.distance_deque else 0.0)
+        distance_avg = (
+            sum(state.distance_deque) / len(state.distance_deque) if state.distance_deque else 0.0
+        )
 
         # Build debug info
         debug_info = {
-            'is_ready': state.is_ready,
-            'candle_count': state.candle_count,
-            'tr': tr,
-            'flip_window': self.config.flip_window,
-            'flip_rate_chop_thr': self.config.flip_rate_chop,
-            'flip_rate_trend_thr': self.config.flip_rate_trend,
-            'min_hold_bars': self.config.min_hold_bars,
-            'st_distance_factor': self.config.st_distance_factor,
-            'atrp_min_chop': self.config.atrp_min_chop
+            "is_ready": state.is_ready,
+            "candle_count": state.candle_count,
+            "tr": tr,
+            "flip_window": self.config.flip_window,
+            "flip_rate_chop_thr": self.config.flip_rate_chop,
+            "flip_rate_trend_thr": self.config.flip_rate_trend,
+            "min_hold_bars": self.config.min_hold_bars,
+            "st_distance_factor": self.config.st_distance_factor,
+            "atrp_min_chop": self.config.atrp_min_chop,
         }
 
         result = SupertrendState(
@@ -449,7 +455,7 @@ class SupertrendEngine:
             regime_strength_0_100=strength,
             direction_hold_count=state.direction_hold_count,
             distance_avg=distance_avg,
-            debug=debug_info
+            debug=debug_info,
         )
 
         # Update state for next iteration
@@ -501,8 +507,7 @@ class SupertrendEngine:
         return None
 
 
-def format_supertrend_output(states: Dict[str, SupertrendState],
-                             compact: bool = True) -> str:
+def format_supertrend_output(states: Dict[str, SupertrendState], compact: bool = True) -> str:
     """
     Format Supertrend states for display.
 
@@ -522,15 +527,17 @@ def format_supertrend_output(states: Dict[str, SupertrendState],
             # Check if hugging line
             hugging = "YES" if state.distance_avg < 0.001 else "NO"
 
-            line = (f"{tf}: dir={state.st_direction.value} "
-                   f"regime={state.regime.value:5s} "
-                   f"strength={state.regime_strength_0_100:.0f} "
-                   f"line={state.st_line:.2f} "
-                   f"atr%={state.atr_percent*100:.2f}% "
-                   f"flips{state.debug['flip_window']}={state.flips_last_n} "
-                   f"({state.flip_rate:.2f}) "
-                   f"hold={state.direction_hold_count} "
-                   f"dist_avg={state.distance_avg*100:.2f}%")
+            line = (
+                f"{tf}: dir={state.st_direction.value} "
+                f"regime={state.regime.value:5s} "
+                f"strength={state.regime_strength_0_100:.0f} "
+                f"line={state.st_line:.2f} "
+                f"atr%={state.atr_percent*100:.2f}% "
+                f"flips{state.debug['flip_window']}={state.flips_last_n} "
+                f"({state.flip_rate:.2f}) "
+                f"hold={state.direction_hold_count} "
+                f"dist_avg={state.distance_avg*100:.2f}%"
+            )
 
             if hugging == "YES":
                 line += " hugging_line=YES"
@@ -544,7 +551,9 @@ def format_supertrend_output(states: Dict[str, SupertrendState],
             lines.append(f"  Strength: {state.regime_strength_0_100:.1f}")
             lines.append(f"  ST Line: {state.st_line:.2f}")
             lines.append(f"  ATR: {state.atr:.2f} ({state.atr_percent*100:.2f}%)")
-            lines.append(f"  Flips (last {state.debug['flip_window']}): {state.flips_last_n} ({state.flip_rate:.2%})")
+            lines.append(
+                f"  Flips (last {state.debug['flip_window']}): {state.flips_last_n} ({state.flip_rate:.2%})"
+            )
             lines.append(f"  Hold Count: {state.direction_hold_count}")
             lines.append(f"  Distance Avg: {state.distance_avg*100:.2f}%")
 

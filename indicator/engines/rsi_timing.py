@@ -17,14 +17,15 @@ Use divergence for:
 Always combine with price action, volume, and structure.
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List
 from collections import deque
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
 @dataclass
 class Candle:
     """OHLCV candle data."""
+
     timestamp: int
     open: float
     high: float
@@ -36,25 +37,27 @@ class Candle:
 @dataclass
 class SwingPoint:
     """Swing high/low point for divergence detection."""
-    ts: int           # Timestamp
-    price: float      # Swing price
-    rsi: float        # RSI at swing
-    index: int        # Bar index
+
+    ts: int  # Timestamp
+    price: float  # Swing price
+    rsi: float  # RSI at swing
+    index: int  # Bar index
 
 
 @dataclass
 class RSITimingConfig:
     """Configuration for RSI Timing module."""
+
     timeframes: List[str] = field(default_factory=lambda: ["1m", "5m", "1h"])
 
     # RSI calculation
     rsi_period: int = 14
 
     # Regime bands (timing confirmation, NOT entry)
-    regime_high: float = 55.0   # Above => bullish regime
-    regime_low: float = 45.0    # Below => bearish regime
+    regime_high: float = 55.0  # Above => bullish regime
+    regime_low: float = 45.0  # Below => bearish regime
     extreme_high: float = 75.0  # Warning only
-    extreme_low: float = 25.0   # Warning only
+    extreme_low: float = 25.0  # Warning only
 
     # Divergence settings
     min_bars_between_swings_by_tf: Dict[str, int] = field(default_factory=dict)
@@ -82,6 +85,7 @@ class RSITimingConfig:
 @dataclass
 class RSITimingState:
     """RSI timing state for a timeframe."""
+
     rsi: Optional[float]
     rsi_regime: str  # WARMUP / BULLISH / BEARISH / RANGE
     divergence: str  # NONE / REG_BULL / REG_BEAR / HID_BULL / HID_BEAR
@@ -243,10 +247,7 @@ class RSITimingEngine:
             self._states[tf] = _TimeframeState(self.config, tf)
 
     def on_candle_close(
-        self,
-        timeframe: str,
-        candle: Candle,
-        atr_percent: Optional[float] = None
+        self, timeframe: str, candle: Candle, atr_percent: Optional[float] = None
     ) -> RSITimingState:
         """
         Process candle close and update RSI state.
@@ -300,12 +301,7 @@ class RSITimingEngine:
             return  # Skip if RSI not ready
 
         # Create swing point
-        swing = SwingPoint(
-            ts=ts,
-            price=price_high,
-            rsi=state.rsi,
-            index=state.bar_index
-        )
+        swing = SwingPoint(ts=ts, price=price_high, rsi=state.rsi, index=state.bar_index)
 
         # Shift swings
         state.prev_swing_high = state.last_swing_high
@@ -331,12 +327,7 @@ class RSITimingEngine:
         if state.rsi is None:
             return
 
-        swing = SwingPoint(
-            ts=ts,
-            price=price_low,
-            rsi=state.rsi,
-            index=state.bar_index
-        )
+        swing = SwingPoint(ts=ts, price=price_low, rsi=state.rsi, index=state.bar_index)
 
         state.prev_swing_low = state.last_swing_low
         state.last_swing_low = swing
@@ -346,7 +337,7 @@ class RSITimingEngine:
     def warmup(
         self,
         candles_by_tf: Dict[str, List[Candle]],
-        atr_percent_by_tf: Optional[Dict[str, float]] = None
+        atr_percent_by_tf: Optional[Dict[str, float]] = None,
     ) -> Dict[str, RSITimingState]:
         """
         Warmup engine with historical candles.
@@ -420,11 +411,7 @@ class RSITimingEngine:
         state.prev_close = close
 
     def _update_atr_percent(
-        self,
-        state: _TimeframeState,
-        high: float,
-        low: float,
-        close: float
+        self, state: _TimeframeState, high: float, low: float, close: float
     ) -> None:
         """Update ATR% calculation (only if needed for divergence threshold)."""
         # Calculate TR
@@ -501,8 +488,7 @@ class RSITimingEngine:
         if divergence != "NONE":
             state.current_divergence = divergence
             state.div_strength = self._calculate_div_strength(
-                price_delta, min_threshold,
-                abs(new_swing.rsi - prev_swing.rsi)
+                price_delta, min_threshold, abs(new_swing.rsi - prev_swing.rsi)
             )
         else:
             state.current_divergence = "NONE"
@@ -554,8 +540,7 @@ class RSITimingEngine:
         if divergence != "NONE":
             state.current_divergence = divergence
             state.div_strength = self._calculate_div_strength(
-                price_delta, min_threshold,
-                abs(new_swing.rsi - prev_swing.rsi)
+                price_delta, min_threshold, abs(new_swing.rsi - prev_swing.rsi)
             )
         else:
             state.current_divergence = "NONE"
@@ -570,10 +555,7 @@ class RSITimingEngine:
             return price * 0.001
 
     def _calculate_div_strength(
-        self,
-        price_delta: float,
-        min_threshold: float,
-        rsi_delta: float
+        self, price_delta: float, min_threshold: float, rsi_delta: float
     ) -> float:
         """Calculate divergence strength (0-100)."""
         # Normalize price delta (0-3 range, clip at 3x threshold)
@@ -617,15 +599,17 @@ class RSITimingEngine:
                 "atr_percent": state.atr_percent,
                 "regime_high": self.config.regime_high,
                 "regime_low": self.config.regime_low,
-                "last_swing_high": {
-                    "price": state.last_swing_high.price,
-                    "rsi": state.last_swing_high.rsi
-                } if state.last_swing_high else None,
-                "last_swing_low": {
-                    "price": state.last_swing_low.price,
-                    "rsi": state.last_swing_low.rsi
-                } if state.last_swing_low else None,
-            }
+                "last_swing_high": (
+                    {"price": state.last_swing_high.price, "rsi": state.last_swing_high.rsi}
+                    if state.last_swing_high
+                    else None
+                ),
+                "last_swing_low": (
+                    {"price": state.last_swing_low.price, "rsi": state.last_swing_low.rsi}
+                    if state.last_swing_low
+                    else None
+                ),
+            },
         )
 
 

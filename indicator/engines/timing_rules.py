@@ -40,10 +40,10 @@ Usage:
 from dataclasses import dataclass, field
 from typing import Optional
 
-
 # ============================================================================
 # CONFIG
 # ============================================================================
+
 
 @dataclass
 class TimingRulesConfig:
@@ -53,18 +53,18 @@ class TimingRulesConfig:
     timeframes: list[str] = field(default_factory=lambda: ["1m", "5m", "1h"])
 
     # Continuation parameters
-    roc_restart_thr: float = 0.30       # abs threshold for meaningful normalized ROC
-    roc_impulse_thr: float = 0.80       # normalized impulse threshold
+    roc_restart_thr: float = 0.30  # abs threshold for meaningful normalized ROC
+    roc_impulse_thr: float = 0.80  # normalized impulse threshold
     atr_exp_continue_thr: float = 1.00
     use_macd_optional: bool = True
-    macd_slope_thr: float = 0.0         # >0 for bull, <0 for bear
+    macd_slope_thr: float = 0.0  # >0 for bull, <0 for bear
     require_vwap_alignment: bool = True  # vwap_position must match bias
 
     # Exhaustion parameters
     atr_exp_blowoff_thr: float = 1.60
     atr_exp_hot_thr: float = 1.20
     tr_spike_hot_thr: float = 1.50
-    ribbon_compress_thr: float = 0.0    # <0 = compressing
+    ribbon_compress_thr: float = 0.0  # <0 = compressing
     exhaustion_requires_2of3: bool = True
 
     # Squeeze-break parameters
@@ -90,22 +90,24 @@ class TimingRulesConfig:
 # OUTPUT
 # ============================================================================
 
+
 @dataclass
 class TimingDecision:
     """Timing decision output per timeframe."""
 
-    timing_state: str                      # NO_TRADE|CONTINUATION_READY|BREAKOUT_WINDOW|EXHAUSTION_WARNING|TRANSITION
-    direction: int                         # +1 bull, -1 bear, 0 neutral
+    timing_state: str  # NO_TRADE|CONTINUATION_READY|BREAKOUT_WINDOW|EXHAUSTION_WARNING|TRANSITION
+    direction: int  # +1 bull, -1 bear, 0 neutral
     confidence_0_100: float
     timing_score_0_100: Optional[float]
-    checklist: dict[str, bool]             # detailed booleans
-    reasons: list[str]                     # short strings
+    checklist: dict[str, bool]  # detailed booleans
+    reasons: list[str]  # short strings
     debug: dict
 
 
 # ============================================================================
 # INTERNAL STATE
 # ============================================================================
+
 
 @dataclass
 class _TimeframeState:
@@ -129,6 +131,7 @@ class _TimeframeState:
 # ============================================================================
 # ENGINE
 # ============================================================================
+
 
 class TimingRulesEngine:
     """
@@ -206,9 +209,19 @@ class TimingRulesEngine:
         # ====================================================================
 
         ex_decision = self._evaluate_exhaustion(
-            state, trend_bias, roc_fast_norm, roc_fast_norm_prev, acc_fast,
-            atr_exp, tr_spike, ribbon_width_rate, rsi_divergence, structure_pivot_type,
-            checklist, reasons, debug
+            state,
+            trend_bias,
+            roc_fast_norm,
+            roc_fast_norm_prev,
+            acc_fast,
+            atr_exp,
+            tr_spike,
+            ribbon_width_rate,
+            rsi_divergence,
+            structure_pivot_type,
+            checklist,
+            reasons,
+            debug,
         )
 
         if ex_decision is not None:
@@ -221,8 +234,15 @@ class TimingRulesEngine:
         # ====================================================================
 
         brk_decision = self._evaluate_breakout(
-            state, atr_exp, tr_spike, chop_value, chop_state, roc_fast_norm,
-            checklist, reasons, debug
+            state,
+            atr_exp,
+            tr_spike,
+            chop_value,
+            chop_state,
+            roc_fast_norm,
+            checklist,
+            reasons,
+            debug,
         )
 
         if brk_decision is not None:
@@ -235,9 +255,19 @@ class TimingRulesEngine:
         # ====================================================================
 
         cont_decision = self._evaluate_continuation(
-            state, trend_ok, trend_bias, vwap_state, vwap_position,
-            roc_fast_norm, roc_fast_norm_prev, atr_exp, atr_exp_slope,
-            macd_hist_slope, checklist, reasons, debug
+            state,
+            trend_ok,
+            trend_bias,
+            vwap_state,
+            vwap_position,
+            roc_fast_norm,
+            roc_fast_norm_prev,
+            atr_exp,
+            atr_exp_slope,
+            macd_hist_slope,
+            checklist,
+            reasons,
+            debug,
         )
 
         if cont_decision is not None:
@@ -268,7 +298,7 @@ class TimingRulesEngine:
             timing_score_0_100=None,
             checklist={},
             reasons=[],
-            debug={"timeframe": timeframe, "cached": True}
+            debug={"timeframe": timeframe, "cached": True},
         )
 
     # ========================================================================
@@ -289,7 +319,7 @@ class TimingRulesEngine:
         structure_pivot_type: Optional[str],
         checklist: dict[str, bool],
         reasons: list[str],
-        debug: dict
+        debug: dict,
     ) -> Optional[TimingDecision]:
         """Evaluate EXHAUSTION_WARNING (2-of-3 logic)."""
 
@@ -316,7 +346,9 @@ class TimingRulesEngine:
             hot = True
 
         extreme = atr_exp is not None and atr_exp >= self.config.atr_exp_blowoff_thr
-        ribbon_compress = ribbon_width_rate is not None and ribbon_width_rate < self.config.ribbon_compress_thr
+        ribbon_compress = (
+            ribbon_width_rate is not None and ribbon_width_rate < self.config.ribbon_compress_thr
+        )
 
         blowoff = (extreme or hot) and ribbon_compress
         checklist["ex_blowoff"] = blowoff
@@ -326,11 +358,18 @@ class TimingRulesEngine:
 
         # Condition 3: RSI divergence at structure
         rsi_div_at_structure = False
-        if rsi_divergence in {"REG_BEAR", "REG_BULL"} and structure_pivot_type in {"SWING_HIGH", "SWING_LOW"}:
+        if rsi_divergence in {"REG_BEAR", "REG_BULL"} and structure_pivot_type in {
+            "SWING_HIGH",
+            "SWING_LOW",
+        }:
             if trend_bias == 1:
-                rsi_div_at_structure = rsi_divergence == "REG_BEAR" and structure_pivot_type == "SWING_HIGH"
+                rsi_div_at_structure = (
+                    rsi_divergence == "REG_BEAR" and structure_pivot_type == "SWING_HIGH"
+                )
             else:  # bear
-                rsi_div_at_structure = rsi_divergence == "REG_BULL" and structure_pivot_type == "SWING_LOW"
+                rsi_div_at_structure = (
+                    rsi_divergence == "REG_BULL" and structure_pivot_type == "SWING_LOW"
+                )
         checklist["ex_rsi_div"] = rsi_div_at_structure
 
         # Count conditions
@@ -361,9 +400,13 @@ class TimingRulesEngine:
             state.cooldown_remaining = self.config.cooldown_bars_after_exhaustion
             state.cont_count = 0
 
-            timing_score = self._compute_timing_score(
-                True, False, False, False, False, False, True, checklist, debug
-            ) if self.config.enable_timing_score else None
+            timing_score = (
+                self._compute_timing_score(
+                    True, False, False, False, False, False, True, checklist, debug
+                )
+                if self.config.enable_timing_score
+                else None
+            )
 
             return TimingDecision(
                 timing_state="EXHAUSTION_WARNING",
@@ -372,7 +415,7 @@ class TimingRulesEngine:
                 timing_score_0_100=timing_score,
                 checklist=checklist,
                 reasons=reasons,
-                debug=debug
+                debug=debug,
             )
 
         return None
@@ -391,7 +434,7 @@ class TimingRulesEngine:
         roc_fast_norm: Optional[float],
         checklist: dict[str, bool],
         reasons: list[str],
-        debug: dict
+        debug: dict,
     ) -> Optional[TimingDecision]:
         """Evaluate BREAKOUT_WINDOW (two-step: setup → ignition)."""
 
@@ -456,7 +499,11 @@ class TimingRulesEngine:
 
         if state.brk_count >= self.config.breakout_confirm_bars:
             if vol_ignite:
-                reasons.append("atr_exp>=1.2" if atr_exp and atr_exp >= self.config.atr_exp_break_thr else "tr_spike>=1.5")
+                reasons.append(
+                    "atr_exp>=1.2"
+                    if atr_exp and atr_exp >= self.config.atr_exp_break_thr
+                    else "tr_spike>=1.5"
+                )
             if roc_surge:
                 reasons.append("roc_surge")
 
@@ -470,9 +517,13 @@ class TimingRulesEngine:
             # Disarm after firing
             state.setup_armed = False
 
-            timing_score = self._compute_timing_score(
-                False, False, False, False, False, not squeeze_setup, False, checklist, debug
-            ) if self.config.enable_timing_score else None
+            timing_score = (
+                self._compute_timing_score(
+                    False, False, False, False, False, not squeeze_setup, False, checklist, debug
+                )
+                if self.config.enable_timing_score
+                else None
+            )
 
             return TimingDecision(
                 timing_state="BREAKOUT_WINDOW",
@@ -481,7 +532,7 @@ class TimingRulesEngine:
                 timing_score_0_100=timing_score,
                 checklist=checklist,
                 reasons=reasons,
-                debug=debug
+                debug=debug,
             )
 
         return None
@@ -504,7 +555,7 @@ class TimingRulesEngine:
         macd_hist_slope: Optional[float],
         checklist: dict[str, bool],
         reasons: list[str],
-        debug: dict
+        debug: dict,
     ) -> Optional[TimingDecision]:
         """Evaluate CONTINUATION_READY (2-of-3 momentum triggers)."""
 
@@ -539,9 +590,15 @@ class TimingRulesEngine:
         roc_restart = False
         if roc_fast_norm is not None and roc_fast_norm_prev is not None:
             if trend_bias == 1:
-                roc_restart = roc_fast_norm > roc_fast_norm_prev and roc_fast_norm >= self.config.roc_restart_thr
+                roc_restart = (
+                    roc_fast_norm > roc_fast_norm_prev
+                    and roc_fast_norm >= self.config.roc_restart_thr
+                )
             elif trend_bias == -1:
-                roc_restart = roc_fast_norm < roc_fast_norm_prev and roc_fast_norm <= -self.config.roc_restart_thr
+                roc_restart = (
+                    roc_fast_norm < roc_fast_norm_prev
+                    and roc_fast_norm <= -self.config.roc_restart_thr
+                )
         checklist["cont_roc_restart"] = roc_restart
 
         # Trigger 2: ATR support
@@ -597,9 +654,21 @@ class TimingRulesEngine:
                 confidence += 10.0
             confidence = min(confidence, 100.0)
 
-            timing_score = self._compute_timing_score(
-                trend_gate, vwap_gate, roc_restart, atr_support, macd_support, False, False, checklist, debug
-            ) if self.config.enable_timing_score else None
+            timing_score = (
+                self._compute_timing_score(
+                    trend_gate,
+                    vwap_gate,
+                    roc_restart,
+                    atr_support,
+                    macd_support,
+                    False,
+                    False,
+                    checklist,
+                    debug,
+                )
+                if self.config.enable_timing_score
+                else None
+            )
 
             return TimingDecision(
                 timing_state="CONTINUATION_READY",
@@ -608,7 +677,7 @@ class TimingRulesEngine:
                 timing_score_0_100=timing_score,
                 checklist=checklist,
                 reasons=reasons,
-                debug=debug
+                debug=debug,
             )
 
         return None
@@ -618,11 +687,7 @@ class TimingRulesEngine:
     # ========================================================================
 
     def _default_state(
-        self,
-        trend_ok: Optional[bool],
-        checklist: dict[str, bool],
-        reasons: list[str],
-        debug: dict
+        self, trend_ok: Optional[bool], checklist: dict[str, bool], reasons: list[str], debug: dict
     ) -> TimingDecision:
         """Return default state (TRANSITION or NO_TRADE)."""
 
@@ -635,9 +700,13 @@ class TimingRulesEngine:
             confidence = 10.0
             reasons.append("no_setup")
 
-        timing_score = self._compute_timing_score(
-            trend_ok or False, False, False, False, False, False, False, checklist, debug
-        ) if self.config.enable_timing_score else None
+        timing_score = (
+            self._compute_timing_score(
+                trend_ok or False, False, False, False, False, False, False, checklist, debug
+            )
+            if self.config.enable_timing_score
+            else None
+        )
 
         return TimingDecision(
             timing_state=timing_state,
@@ -646,7 +715,7 @@ class TimingRulesEngine:
             timing_score_0_100=timing_score,
             checklist=checklist,
             reasons=reasons,
-            debug=debug
+            debug=debug,
         )
 
     # ========================================================================
@@ -663,7 +732,7 @@ class TimingRulesEngine:
         chop_penalty: bool,
         exhaustion_active: bool,
         checklist: dict[str, bool],
-        debug: dict
+        debug: dict,
     ) -> float:
         """Compute timing score 0-100 (for dashboards)."""
 
@@ -702,6 +771,7 @@ class TimingRulesEngine:
 # PRINT HELPERS
 # ============================================================================
 
+
 def print_timing_decisions(decisions: dict[str, TimingDecision]) -> None:
     """
     Print timing decisions in compact format.
@@ -720,7 +790,9 @@ def print_timing_decisions(decisions: dict[str, TimingDecision]) -> None:
 def format_timing_decision(timeframe: str, decision: TimingDecision) -> str:
     """Format single timing decision."""
     dir_str = f"{decision.direction:+d}" if decision.direction != 0 else " 0"
-    score_str = f"{decision.timing_score_0_100:.0f}" if decision.timing_score_0_100 is not None else "--"
+    score_str = (
+        f"{decision.timing_score_0_100:.0f}" if decision.timing_score_0_100 is not None else "--"
+    )
     reasons_str = ",".join(decision.reasons) if decision.reasons else "none"
 
     return (

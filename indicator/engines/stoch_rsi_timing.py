@@ -14,14 +14,15 @@ StochRSI alone is NOT an entry - it's the final timing confirmation
 after all other conditions are met.
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List
 from collections import deque
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
 @dataclass
 class Candle:
     """OHLCV candle data."""
+
     timestamp: int
     open: float
     high: float
@@ -33,6 +34,7 @@ class Candle:
 @dataclass
 class StochRSIConfig:
     """Configuration for Stochastic RSI timing."""
+
     timeframes: List[str] = field(default_factory=lambda: ["1m", "5m", "1h"])
 
     # RSI settings (if computing internally)
@@ -41,8 +43,8 @@ class StochRSIConfig:
 
     # StochRSI settings
     stoch_period: int = 14  # Lookback for RSI min/max
-    k_smooth: int = 3       # Smoothing for %K
-    d_smooth: int = 3       # Smoothing for %D
+    k_smooth: int = 3  # Smoothing for %K
+    d_smooth: int = 3  # Smoothing for %D
 
     # Zones
     oversold: float = 0.20
@@ -60,12 +62,13 @@ class StochRSIConfig:
 @dataclass
 class StochRSIState:
     """Stochastic RSI state for a timeframe."""
+
     rsi: Optional[float]
     stochrsi: Optional[float]  # 0-1
-    k: Optional[float]         # Smoothed %K (0-1)
-    d: Optional[float]         # Smoothed %D (0-1)
-    zone: str                  # OVERSOLD / NEUTRAL / OVERBOUGHT
-    micro_timing: str          # PULLBACK_DONE_UP / PULLBACK_DONE_DOWN / NONE
+    k: Optional[float]  # Smoothed %K (0-1)
+    d: Optional[float]  # Smoothed %D (0-1)
+    zone: str  # OVERSOLD / NEUTRAL / OVERBOUGHT
+    micro_timing: str  # PULLBACK_DONE_UP / PULLBACK_DONE_DOWN / NONE
     timing_conf_0_100: Optional[float]
     debug: Dict
 
@@ -140,7 +143,7 @@ class StochRSITimingEngine:
         bias_str: Optional[str] = None,
         vwap_near: Optional[bool] = None,
         chop_state: Optional[str] = None,
-        atr_exp_state: Optional[str] = None
+        atr_exp_state: Optional[str] = None,
     ) -> StochRSIState:
         """
         Process candle close and update StochRSI state.
@@ -192,7 +195,7 @@ class StochRSITimingEngine:
             bias=bias,
             vwap_near=vwap_near,
             chop_state=chop_state,
-            atr_exp_state=atr_exp_state
+            atr_exp_state=atr_exp_state,
         )
 
         return self._build_state(state)
@@ -200,7 +203,7 @@ class StochRSITimingEngine:
     def warmup(
         self,
         candles_by_tf: Dict[str, List[Candle]],
-        rsi_by_tf: Optional[Dict[str, List[float]]] = None
+        rsi_by_tf: Optional[Dict[str, List[float]]] = None,
     ) -> Dict[str, StochRSIState]:
         """
         Warmup engine with historical candles.
@@ -281,8 +284,10 @@ class StochRSITimingEngine:
         state.rsi_min_deque.append((state.bar_index, rsi))
 
         # Remove old elements from min deque
-        while (state.rsi_min_deque and
-               state.rsi_min_deque[0][0] <= state.bar_index - self.config.stoch_period):
+        while (
+            state.rsi_min_deque
+            and state.rsi_min_deque[0][0] <= state.bar_index - self.config.stoch_period
+        ):
             state.rsi_min_deque.popleft()
 
         # Update max deque (decreasing order)
@@ -291,8 +296,10 @@ class StochRSITimingEngine:
         state.rsi_max_deque.append((state.bar_index, rsi))
 
         # Remove old elements from max deque
-        while (state.rsi_max_deque and
-               state.rsi_max_deque[0][0] <= state.bar_index - self.config.stoch_period):
+        while (
+            state.rsi_max_deque
+            and state.rsi_max_deque[0][0] <= state.bar_index - self.config.stoch_period
+        ):
             state.rsi_max_deque.popleft()
 
     def _update_stochrsi(self, state: _TimeframeState) -> None:
@@ -351,7 +358,7 @@ class StochRSITimingEngine:
         bias: Optional[int],
         vwap_near: Optional[bool],
         chop_state: Optional[str],
-        atr_exp_state: Optional[str]
+        atr_exp_state: Optional[str],
     ) -> None:
         """Check for pullback completion micro timing."""
         # Reset timing if prerequisites not met
@@ -376,13 +383,15 @@ class StochRSITimingEngine:
             gates_ok = False
 
         # CHOP noise guard
-        if (self.config.disable_when_chop and
-            chop_state is not None and chop_state == "CHOP"):
+        if self.config.disable_when_chop and chop_state is not None and chop_state == "CHOP":
             gates_ok = False
 
         # ATR squeeze guard (optional)
-        if (self.config.disable_when_atr_squeeze and
-            atr_exp_state is not None and atr_exp_state == "SQUEEZE"):
+        if (
+            self.config.disable_when_atr_squeeze
+            and atr_exp_state is not None
+            and atr_exp_state == "SQUEEZE"
+        ):
             gates_ok = False
 
         if not gates_ok:
@@ -396,31 +405,45 @@ class StochRSITimingEngine:
         # Bull pullback completion (bias = +1)
         if bias is not None and bias == 1:
             # Turn up from oversold
-            if (state.k_prev is not None and
-                state.k_prev < self.config.oversold and
-                state.k > self.config.oversold and
-                state.k > state.k_prev):
+            if (
+                state.k_prev is not None
+                and state.k_prev < self.config.oversold
+                and state.k > self.config.oversold
+                and state.k > state.k_prev
+            ):
                 candidate = "PULLBACK_DONE_UP"
 
             # K crosses above D in oversold zone
-            elif (state.k_prev is not None and state.d_prev is not None and
-                  state.k <= 0.30 and state.d <= 0.30 and
-                  state.k_prev <= state.d_prev and state.k > state.d):
+            elif (
+                state.k_prev is not None
+                and state.d_prev is not None
+                and state.k <= 0.30
+                and state.d <= 0.30
+                and state.k_prev <= state.d_prev
+                and state.k > state.d
+            ):
                 candidate = "PULLBACK_DONE_UP"
 
         # Bear pullback completion (bias = -1)
         elif bias is not None and bias == -1:
             # Turn down from overbought
-            if (state.k_prev is not None and
-                state.k_prev > self.config.overbought and
-                state.k < self.config.overbought and
-                state.k < state.k_prev):
+            if (
+                state.k_prev is not None
+                and state.k_prev > self.config.overbought
+                and state.k < self.config.overbought
+                and state.k < state.k_prev
+            ):
                 candidate = "PULLBACK_DONE_DOWN"
 
             # K crosses below D in overbought zone
-            elif (state.k_prev is not None and state.d_prev is not None and
-                  state.k >= 0.70 and state.d >= 0.70 and
-                  state.k_prev >= state.d_prev and state.k < state.d):
+            elif (
+                state.k_prev is not None
+                and state.d_prev is not None
+                and state.k >= 0.70
+                and state.d >= 0.70
+                and state.k_prev >= state.d_prev
+                and state.k < state.d
+            ):
                 candidate = "PULLBACK_DONE_DOWN"
 
         # Confirmation logic (anti-noise)
@@ -444,7 +467,9 @@ class StochRSITimingEngine:
 
         if micro_timing == "PULLBACK_DONE_UP":
             # Base confidence: how far from oversold to neutral
-            base = (state.k - self.config.oversold) / (0.50 - self.config.oversold + self.config.eps)
+            base = (state.k - self.config.oversold) / (
+                0.50 - self.config.oversold + self.config.eps
+            )
             base = max(0.0, min(1.0, base))
 
             # Cross bonus if K crossed D
@@ -457,7 +482,9 @@ class StochRSITimingEngine:
 
         elif micro_timing == "PULLBACK_DONE_DOWN":
             # Base confidence: how far from overbought to neutral
-            base = (self.config.overbought - state.k) / (self.config.overbought - 0.50 + self.config.eps)
+            base = (self.config.overbought - state.k) / (
+                self.config.overbought - 0.50 + self.config.eps
+            )
             base = max(0.0, min(1.0, base))
 
             # Cross bonus if K crossed below D
@@ -508,7 +535,7 @@ class StochRSITimingEngine:
                 "timing_candidate": state.timing_candidate,
                 "confirm_count": state.confirm_count,
                 "confirm_bars": self.config.confirm_bars,
-            }
+            },
         )
 
 

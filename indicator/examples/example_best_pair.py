@@ -6,6 +6,7 @@ This demonstrates various ways to use the selector programmatically.
 """
 
 import sys
+
 from indicator.engines import best_pair_selector as bps
 
 
@@ -31,7 +32,7 @@ def example_custom_config():
 
     config = bps.Config()
     config.WEIGHT_PARTICIPATION = 0.40  # Increase participation importance
-    config.MAX_SPREAD_PCT = 0.02        # Tighter spread requirement
+    config.MAX_SPREAD_PCT = 0.02  # Tighter spread requirement
     config.MIN_PARTICIPATION_GATE = 0.70  # Higher gate threshold
 
     selector = bps.BestPairSelector(config)
@@ -53,13 +54,15 @@ def example_top_n():
     result = selector.select_best_pair()
 
     # Get top 5 tradable pairs
-    top_n = result['top_n']
-    tradable = top_n[top_n['trade_allowed'] == True].head(5)
+    top_n = result["top_n"]
+    tradable = top_n[top_n["trade_allowed"] == True].head(5)
 
     print("\nTop 5 tradable pairs:")
     for idx, row in tradable.iterrows():
-        print(f"  {idx+1}. {row['symbol']:12s} - Score: {row['tradability_score']:.4f} "
-              f"(Vol: ${row['quote_volume']/1e6:.1f}M, Spread: {row['spread_pct']:.4f}%)")
+        print(
+            f"  {idx+1}. {row['symbol']:12s} - Score: {row['tradability_score']:.4f} "
+            f"(Vol: ${row['quote_volume']/1e6:.1f}M, Spread: {row['spread_pct']:.4f}%)"
+        )
 
 
 def example_detailed_analysis():
@@ -71,7 +74,7 @@ def example_detailed_analysis():
     selector = bps.BestPairSelector()
     result = selector.select_best_pair()
 
-    best = result['top_n'].iloc[0]
+    best = result["top_n"].iloc[0]
 
     print(f"\nDetailed breakdown for {best['symbol']}:")
     print(f"  Final Score: {best['tradability_score']:.4f}")
@@ -98,13 +101,13 @@ def example_volatility_preference():
     config = bps.Config()
     # Target higher volatility for scalping
     config.TARGET_VOLATILITY_OPTIMAL = 0.06  # 6% optimal
-    config.TARGET_VOLATILITY_MIN = 0.03      # 3% minimum
-    config.TARGET_VOLATILITY_MAX = 0.12      # 12% maximum
+    config.TARGET_VOLATILITY_MIN = 0.03  # 3% minimum
+    config.TARGET_VOLATILITY_MAX = 0.12  # 12% maximum
 
     selector = bps.BestPairSelector(config)
     result = selector.select_best_pair()
 
-    best = result['top_n'].iloc[0]
+    best = result["top_n"].iloc[0]
 
     print(f"\nWith high-volatility preference:")
     print(f"Best pair: {best['symbol']}")
@@ -147,7 +150,7 @@ def example_stats():
     selector = bps.BestPairSelector()
     result = selector.select_best_pair()
 
-    stats = result['stats']
+    stats = result["stats"]
 
     print(f"\nMarket Scan Statistics:")
     print(f"  Total eligible symbols:     {stats['total_input']}")
@@ -184,5 +187,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nError: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

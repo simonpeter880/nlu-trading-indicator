@@ -9,18 +9,18 @@ Combine with price action, volume, and momentum for complete analysis.
 """
 
 from indicator.engines.bollinger_bandwidth import (
-    BollingerBandwidthEngine,
     BollingerBandwidthConfig,
+    BollingerBandwidthEngine,
     Candle,
-    print_bollinger_bandwidth,
     format_bandwidth_state,
     interpret_bandwidth,
+    print_bollinger_bandwidth,
 )
-
 
 # ============================================================================
 # EXAMPLE 1: Continuous Runner Integration
 # ============================================================================
+
 
 def example_continuous_integration():
     """
@@ -68,6 +68,7 @@ def example_continuous_integration():
 # ============================================================================
 # EXAMPLE 2: Batch Analysis Integration (runner.py)
 # ============================================================================
+
 
 def example_batch_integration():
     """
@@ -124,6 +125,7 @@ def example_batch_integration():
 # EXAMPLE 3: Combined with CHOP and ATR Expansion
 # ============================================================================
 
+
 def example_combined_chop_atr():
     """
     Example: Combine BB Bandwidth with CHOP and ATR for squeeze-break detection.
@@ -158,6 +160,7 @@ def example_combined_chop_atr():
 # ============================================================================
 # EXAMPLE 4: Multi-Timeframe Volatility Alignment
 # ============================================================================
+
 
 def example_multi_timeframe_volatility():
     """
@@ -197,6 +200,7 @@ def example_multi_timeframe_volatility():
 # EXAMPLE 5: Bollinger Bands as Dynamic Support/Resistance
 # ============================================================================
 
+
 def example_bollinger_bands_sr():
     """
     Example: Use Bollinger Bands (upper/lower) as dynamic S/R levels.
@@ -229,6 +233,7 @@ def example_bollinger_bands_sr():
 # ============================================================================
 # EXAMPLE 6: Bandwidth Score for Ranking Pairs
 # ============================================================================
+
 
 def example_bandwidth_score_ranking():
     """
@@ -263,6 +268,7 @@ def example_bandwidth_score_ranking():
 # ============================================================================
 # EXAMPLE 7: Compact Display
 # ============================================================================
+
 
 def example_compact_display():
     """
@@ -334,6 +340,7 @@ def example_compact_display():
 # ============================================================================
 # EXAMPLE 8: Real-time Updates
 # ============================================================================
+
 
 def example_realtime_updates():
     """

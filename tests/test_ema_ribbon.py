@@ -5,33 +5,30 @@ Tests incremental EMA updates, stack scoring, state classification,
 and various trend scenarios.
 """
 
-import pytest
 import math
 from typing import List
+
+import pytest
 from ema_ribbon import (
-    EMARibbonEngine,
-    EMARibbonConfig,
     Candle,
+    EMARibbonConfig,
+    EMARibbonEngine,
     RibbonDirection,
     RibbonState,
-    format_ribbon_output
+    format_ribbon_output,
 )
 
 
 def create_candle(timestamp: float, price: float, volume: float = 1000.0) -> Candle:
     """Helper to create a candle with same OHLC"""
     return Candle(
-        timestamp=timestamp,
-        open=price,
-        high=price,
-        low=price,
-        close=price,
-        volume=volume
+        timestamp=timestamp, open=price, high=price, low=price, close=price, volume=volume
     )
 
 
-def generate_candles(start_price: float, count: int, trend: str = "flat",
-                    trend_strength: float = 0.001) -> List[Candle]:
+def generate_candles(
+    start_price: float, count: int, trend: str = "flat", trend_strength: float = 0.001
+) -> List[Candle]:
     """
     Generate synthetic candles.
 
@@ -51,9 +48,9 @@ def generate_candles(start_price: float, count: int, trend: str = "flat",
         candles.append(create_candle(float(i), price))
 
         if trend == "up":
-            price *= (1 + trend_strength)
+            price *= 1 + trend_strength
         elif trend == "down":
-            price *= (1 - trend_strength)
+            price *= 1 - trend_strength
         # flat: no change
 
     return candles
@@ -102,9 +99,7 @@ class TestEMARibbonConfig:
 
     def test_light_ribbon_preset(self):
         """Test lighter ribbon configuration"""
-        config = EMARibbonConfig(
-            ribbon_periods=[9, 12, 15, 21, 30, 40, 50]
-        )
+        config = EMARibbonConfig(ribbon_periods=[9, 12, 15, 21, 30, 40, 50])
         assert len(config.ribbon_periods) == 7
 
     def test_invalid_ribbon_periods_unsorted(self):
@@ -126,10 +121,12 @@ class TestEMARibbonConfig:
     def test_weights_sum_to_one(self):
         """Test that strength weights sum to 1.0"""
         config = EMARibbonConfig()
-        weight_sum = (config.strength_weight_stack +
-                     config.strength_weight_width +
-                     config.strength_weight_slope +
-                     config.strength_weight_expansion)
+        weight_sum = (
+            config.strength_weight_stack
+            + config.strength_weight_width
+            + config.strength_weight_slope
+            + config.strength_weight_expansion
+        )
         assert abs(weight_sum - 1.0) < 1e-6
 
 
@@ -157,7 +154,9 @@ class TestIncrementalEMA:
         expected_ema = batch_emas[-1]
 
         rel_error = abs(incremental_ema - expected_ema) / expected_ema
-        assert rel_error < 0.01, f"Incremental EMA {incremental_ema} differs from batch {expected_ema}"
+        assert (
+            rel_error < 0.01
+        ), f"Incremental EMA {incremental_ema} differs from batch {expected_ema}"
 
     def test_incremental_vs_batch_multiple_periods(self):
         """Test incremental EMA matches batch for multiple periods"""
@@ -179,7 +178,9 @@ class TestIncrementalEMA:
             expected_ema = batch_emas[-1]
 
             rel_error = abs(incremental_ema - expected_ema) / expected_ema
-            assert rel_error < 0.01, f"Period {period}: incremental {incremental_ema} != batch {expected_ema}"
+            assert (
+                rel_error < 0.01
+            ), f"Period {period}: incremental {incremental_ema} != batch {expected_ema}"
 
     def test_warmup_state_ready(self):
         """Test that state becomes ready after warmup"""
@@ -215,7 +216,9 @@ class TestStackScore:
         result = engine.on_candle_close("1m", candles[-1])
 
         # Should have high stack score and BULL direction
-        assert result.stack_score >= 0.80, f"Stack score {result.stack_score} too low for strong uptrend"
+        assert (
+            result.stack_score >= 0.80
+        ), f"Stack score {result.stack_score} too low for strong uptrend"
         assert result.ribbon_direction == RibbonDirection.BULL
 
     def test_perfect_bearish_stack(self):
@@ -229,7 +232,9 @@ class TestStackScore:
 
         result = engine.on_candle_close("1m", candles[-1])
 
-        assert result.stack_score >= 0.80, f"Stack score {result.stack_score} too low for strong downtrend"
+        assert (
+            result.stack_score >= 0.80
+        ), f"Stack score {result.stack_score} too low for strong downtrend"
         assert result.ribbon_direction == RibbonDirection.BEAR
 
     def test_neutral_stack_sideways(self):
@@ -245,8 +250,9 @@ class TestStackScore:
 
         # In flat market, EMAs converge and stack becomes weak
         # Direction should be NEUTRAL or stack score low
-        assert (result.ribbon_direction == RibbonDirection.NEUTRAL or
-                result.stack_score < 0.70), "Sideways market should have weak stack"
+        assert (
+            result.ribbon_direction == RibbonDirection.NEUTRAL or result.stack_score < 0.70
+        ), "Sideways market should have weak stack"
 
 
 class TestRibbonWidth:
@@ -296,7 +302,9 @@ class TestRibbonWidth:
             result = engine.on_candle_close("1m", candle)
 
         # Should show negative width_rate (compression)
-        assert result.width_rate < 0, f"Width rate {result.width_rate} should be negative during compression"
+        assert (
+            result.width_rate < 0
+        ), f"Width rate {result.width_rate} should be negative during compression"
 
 
 class TestRibbonState:
@@ -316,7 +324,9 @@ class TestRibbonState:
             result = engine.on_candle_close("1m", candle, atr_percent=0.01)
 
         # Should be HEALTHY with high strength
-        assert result.ribbon_state == RibbonState.HEALTHY, f"Got {result.ribbon_state} instead of HEALTHY"
+        assert (
+            result.ribbon_state == RibbonState.HEALTHY
+        ), f"Got {result.ribbon_state} instead of HEALTHY"
         assert result.ribbon_strength_0_100 > 60, f"Strength {result.ribbon_strength_0_100} too low"
 
     def test_chop_state_sideways(self):
@@ -336,10 +346,7 @@ class TestRibbonState:
 
     def test_exhausting_state(self):
         """Test that weakening momentum is detected"""
-        config = EMARibbonConfig(
-            ribbon_periods=[9, 12, 15, 21, 30],
-            compress_rate_thr=-0.15
-        )
+        config = EMARibbonConfig(ribbon_periods=[9, 12, 15, 21, 30], compress_rate_thr=-0.15)
         engine = EMARibbonEngine(config)
 
         # Start with strong uptrend
@@ -358,7 +365,9 @@ class TestRibbonState:
 
         # After flattening, width should compress and state should deteriorate
         # Check that width_rate is negative (compressing)
-        assert result.width_rate < -0.05, f"Width rate {result.width_rate} should be strongly negative"
+        assert (
+            result.width_rate < -0.05
+        ), f"Width rate {result.width_rate} should be strongly negative"
 
         # State should show deterioration (not perfectly HEALTHY anymore)
         # May still be classified as HEALTHY if stack remains strong, but strength should drop
@@ -382,7 +391,7 @@ class TestPullbackDetection:
         # Get ribbon center and threshold
         result = engine.on_candle_close("1m", candles[-1], atr_percent=0.01)
         center = result.ribbon_center
-        pullback_band = result.debug['thresholds']['pullback_band']  # 0.003 (0.3%)
+        pullback_band = result.debug["thresholds"]["pullback_band"]  # 0.003 (0.3%)
 
         # Create candle close to center (within pullback band)
         # pullback_band is 0.003 = 0.3% of close, so we need to be within that
@@ -429,11 +438,7 @@ class TestMultiTimeframe:
         candles_1h = generate_candles(100.0, 60, trend="flat")
 
         # Warmup all timeframes
-        engine.warmup({
-            "1m": candles_1m,
-            "5m": candles_5m,
-            "1h": candles_1h
-        })
+        engine.warmup({"1m": candles_1m, "5m": candles_5m, "1h": candles_1h})
 
         # Get results
         result_1m = engine.on_candle_close("1m", candles_1m[-1])
@@ -456,19 +461,13 @@ class TestMultiTimeframe:
         candles_5m = generate_candles(100.0, 80, trend="up", trend_strength=0.003)
 
         # Warmup first
-        engine.warmup({
-            "1m": candles_1m[:60],
-            "5m": candles_5m[:60]
-        })
+        engine.warmup({"1m": candles_1m[:60], "5m": candles_5m[:60]})
 
         # Use update method with latest candles
-        results = engine.update({
-            "1m": candles_1m[60:],
-            "5m": candles_5m[60:]
-        }, atr_percent_by_tf={
-            "1m": 0.008,
-            "5m": 0.012
-        })
+        results = engine.update(
+            {"1m": candles_1m[60:], "5m": candles_5m[60:]},
+            atr_percent_by_tf={"1m": 0.008, "5m": 0.012},
+        )
 
         # Should return results for both timeframes
         assert "1m" in results
@@ -483,10 +482,7 @@ class TestATRAdaptiveThresholds:
 
     def test_atr_adaptive_thresholds(self):
         """Test thresholds adapt to ATR%"""
-        config = EMARibbonConfig(
-            width_thr_factor=0.10,
-            slope_thr_factor=0.15
-        )
+        config = EMARibbonConfig(width_thr_factor=0.10, slope_thr_factor=0.15)
         engine = EMARibbonEngine(config)
 
         # High volatility
@@ -498,8 +494,8 @@ class TestATRAdaptiveThresholds:
         thresholds_low = engine._get_thresholds("1m", atr_low)
 
         # High volatility should have higher thresholds
-        assert thresholds_high['width_thr'] > thresholds_low['width_thr']
-        assert thresholds_high['slope_thr'] > thresholds_low['slope_thr']
+        assert thresholds_high["width_thr"] > thresholds_low["width_thr"]
+        assert thresholds_high["slope_thr"] > thresholds_low["slope_thr"]
 
     def test_static_fallback_when_no_atr(self):
         """Test static fallback thresholds when ATR not provided"""
@@ -509,8 +505,8 @@ class TestATRAdaptiveThresholds:
         thresholds = engine._get_thresholds("1m", None)
 
         # Should use static values
-        assert thresholds['width_thr'] == config.width_thr_static_by_tf["1m"]
-        assert thresholds['slope_thr'] == config.slope_thr_static_by_tf["1m"]
+        assert thresholds["width_thr"] == config.width_thr_static_by_tf["1m"]
+        assert thresholds["slope_thr"] == config.slope_thr_static_by_tf["1m"]
 
 
 class TestFormatting:
@@ -596,8 +592,8 @@ class TestEdgeCases:
         result = engine.on_candle_close("1m", candles[-1])
 
         # Should indicate warmup in debug
-        assert 'warmup' in result.debug
-        assert result.debug['warmup'] is True
+        assert "warmup" in result.debug
+        assert result.debug["warmup"] is True
 
 
 if __name__ == "__main__":

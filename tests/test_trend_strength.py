@@ -4,28 +4,21 @@ Tests for Trend Strength Module
 Tests component normalization, weighting, smoothing, and bucketing.
 """
 
-import pytest
 from typing import List
+
+import pytest
 from trend_strength import (
-    TrendStrengthEngine,
-    TrendStrengthConfig,
-    Candle,
     Bucket,
-    format_trend_strength_output
+    Candle,
+    TrendStrengthConfig,
+    TrendStrengthEngine,
+    format_trend_strength_output,
 )
 
 
-def create_candle(timestamp: float, high: float, low: float, close: float,
-                 volume: float) -> Candle:
+def create_candle(timestamp: float, high: float, low: float, close: float, volume: float) -> Candle:
     """Helper to create a candle"""
-    return Candle(
-        timestamp=timestamp,
-        open=close,
-        high=high,
-        low=low,
-        close=close,
-        volume=volume
-    )
+    return Candle(timestamp=timestamp, open=close, high=high, low=low, close=close, volume=volume)
 
 
 def create_simple_candle(timestamp: float, price: float, volume: float = 1000.0) -> Candle:
@@ -38,10 +31,7 @@ class TestComponentNormalization:
 
     def test_ema_slope_normalization(self):
         """Test EMA slope hits ~1.0 when slope == factor × ATR%"""
-        config = TrendStrengthConfig(
-            atr_period=5,
-            ema_slope_strong_factor=0.20
-        )
+        config = TrendStrengthConfig(atr_period=5, ema_slope_strong_factor=0.20)
         engine = TrendStrengthEngine(config)
 
         # Warmup to establish ATR
@@ -58,19 +48,16 @@ class TestComponentNormalization:
             "1m",
             create_simple_candle(10.0, 105.0, 1000.0),
             slope_50=0.002,  # Matches strong threshold
-            atr_percent=0.01
+            atr_percent=0.01,
         )
 
         # Should normalize to ~1.0
-        assert 'ema_slope' in result.components_norm
-        assert 0.8 < result.components_norm['ema_slope'] <= 1.0
+        assert "ema_slope" in result.components_norm
+        assert 0.8 < result.components_norm["ema_slope"] <= 1.0
 
     def test_ribbon_normalization_range(self):
         """Test ribbon WR maps correctly to 0..1"""
-        config = TrendStrengthConfig(
-            ribbon_wr_low=-0.10,
-            ribbon_wr_high=0.20
-        )
+        config = TrendStrengthConfig(ribbon_wr_low=-0.10, ribbon_wr_high=0.20)
         engine = TrendStrengthEngine(config)
 
         # Warmup
@@ -79,35 +66,27 @@ class TestComponentNormalization:
 
         # Test at low boundary
         result_low = engine.on_candle_close(
-            "1m",
-            create_simple_candle(15.0, 100.0, 1000.0),
-            ribbon_width_rate=-0.10
+            "1m", create_simple_candle(15.0, 100.0, 1000.0), ribbon_width_rate=-0.10
         )
-        assert result_low.components_norm['ribbon'] == 0.0
+        assert result_low.components_norm["ribbon"] == 0.0
 
         # Test at high boundary
         result_high = engine.on_candle_close(
-            "1m",
-            create_simple_candle(16.0, 100.0, 1000.0),
-            ribbon_width_rate=0.20
+            "1m", create_simple_candle(16.0, 100.0, 1000.0), ribbon_width_rate=0.20
         )
-        assert abs(result_high.components_norm['ribbon'] - 1.0) < 1e-6
+        assert abs(result_high.components_norm["ribbon"] - 1.0) < 1e-6
 
         # Test at mid-point
         result_mid = engine.on_candle_close(
             "1m",
             create_simple_candle(17.0, 100.0, 1000.0),
-            ribbon_width_rate=0.05  # Mid between -0.10 and 0.20
+            ribbon_width_rate=0.05,  # Mid between -0.10 and 0.20
         )
-        assert 0.4 < result_mid.components_norm['ribbon'] < 0.6
+        assert 0.4 < result_mid.components_norm["ribbon"] < 0.6
 
     def test_rv_normalization_saturation(self):
         """Test RV normalization with saturation"""
-        config = TrendStrengthConfig(
-            rv_period=10,
-            rv_low=0.8,
-            rv_high=2.0
-        )
+        config = TrendStrengthConfig(rv_period=10, rv_low=0.8, rv_high=2.0)
         engine = TrendStrengthEngine(config)
 
         # Warmup with consistent volume
@@ -115,34 +94,24 @@ class TestComponentNormalization:
         engine.warmup({"1m": candles})
 
         # Test RV at low boundary (should -> 0)
-        result_low = engine.on_candle_close(
-            "1m",
-            create_simple_candle(15.0, 100.0, 1000.0),
-            rv=0.8
-        )
-        assert result_low.components_norm['rv'] == 0.0
+        result_low = engine.on_candle_close("1m", create_simple_candle(15.0, 100.0, 1000.0), rv=0.8)
+        assert result_low.components_norm["rv"] == 0.0
 
         # Test RV at high boundary (should -> 1)
         result_high = engine.on_candle_close(
-            "1m",
-            create_simple_candle(16.0, 100.0, 1000.0),
-            rv=2.0
+            "1m", create_simple_candle(16.0, 100.0, 1000.0), rv=2.0
         )
-        assert abs(result_high.components_norm['rv'] - 1.0) < 1e-6
+        assert abs(result_high.components_norm["rv"] - 1.0) < 1e-6
 
         # Test RV above high (saturates at 1)
         result_saturated = engine.on_candle_close(
-            "1m",
-            create_simple_candle(17.0, 100.0, 1000.0),
-            rv=3.0
+            "1m", create_simple_candle(17.0, 100.0, 1000.0), rv=3.0
         )
-        assert result_saturated.components_norm['rv'] == 1.0
+        assert result_saturated.components_norm["rv"] == 1.0
 
     def test_oi_normalization(self):
         """Test OI expansion normalization"""
-        config = TrendStrengthConfig(
-            oi_ref_by_tf={"1m": 0.003}
-        )
+        config = TrendStrengthConfig(oi_ref_by_tf={"1m": 0.003})
         engine = TrendStrengthEngine(config)
 
         # Warmup
@@ -154,11 +123,11 @@ class TestComponentNormalization:
             "1m",
             create_simple_candle(10.0, 100.0, 1000.0),
             oi_now=1000.0,
-            oi_prev=997.0  # dOI = 3/997 ≈ 0.003
+            oi_prev=997.0,  # dOI = 3/997 ≈ 0.003
         )
 
-        assert 'oi' in result.components_norm
-        assert 0.8 < result.components_norm['oi'] <= 1.0
+        assert "oi" in result.components_norm
+        assert 0.8 < result.components_norm["oi"] <= 1.0
 
 
 class TestWeightingAndComposite:
@@ -166,12 +135,7 @@ class TestWeightingAndComposite:
 
     def test_all_components_present(self):
         """Test composite with all components present"""
-        config = TrendStrengthConfig(
-            w_ema_slope=0.35,
-            w_ribbon=0.25,
-            w_rv=0.20,
-            w_oi=0.20
-        )
+        config = TrendStrengthConfig(w_ema_slope=0.35, w_ribbon=0.25, w_rv=0.20, w_oi=0.20)
         engine = TrendStrengthEngine(config)
 
         # Warmup
@@ -187,7 +151,7 @@ class TestWeightingAndComposite:
             rv=1.4,
             oi_now=1000.0,
             oi_prev=997.0,
-            atr_percent=0.01
+            atr_percent=0.01,
         )
 
         # Weights should be original
@@ -196,12 +160,7 @@ class TestWeightingAndComposite:
 
     def test_missing_oi_renormalizes_weights(self):
         """Test weight renormalization when OI missing"""
-        config = TrendStrengthConfig(
-            w_ema_slope=0.35,
-            w_ribbon=0.25,
-            w_rv=0.20,
-            w_oi=0.20
-        )
+        config = TrendStrengthConfig(w_ema_slope=0.35, w_ribbon=0.25, w_rv=0.20, w_oi=0.20)
         engine = TrendStrengthEngine(config)
 
         # Warmup
@@ -215,12 +174,12 @@ class TestWeightingAndComposite:
             slope_50=0.001,
             ribbon_width_rate=0.05,
             rv=1.4,
-            atr_percent=0.01
+            atr_percent=0.01,
         )
 
         # Should have 3 components
         assert len(result.weights) == 3
-        assert 'oi' not in result.weights
+        assert "oi" not in result.weights
 
         # Weights should sum to 1.0
         assert abs(sum(result.weights.values()) - 1.0) < 1e-6
@@ -229,7 +188,7 @@ class TestWeightingAndComposite:
         # Original: ema=0.35, ribbon=0.25, rv=0.20, sum=0.80
         # Renormalized: ema=0.35/0.80, ribbon=0.25/0.80, rv=0.20/0.80
         expected_ema = 0.35 / 0.80
-        assert abs(result.weights['ema_slope'] - expected_ema) < 0.01
+        assert abs(result.weights["ema_slope"] - expected_ema) < 0.01
 
 
 class TestSmoothing:
@@ -252,15 +211,19 @@ class TestSmoothing:
                 "1m",
                 create_simple_candle(15.0 + i, 100.0, 1000.0),
                 slope_50=slope,
-                atr_percent=0.01
+                atr_percent=0.01,
             )
             results.append(result)
 
         # Smooth should be less volatile than raw
-        raw_changes = [abs(results[i].strength_raw - results[i-1].strength_raw)
-                      for i in range(1, len(results))]
-        smooth_changes = [abs(results[i].strength_smooth - results[i-1].strength_smooth)
-                         for i in range(1, len(results))]
+        raw_changes = [
+            abs(results[i].strength_raw - results[i - 1].strength_raw)
+            for i in range(1, len(results))
+        ]
+        smooth_changes = [
+            abs(results[i].strength_smooth - results[i - 1].strength_smooth)
+            for i in range(1, len(results))
+        ]
 
         avg_raw_change = sum(raw_changes) / len(raw_changes)
         avg_smooth_change = sum(smooth_changes) / len(smooth_changes)
@@ -287,7 +250,7 @@ class TestBucketing:
             slope_50=0.0001,
             ribbon_width_rate=-0.05,
             rv=0.9,
-            atr_percent=0.01
+            atr_percent=0.01,
         )
 
         assert result.bucket == Bucket.WEAK
@@ -311,7 +274,7 @@ class TestBucketing:
             rv=1.8,
             oi_now=1000.0,
             oi_prev=990.0,
-            atr_percent=0.01
+            atr_percent=0.01,
         )
 
         assert result.bucket == Bucket.STRONG
@@ -333,7 +296,7 @@ class TestBucketing:
             slope_50=0.0015,
             ribbon_width_rate=0.05,
             rv=1.2,
-            atr_percent=0.01
+            atr_percent=0.01,
         )
 
         assert result.bucket == Bucket.EMERGING
@@ -360,7 +323,7 @@ class TestSafetyCaps:
             ribbon_width_rate=0.15,
             rv=1.8,
             atr_percent=0.01,
-            flags={'structure_is_range': True}
+            flags={"structure_is_range": True},
         )
 
         assert result.strength_smooth <= 50.0
@@ -382,7 +345,7 @@ class TestSafetyCaps:
             ribbon_width_rate=0.15,
             rv=1.8,
             atr_percent=0.01,
-            flags={'supertrend_is_chop': True}
+            flags={"supertrend_is_chop": True},
         )
 
         assert result.strength_smooth <= 50.0
@@ -403,7 +366,7 @@ class TestSafetyCaps:
             slope_50=0.003,
             ribbon_width_rate=0.15,
             rv=0.2,  # Very low RV
-            atr_percent=0.01
+            atr_percent=0.01,
         )
 
         assert result.strength_smooth <= 25.0
@@ -435,8 +398,8 @@ class TestEndToEnd:
                 ribbon_width_rate=0.15,  # Expanding
                 rv=1.7,  # High volume
                 oi_now=1000.0 + i * 5,
-                oi_prev=1000.0 + (i-1) * 5,
-                atr_percent=0.01
+                oi_prev=1000.0 + (i - 1) * 5,
+                atr_percent=0.01,
             )
 
         # Final result should be STRONG
@@ -466,7 +429,7 @@ class TestEndToEnd:
                 slope_50=0.0001,  # Minimal slope
                 ribbon_width_rate=-0.05,  # Compressing
                 rv=0.9,  # Low volume
-                atr_percent=0.01
+                atr_percent=0.01,
             )
 
         # Final result should be WEAK
@@ -495,7 +458,7 @@ class TestDirectionalSigning:
             rv=1.5,
             oi_now=100000.0,
             oi_prev=97000.0,
-            bias="BULL"
+            bias="BULL",
         )
 
         # Verify direction_bias is +1
@@ -523,7 +486,7 @@ class TestDirectionalSigning:
             rv=1.5,
             oi_now=100000.0,
             oi_prev=97000.0,
-            bias="BEAR"
+            bias="BEAR",
         )
 
         # Verify direction_bias is -1
@@ -549,7 +512,7 @@ class TestDirectionalSigning:
             slope_50=0.0030,
             ribbon_width_rate=0.15,
             rv=1.5,
-            bias="NEUTRAL"
+            bias="NEUTRAL",
         )
 
         # Verify direction_bias is 0
@@ -576,7 +539,7 @@ class TestDirectionalSigning:
             ribbon_width_rate=0.15,
             rv=1.5,
             bias="BULL",  # This should be ignored
-            direction_bias=-1  # This should be used
+            direction_bias=-1,  # This should be used
         )
 
         # Verify direction_bias parameter was used
@@ -598,7 +561,7 @@ class TestDirectionalSigning:
             create_simple_candle(15.0, 100.0, 1000.0),
             slope_50=0.0030,
             ribbon_width_rate=0.15,
-            rv=1.5
+            rv=1.5,
         )
 
         # Verify defaults to neutral
@@ -621,7 +584,7 @@ class TestDirectionalSigning:
             slope_50=0.0030,
             ribbon_width_rate=0.15,
             rv=1.5,
-            bias="INVALID"
+            bias="INVALID",
         )
 
         # Verify defaults to neutral
@@ -644,7 +607,7 @@ class TestDirectionalSigning:
             slope_50=0.0030,
             ribbon_width_rate=0.15,
             rv=1.5,
-            direction_bias=5  # Invalid
+            direction_bias=5,  # Invalid
         )
 
         # Should default to 0
@@ -670,7 +633,7 @@ class TestFormatting:
             ribbon_width_rate=0.10,
             rv=1.5,
             atr_percent=0.01,
-            bias="BULL"
+            bias="BULL",
         )
 
         output = format_trend_strength_output({"1m": result}, compact=True)
@@ -691,10 +654,7 @@ class TestEdgeCases:
         engine = TrendStrengthEngine(config)
 
         # No warmup, no components
-        result = engine.on_candle_close(
-            "1m",
-            create_simple_candle(1.0, 100.0, 1000.0)
-        )
+        result = engine.on_candle_close("1m", create_simple_candle(1.0, 100.0, 1000.0))
 
         # Should return 0 strength
         assert result.strength_raw == 0.0
@@ -703,12 +663,7 @@ class TestEdgeCases:
     def test_weight_validation(self):
         """Test config validates weights sum to 1.0"""
         with pytest.raises(ValueError, match="must sum to 1.0"):
-            TrendStrengthConfig(
-                w_ema_slope=0.3,
-                w_ribbon=0.3,
-                w_rv=0.3,
-                w_oi=0.3  # Sums to 1.2
-            )
+            TrendStrengthConfig(w_ema_slope=0.3, w_ribbon=0.3, w_rv=0.3, w_oi=0.3)  # Sums to 1.2
 
 
 if __name__ == "__main__":

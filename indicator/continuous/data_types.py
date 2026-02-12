@@ -4,15 +4,15 @@ Core data types for continuous market data.
 These are the atomic units flowing through the system.
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
-from enum import Enum
 import time
-
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 # =============================================================================
 # RAW DATA EVENTS (from exchanges)
 # =============================================================================
+
 
 @dataclass(slots=True)
 class TradeEvent:
@@ -23,6 +23,7 @@ class TradeEvent:
     - is_buyer_maker=True  -> Seller aggressed (hit bid) -> SELL
     - is_buyer_maker=False -> Buyer aggressed (lifted ask) -> BUY
     """
+
     timestamp_ms: int
     price: float
     quantity: float
@@ -53,6 +54,7 @@ class TradeEvent:
 @dataclass(slots=True)
 class OrderbookLevel:
     """Single price level in orderbook."""
+
     price: float
     quantity: float
 
@@ -68,6 +70,7 @@ class OrderbookSnapshot:
 
     Kept sparse (top 10-25 levels) for efficiency.
     """
+
     timestamp_ms: int
     bids: List[OrderbookLevel]  # Sorted by price descending (best bid first)
     asks: List[OrderbookLevel]  # Sorted by price ascending (best ask first)
@@ -139,14 +142,8 @@ class OrderbookSnapshot:
 
         threshold = mid * bps / 10000
 
-        bid_depth = sum(
-            b.quantity for b in self.bids
-            if mid - b.price <= threshold
-        )
-        ask_depth = sum(
-            a.quantity for a in self.asks
-            if a.price - mid <= threshold
-        )
+        bid_depth = sum(b.quantity for b in self.bids if mid - b.price <= threshold)
+        ask_depth = sum(a.quantity for a in self.asks if a.price - mid <= threshold)
 
         return bid_depth, ask_depth
 
@@ -154,6 +151,7 @@ class OrderbookSnapshot:
 @dataclass(slots=True)
 class OIUpdate:
     """Open Interest update."""
+
     timestamp_ms: int
     open_interest: float
     open_interest_value: float  # OI * mark price
@@ -162,6 +160,7 @@ class OIUpdate:
 @dataclass(slots=True)
 class FundingUpdate:
     """Funding rate update."""
+
     timestamp_ms: int
     funding_rate: float
     mark_price: float
@@ -181,8 +180,10 @@ class FundingUpdate:
 # COMPUTED SIGNALS (from engines)
 # =============================================================================
 
+
 class SignalDirection(Enum):
     """Directional bias of a signal."""
+
     BULLISH = "bullish"
     BEARISH = "bearish"
     NEUTRAL = "neutral"
@@ -191,6 +192,7 @@ class SignalDirection(Enum):
 @dataclass
 class VolumeSignal:
     """Signal from Volume Engine."""
+
     timestamp_ms: int
 
     # Raw metrics
@@ -215,6 +217,7 @@ class VolumeSignal:
 @dataclass
 class DeltaSignal:
     """Signal from Delta Engine (cumulative volume delta)."""
+
     timestamp_ms: int
 
     # CVD metrics
@@ -236,6 +239,7 @@ class DeltaSignal:
 @dataclass
 class BookSignal:
     """Signal from Orderbook Engine."""
+
     timestamp_ms: int
 
     # Raw metrics
@@ -262,6 +266,7 @@ class BookSignal:
 @dataclass
 class OIFundingSignal:
     """Combined OI + Funding signal (context layer)."""
+
     timestamp_ms: int
 
     # OI metrics
@@ -291,6 +296,7 @@ class OIFundingSignal:
 # AGGREGATED MARKET STATE
 # =============================================================================
 
+
 @dataclass
 class MarketState:
     """
@@ -298,6 +304,7 @@ class MarketState:
 
     This is what the state machine consumes to make decisions.
     """
+
     timestamp_ms: int
     symbol: str
     current_price: float
@@ -329,18 +336,36 @@ class MarketState:
             "atr_percent": self.atr_percent,
             "unified_score": self.unified_score,
             "confidence": self.confidence,
-            "volume": {
-                "delta_ratio": self.volume_signal.delta_ratio if self.volume_signal else None,
-                "relative_volume": self.volume_signal.relative_volume if self.volume_signal else None,
-            } if self.volume_signal else None,
-            "book": {
-                "imbalance": self.book_signal.imbalance if self.book_signal else None,
-                "path": self.book_signal.path_of_least_resistance if self.book_signal else None,
-            } if self.book_signal else None,
-            "oi_funding": {
-                "regime": self.oi_funding_signal.regime if self.oi_funding_signal else None,
-                "funding_percentile": self.oi_funding_signal.funding_percentile if self.oi_funding_signal else None,
-            } if self.oi_funding_signal else None,
+            "volume": (
+                {
+                    "delta_ratio": self.volume_signal.delta_ratio if self.volume_signal else None,
+                    "relative_volume": (
+                        self.volume_signal.relative_volume if self.volume_signal else None
+                    ),
+                }
+                if self.volume_signal
+                else None
+            ),
+            "book": (
+                {
+                    "imbalance": self.book_signal.imbalance if self.book_signal else None,
+                    "path": self.book_signal.path_of_least_resistance if self.book_signal else None,
+                }
+                if self.book_signal
+                else None
+            ),
+            "oi_funding": (
+                {
+                    "regime": self.oi_funding_signal.regime if self.oi_funding_signal else None,
+                    "funding_percentile": (
+                        self.oi_funding_signal.funding_percentile
+                        if self.oi_funding_signal
+                        else None
+                    ),
+                }
+                if self.oi_funding_signal
+                else None
+            ),
         }
 
 
@@ -348,9 +373,11 @@ class MarketState:
 # CONFIGURATION
 # =============================================================================
 
+
 @dataclass
 class IngestionConfig:
     """Configuration for data ingestion rates."""
+
     # Orderbook snapshot interval
     orderbook_interval_ms: int = 250  # 4 snapshots per second
     orderbook_depth: int = 50  # Depth levels to fetch (default 50 for better liquidity analysis)
@@ -375,26 +402,21 @@ class IngestionConfig:
 @dataclass
 class WindowConfig:
     """Configuration for rolling windows."""
+
     # Layer 1 - Micro (Execution)
-    micro_windows_seconds: List[int] = field(
-        default_factory=lambda: [5, 15, 30]
-    )
+    micro_windows_seconds: List[int] = field(default_factory=lambda: [5, 15, 30])
 
     # Layer 2 - Decision Frame
-    decision_windows_seconds: List[int] = field(
-        default_factory=lambda: [60, 120, 180]
-    )
+    decision_windows_seconds: List[int] = field(default_factory=lambda: [60, 120, 180])
 
     # Layer 3 - Context Frame
-    context_windows_seconds: List[int] = field(
-        default_factory=lambda: [900, 3600]  # 15min, 1h
-    )
+    context_windows_seconds: List[int] = field(default_factory=lambda: [900, 3600])  # 15min, 1h
 
     @property
     def all_windows(self) -> List[int]:
         """All window sizes in seconds."""
         return (
-            self.micro_windows_seconds +
-            self.decision_windows_seconds +
-            self.context_windows_seconds
+            self.micro_windows_seconds
+            + self.decision_windows_seconds
+            + self.context_windows_seconds
         )

@@ -9,6 +9,7 @@ and batch analysis workflows.
 # INTEGRATION 1: CONTINUOUS RUNNER
 # ============================================================================
 
+
 def integrate_continuous_runner_example():
     """
     Example integration with continuous runner.
@@ -16,7 +17,7 @@ def integrate_continuous_runner_example():
     Add this to continuous/orchestrator.py or create a new adapter.
     """
 
-    from indicator.engines.atr_expansion import ATRExpansionEngine, ATRExpansionConfig, Candle
+    from indicator.engines.atr_expansion import ATRExpansionConfig, ATRExpansionEngine, Candle
 
     # Initialize engine
     config = ATRExpansionConfig(
@@ -32,12 +33,12 @@ def integrate_continuous_runner_example():
 
         # Convert to Candle object
         candle = Candle(
-            timestamp=ohlcv_data['timestamp'],
-            open=ohlcv_data['open'],
-            high=ohlcv_data['high'],
-            low=ohlcv_data['low'],
-            close=ohlcv_data['close'],
-            volume=ohlcv_data['volume'],
+            timestamp=ohlcv_data["timestamp"],
+            open=ohlcv_data["open"],
+            high=ohlcv_data["high"],
+            low=ohlcv_data["low"],
+            close=ohlcv_data["close"],
+            volume=ohlcv_data["volume"],
         )
 
         # Update ATR expansion state
@@ -69,7 +70,9 @@ def integrate_continuous_runner_example():
         if atr_state.vol_score_0_100 is not None:
             vol_confidence = atr_state.vol_score_0_100 / 100.0
             # Scale position size or stop distance by vol_confidence
-            print(f"[{timeframe}] Vol score: {atr_state.vol_score_0_100:.0f}/100 (conf={vol_confidence:.2f})")
+            print(
+                f"[{timeframe}] Vol score: {atr_state.vol_score_0_100:.0f}/100 (conf={vol_confidence:.2f})"
+            )
 
         return atr_state
 
@@ -91,6 +94,7 @@ def integrate_continuous_runner_example():
 # INTEGRATION 2: BATCH ANALYSIS (runner.py / analyze.py)
 # ============================================================================
 
+
 def integrate_batch_analysis_example():
     """
     Example integration with batch analysis (analyze.py).
@@ -98,11 +102,15 @@ def integrate_batch_analysis_example():
     Add this after fetching klines in runner.py analyze_pair().
     """
 
-    from indicator.engines.atr_expansion import ATRExpansionEngine, ATRExpansionConfig, Candle, print_atr_expansion
+    from indicator.engines.atr_expansion import (
+        ATRExpansionConfig,
+        ATRExpansionEngine,
+        Candle,
+        print_atr_expansion,
+    )
 
     # After fetching klines in analyze_pair():
     # klines: List[OHLCVData] = data['klines']
-
     # Convert to Candle objects
     candles = []
     for k in klines:
@@ -146,6 +154,7 @@ def integrate_batch_analysis_example():
 # INTEGRATION 3: MULTI-TIMEFRAME CONFIRMATION
 # ============================================================================
 
+
 def multi_timeframe_timing_gate_example():
     """
     Use ATR expansion across multiple timeframes for confirmation.
@@ -153,7 +162,7 @@ def multi_timeframe_timing_gate_example():
     Example: Only enter if BOTH 1m and 5m are expanding.
     """
 
-    from indicator.engines.atr_expansion import ATRExpansionEngine, ATRExpansionConfig
+    from indicator.engines.atr_expansion import ATRExpansionConfig, ATRExpansionEngine
 
     config = ATRExpansionConfig(timeframes=["1m", "5m", "15m"])
     atr_engine = ATRExpansionEngine(config)
@@ -170,8 +179,10 @@ def multi_timeframe_timing_gate_example():
     expansion_states = ["EXPANSION", "EXTREME"]
 
     all_expanding = (
-        state_1m and state_1m.vol_state in expansion_states and
-        state_5m and state_5m.vol_state in expansion_states
+        state_1m
+        and state_1m.vol_state in expansion_states
+        and state_5m
+        and state_5m.vol_state in expansion_states
     )
 
     if all_expanding:
@@ -184,15 +195,19 @@ def multi_timeframe_timing_gate_example():
             print("⚠️  TF DIVERGENCE: 1m expanding but 5m squeezed - wait for 5m confirmation")
 
         # Progressive expansion (ideal)
-        if (state_15m and state_15m.vol_state == "EXPANSION" and
-            state_5m.vol_state == "EXPANSION" and
-            state_1m.vol_state == "EXTREME"):
+        if (
+            state_15m
+            and state_15m.vol_state == "EXPANSION"
+            and state_5m.vol_state == "EXPANSION"
+            and state_1m.vol_state == "EXTREME"
+        ):
             print("🚀 PROGRESSIVE EXPANSION: 15m→5m→1m cascade - OPTIMAL timing")
 
 
 # ============================================================================
 # INTEGRATION 4: DISPLAY IN DEEP-DIVE MODE
 # ============================================================================
+
 
 def integrate_deep_dive_display():
     """
@@ -201,7 +216,7 @@ def integrate_deep_dive_display():
     Insert this in DeepDiveDisplay.print_deep_dive() after unified score.
     """
 
-    code_snippet = '''
+    code_snippet = """
     # In continuous_runner.py DeepDiveDisplay.print_deep_dive():
 
     # After printing unified score...
@@ -220,7 +235,7 @@ def integrate_deep_dive_display():
         if atr_states:
             from indicator.engines.atr_expansion import print_atr_expansion
             print_atr_expansion(atr_states)
-    '''
+    """
 
     print(code_snippet)
 
@@ -229,12 +244,14 @@ def integrate_deep_dive_display():
 # INTEGRATION 5: COMPACT PRINT EXAMPLE
 # ============================================================================
 
+
 def example_compact_output():
     """
     Example of what the compact print output looks like.
     """
 
-    print("""
+    print(
+        """
 Example Output:
 
 ATR EXPANSION
@@ -251,7 +268,8 @@ Trading Decision:
 - Timing: ✅ Good (1m expansion + shock)
 - Confirmation: ⚠️ Partial (5m not yet expanded)
 - Action: Small entry on 1m, add to position when 5m confirms
-""")
+"""
+    )
 
 
 # ============================================================================

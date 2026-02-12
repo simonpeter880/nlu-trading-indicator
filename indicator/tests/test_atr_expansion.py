@@ -11,20 +11,21 @@ Verifies:
 """
 
 import pytest
-from atr_expansion import (
-    ATRExpansionEngine,
-    ATRExpansionConfig,
-    Candle,
-    _true_range,
-    _clip,
-    _classify_vol_state,
-    _calculate_vol_score,
-)
 
+from atr_expansion import (
+    ATRExpansionConfig,
+    ATRExpansionEngine,
+    Candle,
+    _calculate_vol_score,
+    _classify_vol_state,
+    _clip,
+    _true_range,
+)
 
 # ============================================================================
 # TEST DATA FIXTURES
 # ============================================================================
+
 
 @pytest.fixture
 def config():
@@ -51,6 +52,7 @@ def simple_candles():
 # ============================================================================
 # TEST 1: TRUE RANGE CORRECTNESS
 # ============================================================================
+
 
 def test_true_range_first_candle():
     """First candle: TR = high - low (no prev_close)."""
@@ -87,6 +89,7 @@ def test_true_range_sequence(simple_candles):
 # ============================================================================
 # TEST 2: WILDER ATR SMOOTHING CORRECTNESS
 # ============================================================================
+
 
 def test_atr_seeding(config):
     """ATR seeds with SMA of first N TRs."""
@@ -144,6 +147,7 @@ def test_atr_wilder_smoothing(config):
 # TEST 3: ROLLING SMA CORRECTNESS
 # ============================================================================
 
+
 def test_rolling_sma_tr(config):
     """Verify rolling SMA of TR using deque."""
     engine = ATRExpansionEngine(config)
@@ -171,7 +175,7 @@ def test_rolling_sma_tr(config):
             assert state.sma_tr is None
         else:
             # Should be mean of last 5 TRs
-            expected_sma = sum(trs[:i + 1][-config.sma_period:]) / config.sma_period
+            expected_sma = sum(trs[: i + 1][-config.sma_period :]) / config.sma_period
             assert abs(state.sma_tr - expected_sma) < 1e-6
 
 
@@ -203,6 +207,7 @@ def test_rolling_sma_atr(config):
 # ============================================================================
 # TEST 4: RATIO COMPUTATIONS
 # ============================================================================
+
 
 def test_atr_expansion_ratio(config):
     """Verify ATR expansion = ATR / SMA(ATR)."""
@@ -247,6 +252,7 @@ def test_tr_spike_ratio(config):
 # TEST 5: STATE CLASSIFICATION
 # ============================================================================
 
+
 def test_state_squeeze():
     """ATR_exp < squeeze_thr => SQUEEZE."""
     config = ATRExpansionConfig()
@@ -286,6 +292,7 @@ def test_state_fade_risk():
 # TEST 6: VOL SCORE CALCULATION
 # ============================================================================
 
+
 def test_vol_score_squeeze():
     """Squeeze state caps score at 30."""
     config = ATRExpansionConfig()
@@ -317,8 +324,12 @@ def test_vol_score_extreme():
 def test_vol_score_shock_bonus():
     """Shock adds +5 to score."""
     config = ATRExpansionConfig()
-    score_no_shock = _calculate_vol_score(atr_exp=1.5, vol_state="EXPANSION", tr_spike=1.0, config=config)
-    score_with_shock = _calculate_vol_score(atr_exp=1.5, vol_state="EXPANSION", tr_spike=1.6, config=config)
+    score_no_shock = _calculate_vol_score(
+        atr_exp=1.5, vol_state="EXPANSION", tr_spike=1.0, config=config
+    )
+    score_with_shock = _calculate_vol_score(
+        atr_exp=1.5, vol_state="EXPANSION", tr_spike=1.6, config=config
+    )
     assert score_with_shock >= score_no_shock  # Should be higher with shock
 
 
@@ -333,6 +344,7 @@ def test_vol_score_fade_penalty():
 # ============================================================================
 # TEST 7: INCREMENTAL VS BATCH CONSISTENCY
 # ============================================================================
+
 
 def test_incremental_vs_batch(simple_candles):
     """Verify incremental updates match batch warmup."""
@@ -362,6 +374,7 @@ def test_incremental_vs_batch(simple_candles):
 # TEST 8: MULTI-TIMEFRAME SUPPORT
 # ============================================================================
 
+
 def test_multi_timeframe():
     """Verify engine handles multiple timeframes independently."""
     config = ATRExpansionConfig(timeframes=["1m", "5m"], atr_period=3, sma_period=5)
@@ -371,10 +384,12 @@ def test_multi_timeframe():
     candles_1m = [Candle(1000, 100, 110, 90, 100, 1000) for _ in range(5)]
     candles_5m = [Candle(1000, 200, 220, 180, 200, 1000) for _ in range(5)]
 
-    results = engine.warmup({
-        "1m": candles_1m,
-        "5m": candles_5m,
-    })
+    results = engine.warmup(
+        {
+            "1m": candles_1m,
+            "5m": candles_5m,
+        }
+    )
 
     assert "1m" in results
     assert "5m" in results
@@ -390,6 +405,7 @@ def test_multi_timeframe():
 # ============================================================================
 # TEST 9: EDGE CASES
 # ============================================================================
+
 
 def test_empty_candles():
     """Handle empty candle list gracefully."""
@@ -427,6 +443,7 @@ def test_zero_volatility():
 # TEST 10: HELPER FUNCTIONS
 # ============================================================================
 
+
 def test_clip():
     """Test clip helper function."""
     assert _clip(5, 0, 10) == 5
@@ -438,6 +455,7 @@ def test_clip():
 # ============================================================================
 # INTEGRATION TEST: REALISTIC SCENARIO
 # ============================================================================
+
 
 def test_realistic_volatility_expansion():
     """Test realistic scenario: quiet period followed by expansion."""
@@ -453,7 +471,7 @@ def test_realistic_volatility_expansion():
             high=101 + i * 0.1,  # Tiny moves
             low=99 - i * 0.1,
             close=100 + i * 0.05,
-            volume=1000
+            volume=1000,
         )
         quiet_candles.append(candle)
 
@@ -466,7 +484,7 @@ def test_realistic_volatility_expansion():
             high=100 + i * 2 + 5,  # Large moves
             low=100 + i * 2 - 5,
             close=100 + i * 2 + 2,
-            volume=2000
+            volume=2000,
         )
         expansion_candles.append(candle)
 

@@ -7,11 +7,11 @@ different volatility regimes.
 """
 
 from indicator.engines.atr_expansion import (
-    ATRExpansionEngine,
     ATRExpansionConfig,
+    ATRExpansionEngine,
     Candle,
-    print_atr_expansion,
     format_atr_state,
+    print_atr_expansion,
 )
 
 
@@ -26,12 +26,7 @@ def generate_squeeze_candles(base_price=100, count=20):
         low = price - 0.5
         close = price + (i % 2) * 0.1  # Tiny fluctuation
         candle = Candle(
-            timestamp=1000 * i,
-            open=price,
-            high=high,
-            low=low,
-            close=close,
-            volume=1000
+            timestamp=1000 * i, open=price, high=high, low=low, close=close, volume=1000
         )
         candles.append(candle)
         price = close
@@ -51,12 +46,7 @@ def generate_expansion_candles(base_price=100, count=15):
         low = price - volatility
         close = price + volatility * 0.5  # Trending up
         candle = Candle(
-            timestamp=1000 * (20 + i),
-            open=price,
-            high=high,
-            low=low,
-            close=close,
-            volume=2000
+            timestamp=1000 * (20 + i), open=price, high=high, low=low, close=close, volume=2000
         )
         candles.append(candle)
         price = close
@@ -75,12 +65,7 @@ def generate_extreme_candles(base_price=110, count=10):
         low = price - 8
         close = price + 5  # Big moves
         candle = Candle(
-            timestamp=1000 * (35 + i),
-            open=price,
-            high=high,
-            low=low,
-            close=close,
-            volume=5000
+            timestamp=1000 * (35 + i), open=price, high=high, low=low, close=close, volume=5000
         )
         candles.append(candle)
         price = close
@@ -113,7 +98,9 @@ def demo_basic_usage():
     # Phase 2: Expansion
     print("\n📊 Phase 2: EXPANSION (Volatility Waking Up)")
     print("-" * 70)
-    expansion_candles = generate_expansion_candles(base_price=state.debug.get('prev_close', 100), count=15)
+    expansion_candles = generate_expansion_candles(
+        base_price=state.debug.get("prev_close", 100), count=15
+    )
 
     for i, candle in enumerate(expansion_candles):
         state = engine.on_candle_close("demo", candle)
@@ -126,7 +113,9 @@ def demo_basic_usage():
     # Phase 3: Extreme
     print("\n📊 Phase 3: EXTREME (Move is ON)")
     print("-" * 70)
-    extreme_candles = generate_extreme_candles(base_price=state.debug.get('prev_close', 120), count=10)
+    extreme_candles = generate_extreme_candles(
+        base_price=state.debug.get("prev_close", 120), count=10
+    )
 
     for i, candle in enumerate(extreme_candles):
         state = engine.on_candle_close("demo", candle)
@@ -143,18 +132,14 @@ def demo_multi_timeframe():
     print("DEMO 2: Multi-Timeframe Analysis")
     print("=" * 70)
 
-    config = ATRExpansionConfig(
-        timeframes=["1m", "5m", "15m"],
-        atr_period=5,
-        sma_period=10
-    )
+    config = ATRExpansionConfig(timeframes=["1m", "5m", "15m"], atr_period=5, sma_period=10)
     engine = ATRExpansionEngine(config)
 
     # Generate different scenarios for each TF
     all_candles = (
-        generate_squeeze_candles(100, 10) +
-        generate_expansion_candles(100, 10) +
-        generate_extreme_candles(110, 10)
+        generate_squeeze_candles(100, 10)
+        + generate_expansion_candles(100, 10)
+        + generate_extreme_candles(110, 10)
     )
 
     # Simulate different timeframes
@@ -163,11 +148,13 @@ def demo_multi_timeframe():
     candles_15m = all_candles[::15]  # Every 15th candle
 
     # Warmup
-    states = engine.warmup({
-        "1m": candles_1m,
-        "5m": candles_5m,
-        "15m": candles_15m,
-    })
+    states = engine.warmup(
+        {
+            "1m": candles_1m,
+            "5m": candles_5m,
+            "15m": candles_15m,
+        }
+    )
 
     print("\n📊 Multi-Timeframe States:")
     print("-" * 70)
@@ -211,7 +198,7 @@ def demo_shock_detection():
         high=prev_close + 15,  # HUGE move
         low=prev_close - 2,
         close=prev_close + 12,
-        volume=10000
+        volume=10000,
     )
 
     state = engine.on_candle_close("demo", shock_candle)
@@ -233,10 +220,7 @@ def demo_fade_risk():
     engine = ATRExpansionEngine(config)
 
     # Build up expansion
-    candles = (
-        generate_squeeze_candles(100, 10) +
-        generate_expansion_candles(100, 15)
-    )
+    candles = generate_squeeze_candles(100, 10) + generate_expansion_candles(100, 15)
 
     for candle in candles:
         engine.on_candle_close("demo", candle)
@@ -260,14 +244,16 @@ def demo_fade_risk():
             high=fade_start_price + i + volatility,
             low=fade_start_price + i - volatility * 0.5,
             close=fade_start_price + i + 1,
-            volume=1500
+            volume=1500,
         )
         state = engine.on_candle_close("demo", candle)
 
         if i % 3 == 0:
             slope_str = f"{state.atr_exp_slope:+.3f}" if state.atr_exp_slope is not None else "N/A"
             atr_exp_str = f"{state.atr_exp:.2f}" if state.atr_exp is not None else "N/A"
-            print(f"   Candle {i}: ATR_exp={atr_exp_str}, slope={slope_str}, state={state.vol_state}")
+            print(
+                f"   Candle {i}: ATR_exp={atr_exp_str}, slope={slope_str}, state={state.vol_state}"
+            )
 
     if state.vol_state == "FADE_RISK":
         print("\n⚠️  FADE_RISK detected - expansion losing steam!")

@@ -12,16 +12,13 @@ Verifies:
 """
 
 import pytest
-from timing_rules import (
-    TimingRulesEngine,
-    TimingRulesConfig,
-    TimingDecision,
-)
 
+from timing_rules import TimingDecision, TimingRulesConfig, TimingRulesEngine
 
 # ============================================================================
 # TEST 1: CONTINUATION TRIGGERS (2-of-3)
 # ============================================================================
+
 
 def test_continuation_2of3_roc_atr():
     """ROC restart + ATR support (2 of 3) triggers continuation."""
@@ -145,6 +142,7 @@ def test_continuation_bear_bias():
 # TEST 2: EXHAUSTION WARNING (2-of-3)
 # ============================================================================
 
+
 def test_exhaustion_2of3_roc_blowoff():
     """ROC decelerating + blowoff triggers exhaustion."""
     config = TimingRulesConfig(
@@ -237,6 +235,7 @@ def test_exhaustion_requires_trend_context():
 # TEST 3: COOLDOWN BLOCKS CONTINUATION
 # ============================================================================
 
+
 def test_cooldown_blocks_continuation():
     """After exhaustion fires, continuation blocked until cooldown expires."""
     config = TimingRulesConfig(
@@ -283,6 +282,7 @@ def test_cooldown_blocks_continuation():
 # ============================================================================
 # TEST 4: SQUEEZE-BREAK TWO-STEP
 # ============================================================================
+
 
 def test_breakout_two_step():
     """Squeeze setup arms, then ignition fires."""
@@ -389,6 +389,7 @@ def test_breakout_tr_spike_alternative():
 # TEST 5: PRIORITY ORDERING
 # ============================================================================
 
+
 def test_priority_exhaustion_over_continuation():
     """Exhaustion fires even if continuation conditions met."""
     config = TimingRulesConfig(
@@ -477,6 +478,7 @@ def test_priority_breakout_over_continuation():
 # TEST 6: MISSING DATA ROBUSTNESS
 # ============================================================================
 
+
 def test_continuation_without_macd():
     """Continuation works with MACD missing (ROC + ATR only)."""
     config = TimingRulesConfig(
@@ -551,6 +553,7 @@ def test_breakout_without_roc():
 # ============================================================================
 # TEST 7: CONFIRMATION COUNTERS (NO FLIP)
 # ============================================================================
+
 
 def test_confirmation_prevents_single_bar_trigger():
     """Single bar meeting conditions does not trigger (requires confirmation)."""
@@ -628,6 +631,7 @@ def test_counter_resets_on_condition_loss():
 # TEST 8: DEFAULT STATES
 # ============================================================================
 
+
 def test_default_transition():
     """Default to TRANSITION when trend_ok but no signals."""
     config = TimingRulesConfig(timeframes=["1m"])
@@ -655,6 +659,7 @@ def test_default_no_trade():
 # ============================================================================
 # TEST 9: MULTI-TIMEFRAME
 # ============================================================================
+
 
 def test_multi_timeframe_independence():
     """Each timeframe maintains independent state."""
@@ -694,6 +699,7 @@ def test_multi_timeframe_independence():
 # ============================================================================
 # TEST 10: TIMING SCORE
 # ============================================================================
+
 
 def test_timing_score_computation():
     """Timing score computes correctly."""
@@ -754,9 +760,10 @@ def test_timing_score_penalties():
 # TEST 11: HELPER FUNCTIONS
 # ============================================================================
 
+
 def test_print_timing_decisions():
     """Print helper does not crash."""
-    from timing_rules import print_timing_decisions, format_timing_decision, interpret_timing
+    from timing_rules import format_timing_decision, interpret_timing, print_timing_decisions
 
     decision = TimingDecision(
         timing_state="CONTINUATION_READY",
@@ -765,7 +772,7 @@ def test_print_timing_decisions():
         timing_score_0_100=72.0,
         checklist={},
         reasons=["trend_ok", "vwap_reclaim"],
-        debug={}
+        debug={},
     )
 
     # Should not raise
@@ -783,6 +790,7 @@ def test_print_timing_decisions():
 # ============================================================================
 # TEST 12: RESET
 # ============================================================================
+
 
 def test_reset():
     """Reset clears state for timeframe."""

@@ -5,34 +5,27 @@ Tests VWAP calculation accuracy, session/weekly resets, anchored VWAP,
 standard deviation bands, and interaction state machine.
 """
 
-import pytest
 import math
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
+
+import pytest
 from vwap_engine import (
-    VWAPEngine,
-    VWAPConfig,
-    Candle,
-    PriceSource,
-    VWAPKind,
-    PricePosition,
-    InteractionState,
     BandMethod,
-    format_vwap_output
+    Candle,
+    InteractionState,
+    PricePosition,
+    PriceSource,
+    VWAPConfig,
+    VWAPEngine,
+    VWAPKind,
+    format_vwap_output,
 )
 
 
-def create_candle(timestamp: float, high: float, low: float, close: float,
-                 volume: float) -> Candle:
+def create_candle(timestamp: float, high: float, low: float, close: float, volume: float) -> Candle:
     """Helper to create a candle"""
-    return Candle(
-        timestamp=timestamp,
-        open=close,
-        high=high,
-        low=low,
-        close=close,
-        volume=volume
-    )
+    return Candle(timestamp=timestamp, open=close, high=high, low=low, close=close, volume=volume)
 
 
 def create_simple_candle(timestamp: float, price: float, volume: float) -> Candle:
@@ -57,7 +50,7 @@ class TestVWAPFormula:
         candles = [
             create_simple_candle(1.0, 100.0, 100.0),
             create_simple_candle(2.0, 110.0, 200.0),
-            create_simple_candle(3.0, 105.0, 150.0)
+            create_simple_candle(3.0, 105.0, 150.0),
         ]
 
         for candle in candles:
@@ -66,8 +59,9 @@ class TestVWAPFormula:
         expected_vwap = 47750.0 / 450.0
         actual_vwap = result.session_by_tf["1m"].vwap
 
-        assert abs(actual_vwap - expected_vwap) < 1e-9, \
-            f"VWAP {actual_vwap} != expected {expected_vwap}"
+        assert (
+            abs(actual_vwap - expected_vwap) < 1e-9
+        ), f"VWAP {actual_vwap} != expected {expected_vwap}"
 
     def test_vwap_typical_price(self):
         """Test VWAP with typical price (H+L+C)/3"""
@@ -94,7 +88,7 @@ class TestVWAPFormula:
         candles = [
             create_simple_candle(1.0, 100.0, 100.0),
             create_simple_candle(2.0, 110.0, 0.0),  # Zero volume
-            create_simple_candle(3.0, 105.0, 50.0)
+            create_simple_candle(3.0, 105.0, 50.0),
         ]
 
         for candle in candles:
@@ -134,8 +128,9 @@ class TestIncrementalVWAP:
         v_sum = sum(c.volume for c in candles)
         batch_vwap = pv_sum / v_sum
 
-        assert abs(incremental_vwap - batch_vwap) < 1e-9, \
-            f"Incremental {incremental_vwap} != Batch {batch_vwap}"
+        assert (
+            abs(incremental_vwap - batch_vwap) < 1e-9
+        ), f"Incremental {incremental_vwap} != Batch {batch_vwap}"
 
     def test_incremental_typical_price(self):
         """Test incremental with typical price"""
@@ -169,10 +164,7 @@ class TestSessionReset:
 
     def test_utc_day_reset(self):
         """Test session reset at UTC day boundary"""
-        config = VWAPConfig(
-            session_reset="UTC_DAY",
-            timezone="UTC"
-        )
+        config = VWAPConfig(session_reset="UTC_DAY", timezone="UTC")
         engine = VWAPEngine(config)
 
         # Day 1: 2024-01-01 23:59:00 UTC
@@ -209,7 +201,7 @@ class TestSessionReset:
         # Should accumulate, not reset
         assert result2.session_by_tf["1m"].bar_count == 2
         # VWAP should be weighted average
-        expected = (100*100 + 110*100) / 200
+        expected = (100 * 100 + 110 * 100) / 200
         assert abs(result2.session_by_tf["1m"].vwap - expected) < 1e-6
 
 
@@ -218,10 +210,7 @@ class TestWeeklyReset:
 
     def test_weekly_reset(self):
         """Test weekly reset at ISO week boundary"""
-        config = VWAPConfig(
-            weekly_reset_day="MON",
-            timezone="UTC"
-        )
+        config = VWAPConfig(weekly_reset_day="MON", timezone="UTC")
         engine = VWAPEngine(config)
 
         # Week 1: Friday 2024-01-05 (week 1)
@@ -273,7 +262,7 @@ class TestAnchoredVWAP:
         candles_after = [
             create_simple_candle(5.0, 110.0, 100.0),
             create_simple_candle(6.0, 120.0, 200.0),
-            create_simple_candle(7.0, 115.0, 150.0)
+            create_simple_candle(7.0, 115.0, 150.0),
         ]
 
         for candle in candles_after:
@@ -285,7 +274,7 @@ class TestAnchoredVWAP:
 
         anchor_vwap = anchors[0].vwap
         # VWAP = (110*100 + 120*200 + 115*150) / (100+200+150)
-        expected = (110*100 + 120*200 + 115*150) / 450.0
+        expected = (110 * 100 + 120 * 200 + 115 * 150) / 450.0
 
         assert abs(anchor_vwap - expected) < 1e-6
 
@@ -345,9 +334,7 @@ class TestStandardDeviationBands:
     def test_std_bands_calculation(self):
         """Test standard deviation bands calculation"""
         config = VWAPConfig(
-            enable_std_bands=True,
-            min_bars_for_std=10,
-            std_band_multipliers=[1.0, 2.0]
+            enable_std_bands=True, min_bars_for_std=10, std_band_multipliers=[1.0, 2.0]
         )
         engine = VWAPEngine(config)
 
@@ -377,9 +364,7 @@ class TestStandardDeviationBands:
     def test_std_variance_formula(self):
         """Test standard deviation variance formula: Var = E[X^2] - E[X]^2"""
         config = VWAPConfig(
-            enable_std_bands=True,
-            min_bars_for_std=5,
-            price_source=PriceSource.CLOSE
+            enable_std_bands=True, min_bars_for_std=5, price_source=PriceSource.CLOSE
         )
         engine = VWAPEngine(config)
 
@@ -396,7 +381,7 @@ class TestStandardDeviationBands:
 
         # Manual calculation
         mean = sum(prices) / len(prices)  # 100
-        variance = sum((p - mean)**2 for p in prices) / len(prices)  # 2.0
+        variance = sum((p - mean) ** 2 for p in prices) / len(prices)  # 2.0
         expected_std = math.sqrt(variance)  # 1.414...
 
         assert abs(session.bands.std - expected_std) < 0.1
@@ -406,7 +391,7 @@ class TestStandardDeviationBands:
         config = VWAPConfig(
             enable_std_bands=True,
             min_bars_for_std=100,  # High threshold
-            fallback_atr_band_multipliers=[0.5, 1.0]
+            fallback_atr_band_multipliers=[0.5, 1.0],
         )
         engine = VWAPEngine(config)
 
@@ -468,10 +453,7 @@ class TestInteractionStateMachine:
 
     def test_reclaim_state(self):
         """Test RECLAIM state (cross from below to above with hold)"""
-        config = VWAPConfig(
-            hold_bars=3,
-            touch_tolerance=0.0001
-        )
+        config = VWAPConfig(hold_bars=3, touch_tolerance=0.0001)
         engine = VWAPEngine(config)
 
         # Establish VWAP at 100
@@ -491,10 +473,7 @@ class TestInteractionStateMachine:
 
     def test_loss_state(self):
         """Test LOSS state (cross from above to below with hold)"""
-        config = VWAPConfig(
-            hold_bars=3,
-            touch_tolerance=0.0001
-        )
+        config = VWAPConfig(hold_bars=3, touch_tolerance=0.0001)
         engine = VWAPEngine(config)
 
         # Establish VWAP at 100
@@ -527,7 +506,8 @@ class TestInteractionStateMachine:
 
         # Should eventually show ACCEPT
         assert result.session_by_tf["1m"].interaction_state in [
-            InteractionState.ACCEPT, InteractionState.NEUTRAL
+            InteractionState.ACCEPT,
+            InteractionState.NEUTRAL,
         ]
 
 
@@ -545,17 +525,14 @@ class TestDistanceMetrics:
         # Price at 102 (2% above)
         result = engine.on_candle_close("1m", create_simple_candle(2.0, 102.0, 100.0))
 
-        dist_pct = result.session_by_tf["1m"].distance['pct']
+        dist_pct = result.session_by_tf["1m"].distance["pct"]
 
         # Should be approximately 0.01 (1%)
         assert 0.005 < dist_pct < 0.015
 
     def test_sigma_distance(self):
         """Test sigma distance calculation (when std available)"""
-        config = VWAPConfig(
-            enable_std_bands=True,
-            min_bars_for_std=10
-        )
+        config = VWAPConfig(enable_std_bands=True, min_bars_for_std=10)
         engine = VWAPEngine(config)
 
         # Generate data with known variance
@@ -566,8 +543,8 @@ class TestDistanceMetrics:
 
         # Should have sigma distance
         if result.session_by_tf["1m"].bands.std is not None:
-            assert 'sigma' in result.session_by_tf["1m"].distance
-            assert result.session_by_tf["1m"].distance['sigma'] is not None
+            assert "sigma" in result.session_by_tf["1m"].distance
+            assert result.session_by_tf["1m"].distance["sigma"] is not None
 
 
 class TestMultiTimeframe:
@@ -584,11 +561,13 @@ class TestMultiTimeframe:
         engine.on_candle_close("1h", create_simple_candle(1.0, 105.0, 100.0))
 
         # Each should have different VWAP
-        result = engine.update({
-            "1m": [create_simple_candle(2.0, 100.0, 100.0)],
-            "5m": [create_simple_candle(2.0, 110.0, 100.0)],
-            "1h": [create_simple_candle(2.0, 105.0, 100.0)]
-        })
+        result = engine.update(
+            {
+                "1m": [create_simple_candle(2.0, 100.0, 100.0)],
+                "5m": [create_simple_candle(2.0, 110.0, 100.0)],
+                "1h": [create_simple_candle(2.0, 105.0, 100.0)],
+            }
+        )
 
         assert abs(result.session_by_tf["1m"].vwap - 100.0) < 0.1
         assert abs(result.session_by_tf["5m"].vwap - 110.0) < 0.1
@@ -600,16 +579,20 @@ class TestMultiTimeframe:
         engine = VWAPEngine(config)
 
         # Warmup
-        engine.warmup({
-            "1m": [create_simple_candle(float(i), 100.0, 100.0) for i in range(10)],
-            "5m": [create_simple_candle(float(i), 105.0, 100.0) for i in range(10)]
-        })
+        engine.warmup(
+            {
+                "1m": [create_simple_candle(float(i), 100.0, 100.0) for i in range(10)],
+                "5m": [create_simple_candle(float(i), 105.0, 100.0) for i in range(10)],
+            }
+        )
 
         # Update with new candles
-        result = engine.update({
-            "1m": [create_simple_candle(10.0, 102.0, 100.0)],
-            "5m": [create_simple_candle(10.0, 107.0, 100.0)]
-        })
+        result = engine.update(
+            {
+                "1m": [create_simple_candle(10.0, 102.0, 100.0)],
+                "5m": [create_simple_candle(10.0, 107.0, 100.0)],
+            }
+        )
 
         assert "1m" in result.session_by_tf
         assert "5m" in result.session_by_tf
@@ -623,9 +606,7 @@ class TestFormatting:
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
-        engine.warmup({
-            "1m": [create_simple_candle(float(i), 100.0, 100.0) for i in range(20)]
-        })
+        engine.warmup({"1m": [create_simple_candle(float(i), 100.0, 100.0) for i in range(20)]})
 
         result = engine.on_candle_close("1m", create_simple_candle(20.0, 105.0, 100.0))
         output = format_vwap_output(result, compact=True)
@@ -640,9 +621,7 @@ class TestFormatting:
         engine = VWAPEngine(config)
 
         # Setup
-        engine.warmup({
-            "1m": [create_simple_candle(float(i), 100.0, 100.0) for i in range(10)]
-        })
+        engine.warmup({"1m": [create_simple_candle(float(i), 100.0, 100.0) for i in range(10)]})
 
         # Add anchor
         engine.add_anchor("1m", 10.0, "BOS_1", note="BOS")

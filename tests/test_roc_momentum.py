@@ -9,25 +9,21 @@ Validates:
 - Divergence detection
 """
 
-import pytest
 import math
-from typing import List
-
 import sys
 from pathlib import Path
+from typing import List
+
+import pytest
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from roc_momentum import (
-    Candle,
-    ROCConfig,
-    ROCMomentumEngine,
-    ROCState,
-)
-
+from roc_momentum import Candle, ROCConfig, ROCMomentumEngine, ROCState
 
 # =============================================================================
 # FIXTURES
 # =============================================================================
+
 
 @pytest.fixture
 def basic_config():
@@ -62,13 +58,14 @@ def make_candle(timestamp: float, close: float) -> Candle:
         high=close + 0.2,
         low=close - 0.2,
         close=close,
-        volume=1000.0
+        volume=1000.0,
     )
 
 
 # =============================================================================
 # TEST 1: ROC FORMULA CORRECTNESS
 # =============================================================================
+
 
 def test_roc_formula_correctness(basic_config):
     """Validate ROC calculation against known values."""
@@ -92,11 +89,15 @@ def test_roc_formula_correctness(basic_config):
     # Price at t=16 (5 ago): 116
     # ROC_5 = (121 - 116) / 116 = 5 / 116 = 0.04310...
     expected_roc_5 = 5.0 / 116.0
-    assert abs(state.roc[5] - expected_roc_5) < 1e-6, f"ROC_5 mismatch: {state.roc[5]} vs {expected_roc_5}"
+    assert (
+        abs(state.roc[5] - expected_roc_5) < 1e-6
+    ), f"ROC_5 mismatch: {state.roc[5]} vs {expected_roc_5}"
 
     # ROC_10 = (121 - 111) / 111 = 10 / 111
     expected_roc_10 = 10.0 / 111.0
-    assert abs(state.roc[10] - expected_roc_10) < 1e-6, f"ROC_10 mismatch: {state.roc[10]} vs {expected_roc_10}"
+    assert (
+        abs(state.roc[10] - expected_roc_10) < 1e-6
+    ), f"ROC_10 mismatch: {state.roc[10]} vs {expected_roc_10}"
 
 
 def test_roc_log_returns(basic_config):
@@ -119,12 +120,15 @@ def test_roc_log_returns(basic_config):
     # Price at t=25: 150, Price at t=20: 140
     # LR_5 = ln(150 / 140) = ln(1.0714...) ≈ 0.0689
     expected_lr_5 = math.log(150.0 / 140.0)
-    assert abs(state.logret[5] - expected_lr_5) < 1e-5, f"LogRet_5 mismatch: {state.logret[5]} vs {expected_lr_5}"
+    assert (
+        abs(state.logret[5] - expected_lr_5) < 1e-5
+    ), f"LogRet_5 mismatch: {state.logret[5]} vs {expected_lr_5}"
 
 
 # =============================================================================
 # TEST 2: INCREMENTAL VS BATCH
 # =============================================================================
+
 
 def test_incremental_vs_batch(basic_config):
     """Verify incremental updates match batch computation."""
@@ -152,13 +156,15 @@ def test_incremental_vs_batch(basic_config):
 
     # ROC values should match
     for lb in state_inc.roc.keys():
-        assert abs(state_inc.roc[lb] - state_batch.roc[lb]) < 1e-8, \
-            f"ROC_{lb} mismatch: inc={state_inc.roc[lb]} batch={state_batch.roc[lb]}"
+        assert (
+            abs(state_inc.roc[lb] - state_batch.roc[lb]) < 1e-8
+        ), f"ROC_{lb} mismatch: inc={state_inc.roc[lb]} batch={state_batch.roc[lb]}"
 
     # ACC values should match
     for lb in state_inc.acc.keys():
-        assert abs(state_inc.acc[lb] - state_batch.acc[lb]) < 1e-8, \
-            f"ACC_{lb} mismatch: inc={state_inc.acc[lb]} batch={state_batch.acc[lb]}"
+        assert (
+            abs(state_inc.acc[lb] - state_batch.acc[lb]) < 1e-8
+        ), f"ACC_{lb} mismatch: inc={state_inc.acc[lb]} batch={state_batch.acc[lb]}"
 
     # Momentum state should match
     assert state_inc.momentum_state == state_batch.momentum_state
@@ -167,6 +173,7 @@ def test_incremental_vs_batch(basic_config):
 # =============================================================================
 # TEST 3: ATR NORMALIZATION
 # =============================================================================
+
 
 def test_atr_normalization(basic_config):
     """Test ROC normalization with ATR%."""
@@ -196,8 +203,9 @@ def test_atr_normalization(basic_config):
     expected_norm = expected_roc_5 / fixed_atrp
     expected_norm_clipped = min(basic_config.clip_norm, expected_norm)
 
-    assert abs(state.roc_norm[5] - expected_norm_clipped) < 1e-6, \
-        f"ROC_norm_5 mismatch: {state.roc_norm[5]} vs {expected_norm_clipped}"
+    assert (
+        abs(state.roc_norm[5] - expected_norm_clipped) < 1e-6
+    ), f"ROC_norm_5 mismatch: {state.roc_norm[5]} vs {expected_norm_clipped}"
 
     # Verify clipping flag
     assert state.roc_norm[5] == basic_config.clip_norm, "Should be clipped to max"
@@ -214,14 +222,11 @@ def test_atr_internal_calculation(basic_config):
         close = base + i * 0.2
         high = close + 0.5
         low = close - 0.5
-        candles.append(Candle(
-            timestamp=float(i),
-            open=close - 0.1,
-            high=high,
-            low=low,
-            close=close,
-            volume=1000.0
-        ))
+        candles.append(
+            Candle(
+                timestamp=float(i), open=close - 0.1, high=high, low=low, close=close, volume=1000.0
+            )
+        )
 
     # Warmup without providing atr_percent
     engine.warmup({"1m": candles})
@@ -240,6 +245,7 @@ def test_atr_internal_calculation(basic_config):
 # TEST 4: STATE MACHINE LOGIC
 # =============================================================================
 
+
 def test_impulse_state_bull(basic_config):
     """Test IMPULSE state detection for bullish move."""
     engine = ROCMomentumEngine(basic_config)
@@ -257,15 +263,19 @@ def test_impulse_state_bull(basic_config):
 
     # Add more candles with sustained acceleration
     for i, candle in enumerate(candles[30:35]):
-        state = engine.on_candle_close("1m", candle, atr_percent=0.005)  # Very low vol for high norm
+        state = engine.on_candle_close(
+            "1m", candle, atr_percent=0.005
+        )  # Very low vol for high norm
 
     state = engine.get_state("1m")
     assert state is not None
 
     # Should detect IMPULSE or have high score
     # Accept IMPULSE or FADE (since very strong moves can decelerate at peak)
-    assert state.momentum_state in ["IMPULSE", "FADE"], \
-        f"Expected IMPULSE or FADE during strong trend, got {state.momentum_state}"
+    assert state.momentum_state in [
+        "IMPULSE",
+        "FADE",
+    ], f"Expected IMPULSE or FADE during strong trend, got {state.momentum_state}"
     assert state.momentum_score_0_100 > 40, "High momentum score expected"
 
 
@@ -370,13 +380,16 @@ def test_fade_state(basic_config):
 
     # Should detect FADE or NOISE (deceleration)
     # Depending on exact thresholds, might be FADE or transition to NOISE
-    assert state.momentum_state in ["FADE", "NOISE"], \
-        f"Expected FADE or NOISE during deceleration, got {state.momentum_state}"
+    assert state.momentum_state in [
+        "FADE",
+        "NOISE",
+    ], f"Expected FADE or NOISE during deceleration, got {state.momentum_state}"
 
 
 # =============================================================================
 # TEST 5: DIVERGENCE DETECTION
 # =============================================================================
+
 
 def test_bearish_divergence(basic_config):
     """Test bearish divergence: higher high price, lower high ROC."""
@@ -432,7 +445,10 @@ def test_bearish_divergence(basic_config):
         state = engine.get_state("1m")
         # Check if divergence was flagged (depends on implementation)
         # Our implementation checks on every candle against last recorded swing
-        assert state.debug.get("divergence") in ["BEARISH", "NONE"], "Should detect bearish divergence"
+        assert state.debug.get("divergence") in [
+            "BEARISH",
+            "NONE",
+        ], "Should detect bearish divergence"
 
 
 def test_bullish_divergence(basic_config):
@@ -480,12 +496,16 @@ def test_bullish_divergence(basic_config):
         # Bullish divergence
         engine.on_candle_close("1m", make_candle(50.0, swing_price_2 - 0.01), atr_percent=0.008)
         state = engine.get_state("1m")
-        assert state.debug.get("divergence") in ["BULLISH", "NONE"], "Should detect bullish divergence"
+        assert state.debug.get("divergence") in [
+            "BULLISH",
+            "NONE",
+        ], "Should detect bullish divergence"
 
 
 # =============================================================================
 # TEST 6: ACCELERATION SMOOTHING
 # =============================================================================
+
 
 def test_acceleration_smoothing(smoothed_config):
     """Test ROC smoothing before acceleration calculation."""
@@ -501,6 +521,7 @@ def test_acceleration_smoothing(smoothed_config):
 
     # Noisy price series
     import random
+
     random.seed(42)
     prices = [100.0 + i * 0.3 + random.uniform(-0.5, 0.5) for i in range(50)]
     candles = [make_candle(float(i), p) for i, p in enumerate(prices)]
@@ -530,6 +551,7 @@ def test_acceleration_smoothing(smoothed_config):
 # TEST 7: MULTI-TIMEFRAME
 # =============================================================================
 
+
 def test_multi_timeframe():
     """Test multiple timeframes tracked independently."""
     config = ROCConfig(
@@ -537,7 +559,7 @@ def test_multi_timeframe():
         roc_lookbacks_by_tf={
             "1m": [5, 20, 60],
             "5m": [3, 12, 36],
-        }
+        },
     )
     engine = ROCMomentumEngine(config)
 
@@ -549,10 +571,12 @@ def test_multi_timeframe():
     candles_5m = [make_candle(float(i * 5), p) for i, p in enumerate(prices_5m)]
 
     # Warmup both
-    engine.warmup({
-        "1m": candles_1m[:80],
-        "5m": candles_5m[:40],
-    })
+    engine.warmup(
+        {
+            "1m": candles_1m[:80],
+            "5m": candles_5m[:40],
+        }
+    )
 
     # Get states
     state_1m = engine.get_state("1m")
@@ -570,6 +594,7 @@ def test_multi_timeframe():
 # =============================================================================
 # TEST 8: EDGE CASES
 # =============================================================================
+
 
 def test_insufficient_data():
     """Test behavior with insufficient warmup data."""

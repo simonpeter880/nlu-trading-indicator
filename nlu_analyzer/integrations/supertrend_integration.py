@@ -5,15 +5,16 @@ Demonstrates how to integrate the Supertrend Engine for regime labeling
 and directional bias filtering in a streaming trading system.
 """
 
+from typing import Dict, Optional
+
 from nlu_analyzer.indicators.supertrend_filter import (
-    SupertrendEngine,
-    SupertrendConfig,
     Candle,
     Direction,
     Regime,
-    format_supertrend_output
+    SupertrendConfig,
+    SupertrendEngine,
+    format_supertrend_output,
 )
-from typing import Dict, Optional
 
 
 def example_streaming_integration():
@@ -37,7 +38,7 @@ def example_streaming_integration():
         flip_rate_trend=0.05,
         min_hold_bars=3,
         st_distance_factor=0.15,
-        atrp_min_chop=0.0010
+        atrp_min_chop=0.0010,
     )
 
     # Alternative: Per-timeframe overrides
@@ -59,7 +60,7 @@ def example_streaming_integration():
     historical_candles_by_tf = {
         "1m": generate_test_candles(100.0, 100, 0.002),
         "5m": generate_test_candles(100.0, 80, 0.003),
-        "1h": generate_test_candles(100.0, 60, 0.004)
+        "1h": generate_test_candles(100.0, 60, 0.004),
     }
 
     # Warmup all timeframes
@@ -73,12 +74,7 @@ def example_streaming_integration():
 
     # Example: New 1m candle closes
     new_candle_1m = Candle(
-        timestamp=100.0,
-        open=110.5,
-        high=110.8,
-        low=110.3,
-        close=110.7,
-        volume=50000.0
+        timestamp=100.0, open=110.5, high=110.8, low=110.3, close=110.7, volume=50000.0
     )
 
     result_1m = engine.on_candle_close("1m", new_candle_1m)
@@ -97,22 +93,14 @@ def example_streaming_integration():
 
     latest_candles = {
         "1m": [new_candle_1m],
-        "5m": [Candle(
-            timestamp=100.0,
-            open=110.5,
-            high=111.5,
-            low=110.0,
-            close=111.0,
-            volume=250000.0
-        )],
-        "1h": [Candle(
-            timestamp=100.0,
-            open=109.0,
-            high=112.0,
-            low=108.5,
-            close=111.5,
-            volume=3000000.0
-        )]
+        "5m": [
+            Candle(timestamp=100.0, open=110.5, high=111.5, low=110.0, close=111.0, volume=250000.0)
+        ],
+        "1h": [
+            Candle(
+                timestamp=100.0, open=109.0, high=112.0, low=108.5, close=111.5, volume=3000000.0
+            )
+        ],
     }
 
     all_results = engine.update(latest_candles)
@@ -133,7 +121,9 @@ def example_streaming_integration():
     print(f"  Final Upper: {state.final_upper:.2f}")
     print(f"  Final Lower: {state.final_lower:.2f}")
     print(f"  ATR: {state.atr:.2f} ({state.atr_percent*100:.2f}%)")
-    print(f"  Flips (last {state.debug['flip_window']}): {state.flips_last_n} ({state.flip_rate:.2%})")
+    print(
+        f"  Flips (last {state.debug['flip_window']}): {state.flips_last_n} ({state.flip_rate:.2%})"
+    )
     print(f"  Hold Count: {state.direction_hold_count}")
     print(f"  Distance Avg: {state.distance_avg*100:.2f}%")
 
@@ -158,7 +148,9 @@ def example_streaming_integration():
 
         elif st_state.regime == Regime.CHOP:
             signals.append("✗ CHOP - Avoid trend-following strategies")
-            signals.append(f"  Flip rate: {st_state.flip_rate:.2%} (threshold: {st_state.debug['flip_rate_chop_thr']:.2%})")
+            signals.append(
+                f"  Flip rate: {st_state.flip_rate:.2%} (threshold: {st_state.debug['flip_rate_chop_thr']:.2%})"
+            )
             if st_state.distance_avg < 0.001:
                 signals.append("  Price hugging ST line - very noisy")
 
@@ -166,8 +158,10 @@ def example_streaming_integration():
         if st_state.regime == Regime.TREND:
             if st_state.flip_event:
                 signals.append("⚠ Direction flipped - wait for confirmation")
-            elif st_state.direction_hold_count < st_state.debug['min_hold_bars']:
-                signals.append(f"⚠ Hold count low ({st_state.direction_hold_count}) - wait for stability")
+            elif st_state.direction_hold_count < st_state.debug["min_hold_bars"]:
+                signals.append(
+                    f"⚠ Hold count low ({st_state.direction_hold_count}) - wait for stability"
+                )
 
         # Strength warnings
         if st_state.regime == Regime.TREND and st_state.regime_strength_0_100 < 60:
@@ -246,14 +240,9 @@ def generate_test_candles(start_price: float, count: int, trend: float):
         low = price * 0.998
         close = price * (1 + trend)
 
-        candles.append(Candle(
-            timestamp=float(i),
-            open=price,
-            high=high,
-            low=low,
-            close=close,
-            volume=100000.0
-        ))
+        candles.append(
+            Candle(timestamp=float(i), open=price, high=high, low=low, close=close, volume=100000.0)
+        )
 
         price = close
 
@@ -261,6 +250,7 @@ def generate_test_candles(start_price: float, count: int, trend: float):
 
 
 # ========== PRODUCTION INTEGRATION TEMPLATE ==========
+
 
 class ProductionSupertrendIntegration:
     """
@@ -271,11 +261,9 @@ class ProductionSupertrendIntegration:
 
     def __init__(self):
         # Initialize Supertrend engine
-        self.st_engine = SupertrendEngine(SupertrendConfig(
-            atr_period=10,
-            multiplier=3.0,
-            flip_window=20
-        ))
+        self.st_engine = SupertrendEngine(
+            SupertrendConfig(atr_period=10, multiplier=3.0, flip_window=20)
+        )
 
         # Track warmed up timeframes
         self.warmed_up_tfs = set()
@@ -338,11 +326,7 @@ class ProductionSupertrendIntegration:
     def fetch_historical_candles(self) -> Dict[str, list]:
         """Fetch historical candles from your data source"""
         # TODO: Replace with actual data fetching
-        return {
-            "1m": [],
-            "5m": [],
-            "1h": []
-        }
+        return {"1m": [], "5m": [], "1h": []}
 
     def disable_trend_strategies(self, tf: str):
         """Disable trend-following on this timeframe"""

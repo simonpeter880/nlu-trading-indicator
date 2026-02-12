@@ -4,28 +4,30 @@ Metrics and Telemetry for Continuous Analysis.
 Tracks latencies, throughput, and system health for monitoring and debugging.
 """
 
-import time
-from typing import Dict, List, Optional, Callable, Any
-from dataclasses import dataclass, field
-from collections import deque
-from enum import Enum
 import threading
+import time
+from collections import deque
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
 
 class MetricType(Enum):
     """Types of metrics we track."""
-    LATENCY = "latency"          # Time to complete operation (ms)
-    COUNTER = "counter"          # Cumulative count
-    GAUGE = "gauge"              # Current value (can go up/down)
-    RATE = "rate"                # Events per second
+
+    LATENCY = "latency"  # Time to complete operation (ms)
+    COUNTER = "counter"  # Cumulative count
+    GAUGE = "gauge"  # Current value (can go up/down)
+    RATE = "rate"  # Events per second
 
 
 @dataclass
 class LatencyStats:
     """Statistics for a latency metric."""
+
     count: int = 0
     total_ms: float = 0.0
-    min_ms: float = float('inf')
+    min_ms: float = float("inf")
     max_ms: float = 0.0
     last_ms: float = 0.0
 
@@ -42,9 +44,10 @@ class LatencyStats:
 @dataclass
 class RateStats:
     """Statistics for a rate metric."""
+
     total_count: int = 0
-    window_count: int = 0       # Count in current window
-    window_start_ms: int = 0    # Start of current window
+    window_count: int = 0  # Count in current window
+    window_start_ms: int = 0  # Start of current window
     window_duration_ms: int = 1000  # Window size (1 second default)
     rate_per_second: float = 0.0
 
@@ -124,7 +127,9 @@ class RateTracker:
                 # Calculate rate from completed window
                 if self._stats.window_start_ms > 0:
                     elapsed_s = (now - self._stats.window_start_ms) / 1000.0
-                    self._stats.rate_per_second = self._stats.window_count / elapsed_s if elapsed_s > 0 else 0
+                    self._stats.rate_per_second = (
+                        self._stats.window_count / elapsed_s if elapsed_s > 0 else 0
+                    )
 
                 # Start new window
                 self._stats.window_start_ms = now
@@ -167,7 +172,7 @@ class Timer:
         self._tracker = tracker
         self._start: float = 0
 
-    def __enter__(self) -> 'Timer':
+    def __enter__(self) -> "Timer":
         self._start = time.perf_counter()
         return self
 
@@ -179,6 +184,7 @@ class Timer:
 @dataclass
 class SystemMetrics:
     """Aggregated system metrics snapshot."""
+
     timestamp_ms: int
 
     # Data ingestion
@@ -330,7 +336,9 @@ class MetricsCollector:
         return SystemMetrics(
             timestamp_ms=now,
             trades_per_second=trades_rate.get_stats().rate_per_second if trades_rate else 0,
-            orderbook_updates_per_second=orderbook_rate.get_stats().rate_per_second if orderbook_rate else 0,
+            orderbook_updates_per_second=(
+                orderbook_rate.get_stats().rate_per_second if orderbook_rate else 0
+            ),
             total_trades_processed=trades_rate.get_stats().total_count if trades_rate else 0,
             total_orderbook_updates=orderbook_rate.get_stats().total_count if orderbook_rate else 0,
             signal_compute_latency=self._latencies["signal_compute"].get_stats(),

@@ -33,95 +33,104 @@ Architecture:
     FINAL STRUCTURE STATE
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Dict
-from enum import Enum
 import time
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
 
 
 class SwingType(Enum):
     """Swing point type."""
+
     HIGH = "high"
     LOW = "low"
 
 
 class TrendDirection(Enum):
     """Market trend direction."""
-    UPTREND = "uptrend"          # HH + HL
-    DOWNTREND = "downtrend"      # LH + LL
-    RANGE = "range"              # No clear HH/HL or LH/LL
-    UNKNOWN = "unknown"          # Insufficient data
+
+    UPTREND = "uptrend"  # HH + HL
+    DOWNTREND = "downtrend"  # LH + LL
+    RANGE = "range"  # No clear HH/HL or LH/LL
+    UNKNOWN = "unknown"  # Insufficient data
 
 
 class StructureEvent(Enum):
     """Market structure events."""
-    BOS = "bos"                  # Break of Structure (continuation)
-    CHOCH = "choch"              # Change of Character (reversal warning)
-    SWEEP = "sweep"              # Liquidity sweep
-    ACCEPTANCE = "acceptance"    # Break + acceptance
-    REJECTION = "rejection"      # Break + rejection
+
+    BOS = "bos"  # Break of Structure (continuation)
+    CHOCH = "choch"  # Change of Character (reversal warning)
+    SWEEP = "sweep"  # Liquidity sweep
+    ACCEPTANCE = "acceptance"  # Break + acceptance
+    REJECTION = "rejection"  # Break + rejection
 
 
 class RangeType(Enum):
     """Range classification."""
-    COMPRESSION = "compression"      # Narrowing range, breakout imminent
-    DISTRIBUTION = "distribution"    # Top formation, bearish
-    ACCUMULATION = "accumulation"    # Bottom formation, bullish
-    NEUTRAL = "neutral"             # No clear bias
+
+    COMPRESSION = "compression"  # Narrowing range, breakout imminent
+    DISTRIBUTION = "distribution"  # Top formation, bearish
+    ACCUMULATION = "accumulation"  # Bottom formation, bullish
+    NEUTRAL = "neutral"  # No clear bias
 
 
 class StructuralMomentum(Enum):
     """Time-based structural momentum."""
-    FAST = "fast"        # Quick followthrough
-    SLOW = "slow"        # Delayed followthrough
+
+    FAST = "fast"  # Quick followthrough
+    SLOW = "slow"  # Delayed followthrough
     STALLED = "stalled"  # No followthrough
 
 
 class TimeframeAlignment(Enum):
     """Multi-timeframe structure alignment."""
-    FULL_ALIGN = "full_align"        # HTF and LTF agree
+
+    FULL_ALIGN = "full_align"  # HTF and LTF agree
     PARTIAL_ALIGN = "partial_align"  # HTF trend, LTF range
     COUNTER_TREND = "counter_trend"  # HTF and LTF disagree
-    HTF_RANGE = "htf_range"         # HTF ranging
+    HTF_RANGE = "htf_range"  # HTF ranging
 
 
 @dataclass
 class SwingPoint:
     """A swing high or swing low."""
-    idx: int                    # Index in price array
-    price: float               # Price at swing
-    timestamp: int             # Timestamp (ms)
+
+    idx: int  # Index in price array
+    price: float  # Price at swing
+    timestamp: int  # Timestamp (ms)
     swing_type: SwingType
-    strength: int = 1          # How many bars on each side
-    tested: int = 0           # Times price returned to this level
-    broken: bool = False      # Has this swing been broken?
+    strength: int = 1  # How many bars on each side
+    tested: int = 0  # Times price returned to this level
+    broken: bool = False  # Has this swing been broken?
 
 
 @dataclass
 class FairValueGap:
     """Fair Value Gap (imbalance zone)."""
-    idx_start: int            # Start candle index
-    idx_end: int              # End candle index (gap is between start and end)
-    price_top: float          # Top of gap
-    price_bottom: float       # Bottom of gap
-    gap_size_pct: float       # Size as % of price
-    is_bullish: bool          # True if bullish FVG (gap up)
-    filled: bool = False      # Has gap been filled?
-    timestamp: int = 0        # Creation timestamp
+
+    idx_start: int  # Start candle index
+    idx_end: int  # End candle index (gap is between start and end)
+    price_top: float  # Top of gap
+    price_bottom: float  # Bottom of gap
+    gap_size_pct: float  # Size as % of price
+    is_bullish: bool  # True if bullish FVG (gap up)
+    filled: bool = False  # Has gap been filled?
+    timestamp: int = 0  # Creation timestamp
 
 
 @dataclass
 class StructureBreak:
     """Record of a structure break (BOS or CHoCH)."""
+
     timestamp: int
-    event_type: StructureEvent     # BOS or CHOCH
-    direction: str                 # "up" or "down"
-    broken_level: float            # The swing level that was broken
-    break_price: float             # Price at break
-    bar_idx: int                   # Index where break occurred
+    event_type: StructureEvent  # BOS or CHOCH
+    direction: str  # "up" or "down"
+    broken_level: float  # The swing level that was broken
+    break_price: float  # Price at break
+    bar_idx: int  # Index where break occurred
 
     # Acceptance tracking
-    acceptance_bars: int = 0       # Bars since break
+    acceptance_bars: int = 0  # Bars since break
     accepted: Optional[bool] = None
     acceptance_volume_ratio: float = 0.0
 
@@ -177,14 +186,14 @@ class MarketStructureDetector:
 
     def __init__(
         self,
-        swing_lookback: int = 5,          # Bars on each side for swing
-        bos_acceptance_bars: int = 3,     # Bars to confirm acceptance
+        swing_lookback: int = 5,  # Bars on each side for swing
+        bos_acceptance_bars: int = 3,  # Bars to confirm acceptance
         bos_acceptance_volume: float = 1.2,  # Volume ratio for acceptance
         followthrough_time_max: float = 300,  # Max seconds for followthrough (5min)
         followthrough_distance_pct: float = 0.5,  # Required move % for followthrough
-        range_threshold_pct: float = 2.0,   # Max range size for "range" classification
-        compression_periods: int = 10,      # Periods to detect compression
-        fvg_min_gap_pct: float = 0.1,      # Minimum gap size %
+        range_threshold_pct: float = 2.0,  # Max range size for "range" classification
+        compression_periods: int = 10,  # Periods to detect compression
+        fvg_min_gap_pct: float = 0.1,  # Minimum gap size %
     ):
         self.swing_lookback = swing_lookback
         self.bos_acceptance_bars = bos_acceptance_bars
@@ -202,10 +211,7 @@ class MarketStructureDetector:
         self._fvgs: List[FairValueGap] = []
 
     def detect_swings(
-        self,
-        highs: List[float],
-        lows: List[float],
-        timestamps: Optional[List[int]] = None
+        self, highs: List[float], lows: List[float], timestamps: Optional[List[int]] = None
     ) -> Tuple[List[SwingPoint], List[SwingPoint]]:
         """
         Detect swing highs and swing lows.
@@ -237,13 +243,15 @@ class MarketStructureDetector:
                     break
 
             if is_swing_high:
-                swing_highs.append(SwingPoint(
-                    idx=i,
-                    price=highs[i],
-                    timestamp=timestamps[i],
-                    swing_type=SwingType.HIGH,
-                    strength=self.swing_lookback
-                ))
+                swing_highs.append(
+                    SwingPoint(
+                        idx=i,
+                        price=highs[i],
+                        timestamp=timestamps[i],
+                        swing_type=SwingType.HIGH,
+                        strength=self.swing_lookback,
+                    )
+                )
 
             # Check swing low
             is_swing_low = True
@@ -255,20 +263,20 @@ class MarketStructureDetector:
                     break
 
             if is_swing_low:
-                swing_lows.append(SwingPoint(
-                    idx=i,
-                    price=lows[i],
-                    timestamp=timestamps[i],
-                    swing_type=SwingType.LOW,
-                    strength=self.swing_lookback
-                ))
+                swing_lows.append(
+                    SwingPoint(
+                        idx=i,
+                        price=lows[i],
+                        timestamp=timestamps[i],
+                        swing_type=SwingType.LOW,
+                        strength=self.swing_lookback,
+                    )
+                )
 
         return swing_highs, swing_lows
 
     def classify_trend(
-        self,
-        swing_highs: List[SwingPoint],
-        swing_lows: List[SwingPoint]
+        self, swing_highs: List[SwingPoint], swing_lows: List[SwingPoint]
     ) -> TrendDirection:
         """
         Classify trend based on swing structure.
@@ -292,14 +300,14 @@ class MarketStructureDetector:
 
         # Check highs
         for i in range(1, len(recent_highs)):
-            if recent_highs[i].price > recent_highs[i-1].price:
+            if recent_highs[i].price > recent_highs[i - 1].price:
                 hh_count += 1
             else:
                 lh_count += 1
 
         # Check lows
         for i in range(1, len(recent_lows)):
-            if recent_lows[i].price > recent_lows[i-1].price:
+            if recent_lows[i].price > recent_lows[i - 1].price:
                 hl_count += 1
             else:
                 ll_count += 1
@@ -319,7 +327,7 @@ class MarketStructureDetector:
         current_low: float,
         swing_highs: List[SwingPoint],
         swing_lows: List[SwingPoint],
-        trend: TrendDirection
+        trend: TrendDirection,
     ) -> Optional[StructureBreak]:
         """
         Detect Break of Structure (BOS) or Change of Character (CHoCH).
@@ -344,7 +352,7 @@ class MarketStructureDetector:
                         direction="up",
                         broken_level=last_high.price,
                         break_price=current_high,
-                        bar_idx=current_idx
+                        bar_idx=current_idx,
                     )
 
             # Check for CHoCH (break below last low)
@@ -358,7 +366,7 @@ class MarketStructureDetector:
                         direction="down",
                         broken_level=last_low.price,
                         break_price=current_low,
-                        bar_idx=current_idx
+                        bar_idx=current_idx,
                     )
 
         elif trend == TrendDirection.DOWNTREND:
@@ -373,7 +381,7 @@ class MarketStructureDetector:
                         direction="down",
                         broken_level=last_low.price,
                         break_price=current_low,
-                        bar_idx=current_idx
+                        bar_idx=current_idx,
                     )
 
             # Check for CHoCH (break above last high)
@@ -387,7 +395,7 @@ class MarketStructureDetector:
                         direction="up",
                         broken_level=last_high.price,
                         break_price=current_high,
-                        bar_idx=current_idx
+                        bar_idx=current_idx,
                     )
 
         return None
@@ -397,7 +405,7 @@ class MarketStructureDetector:
         structure_break: StructureBreak,
         closes: List[float],
         volumes: List[float],
-        current_idx: int
+        current_idx: int,
     ) -> bool:
         """
         Check if structure break is ACCEPTED or REJECTED.
@@ -438,7 +446,7 @@ class MarketStructureDetector:
         volume_confirmed = True
         if recent_volumes:
             avg_volume = sum(recent_volumes) / len(recent_volumes)
-            prev_volume_window = volumes[max(0, start_idx - 10):start_idx] if volumes else []
+            prev_volume_window = volumes[max(0, start_idx - 10) : start_idx] if volumes else []
             if prev_volume_window:
                 prev_avg = sum(prev_volume_window) / len(prev_volume_window)
                 volume_ratio = avg_volume / prev_avg if prev_avg > 0 else 1.0
@@ -456,7 +464,7 @@ class MarketStructureDetector:
         highs: List[float],
         lows: List[float],
         closes: List[float],
-        volumes: Optional[List[float]] = None
+        volumes: Optional[List[float]] = None,
     ) -> Tuple[bool, RangeType, Optional[float], Optional[float], float]:
         """
         Detect if market is in a range and classify range type.
@@ -477,9 +485,9 @@ class MarketStructureDetector:
         if len(highs) < self.compression_periods:
             return False, RangeType.NEUTRAL, None, None, 0.0
 
-        recent_highs = highs[-self.compression_periods:]
-        recent_lows = lows[-self.compression_periods:]
-        recent_closes = closes[-self.compression_periods:]
+        recent_highs = highs[-self.compression_periods :]
+        recent_lows = lows[-self.compression_periods :]
+        recent_closes = closes[-self.compression_periods :]
 
         # Calculate range
         range_high = max(recent_highs)
@@ -495,8 +503,8 @@ class MarketStructureDetector:
         # Calculate range tightness (0-1, higher = tighter)
         # Compare recent range to historical range
         if len(highs) >= self.compression_periods * 2:
-            historical_highs = highs[-self.compression_periods * 2:-self.compression_periods]
-            historical_lows = lows[-self.compression_periods * 2:-self.compression_periods]
+            historical_highs = highs[-self.compression_periods * 2 : -self.compression_periods]
+            historical_lows = lows[-self.compression_periods * 2 : -self.compression_periods]
             historical_range = max(historical_highs) - min(historical_lows)
             current_range = range_high - range_low
             tightness = 1.0 - (current_range / historical_range) if historical_range > 0 else 0.0
@@ -512,12 +520,16 @@ class MarketStructureDetector:
             range_type = RangeType.COMPRESSION
         elif volumes and len(volumes) >= len(recent_closes):
             # Check volume distribution
-            recent_volumes = volumes[-self.compression_periods:]
+            recent_volumes = volumes[-self.compression_periods :]
             mid_price = (range_high + range_low) / 2
 
             # Volume at highs vs lows
-            volume_at_highs = sum(v for i, v in enumerate(recent_volumes) if recent_closes[i] > mid_price)
-            volume_at_lows = sum(v for i, v in enumerate(recent_volumes) if recent_closes[i] < mid_price)
+            volume_at_highs = sum(
+                v for i, v in enumerate(recent_volumes) if recent_closes[i] > mid_price
+            )
+            volume_at_lows = sum(
+                v for i, v in enumerate(recent_volumes) if recent_closes[i] < mid_price
+            )
             total_vol = sum(recent_volumes)
 
             if total_vol > 0:
@@ -532,11 +544,7 @@ class MarketStructureDetector:
         return in_range, range_type, range_high, range_low, tightness
 
     def detect_fvg(
-        self,
-        idx: int,
-        highs: List[float],
-        lows: List[float],
-        closes: List[float]
+        self, idx: int, highs: List[float], lows: List[float], closes: List[float]
     ) -> Optional[FairValueGap]:
         """
         Detect Fair Value Gap (FVG) / Imbalance.
@@ -566,7 +574,7 @@ class MarketStructureDetector:
                     price_bottom=gap_bottom,
                     gap_size_pct=gap_size_pct,
                     is_bullish=True,
-                    timestamp=int(time.time() * 1000)
+                    timestamp=int(time.time() * 1000),
                 )
 
         # Bearish FVG check
@@ -583,17 +591,12 @@ class MarketStructureDetector:
                     price_bottom=gap_bottom,
                     gap_size_pct=gap_size_pct,
                     is_bullish=False,
-                    timestamp=int(time.time() * 1000)
+                    timestamp=int(time.time() * 1000),
                 )
 
         return None
 
-    def check_fvg_filled(
-        self,
-        fvg: FairValueGap,
-        current_high: float,
-        current_low: float
-    ) -> bool:
+    def check_fvg_filled(self, fvg: FairValueGap, current_high: float, current_low: float) -> bool:
         """Check if FVG has been filled (price returned to gap)."""
         if fvg.is_bullish:
             # Bullish gap filled if price drops back into gap
@@ -603,10 +606,7 @@ class MarketStructureDetector:
             return current_high >= fvg.price_bottom and current_high <= fvg.price_top
 
     def calculate_structural_momentum(
-        self,
-        structure_break: Optional[StructureBreak],
-        current_price: float,
-        time_elapsed: float
+        self, structure_break: Optional[StructureBreak], current_price: float, time_elapsed: float
     ) -> StructuralMomentum:
         """
         Calculate structural momentum based on time-to-followthrough.
@@ -623,7 +623,9 @@ class MarketStructureDetector:
 
         # Check if followthrough achieved
         if not structure_break.followthrough_achieved:
-            distance_from_break = abs(current_price - structure_break.break_price) / structure_break.break_price * 100
+            distance_from_break = (
+                abs(current_price - structure_break.break_price) / structure_break.break_price * 100
+            )
 
             if distance_from_break >= self.followthrough_distance_pct:
                 structure_break.followthrough_achieved = True
@@ -643,9 +645,7 @@ class MarketStructureDetector:
         return StructuralMomentum.SLOW
 
     def analyze_mtf_alignment(
-        self,
-        htf_trend: TrendDirection,
-        ltf_trend: TrendDirection
+        self, htf_trend: TrendDirection, ltf_trend: TrendDirection
     ) -> TimeframeAlignment:
         """
         Analyze multi-timeframe structure alignment.
@@ -673,7 +673,7 @@ class MarketStructureDetector:
         in_range: bool,
         last_event: Optional[StructureBreak],
         tf_alignment: TimeframeAlignment,
-        structural_momentum: StructuralMomentum
+        structural_momentum: StructuralMomentum,
     ) -> float:
         """
         Calculate structure confidence (0-100).
@@ -726,7 +726,7 @@ class MarketStructureDetector:
         closes: List[float],
         volumes: Optional[List[float]] = None,
         timestamps: Optional[List[int]] = None,
-        htf_trend: TrendDirection = TrendDirection.UNKNOWN
+        htf_trend: TrendDirection = TrendDirection.UNKNOWN,
     ) -> MarketStructureState:
         """
         Complete market structure analysis.
@@ -747,12 +747,7 @@ class MarketStructureDetector:
         if len(highs) > 0:
             current_idx = len(highs) - 1
             last_event = self.detect_bos_and_choch(
-                current_idx,
-                highs[-1],
-                lows[-1],
-                swing_highs,
-                swing_lows,
-                ltf_trend
+                current_idx, highs[-1], lows[-1], swing_highs, swing_lows, ltf_trend
             )
 
             if last_event:
@@ -771,7 +766,9 @@ class MarketStructureDetector:
         if last_event and volumes:
             accepted = self.check_acceptance(last_event, closes, volumes, len(closes) - 1)
             if accepted is False:
-                warnings.append(f"{last_event.event_type.value.upper()} rejected - likely fake break")
+                warnings.append(
+                    f"{last_event.event_type.value.upper()} rejected - likely fake break"
+                )
 
         # 5. Detect range structure
         in_range, range_type, range_high, range_low, tightness = self.detect_range_structure(
@@ -805,9 +802,7 @@ class MarketStructureDetector:
             time_elapsed = (int(time.time() * 1000) - last_event.timestamp) / 1000.0
 
         structural_momentum = self.calculate_structural_momentum(
-            last_event,
-            closes[-1] if closes else 0,
-            time_elapsed
+            last_event, closes[-1] if closes else 0, time_elapsed
         )
 
         # 8. Multi-timeframe alignment
@@ -818,11 +813,7 @@ class MarketStructureDetector:
 
         # 9. Calculate structure confidence
         structure_confidence = self.get_structure_confidence(
-            ltf_trend,
-            in_range,
-            last_event,
-            tf_alignment,
-            structural_momentum
+            ltf_trend, in_range, last_event, tf_alignment, structural_momentum
         )
 
         # 10. Add warnings based on CHoCH
@@ -848,15 +839,14 @@ class MarketStructureDetector:
             ltf_trend=ltf_trend,
             tf_alignment=tf_alignment,
             structure_confidence=structure_confidence,
-            warnings=warnings
+            warnings=warnings,
         )
 
 
 # Convenience functions
 
-def get_allowed_trade_direction(
-    structure: MarketStructureState
-) -> Optional[str]:
+
+def get_allowed_trade_direction(structure: MarketStructureState) -> Optional[str]:
     """
     Determine allowed trade direction based on structure.
 
@@ -894,9 +884,7 @@ def get_allowed_trade_direction(
 
 
 def structure_veto_signal(
-    structure: MarketStructureState,
-    signal_direction: str,
-    signal_confidence: float
+    structure: MarketStructureState, signal_direction: str, signal_confidence: float
 ) -> Tuple[bool, Optional[str]]:
     """
     HARD VETO: Structure can veto any signal.
@@ -936,7 +924,10 @@ def structure_veto_signal(
 
     # CHoCH warning: reduce position or avoid
     if structure.last_choch and structure.last_choch.event_type == StructureEvent.CHOCH:
-        if structure.last_bos is None or structure.last_choch.timestamp > structure.last_bos.timestamp:
+        if (
+            structure.last_bos is None
+            or structure.last_choch.timestamp > structure.last_bos.timestamp
+        ):
             if signal_confidence < 70:
                 return True, "Recent CHoCH (trend reversal warning) - need high confidence"
 

@@ -19,39 +19,43 @@ DESIGN:
 - Configurable parameters with sane defaults
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Tuple
-from enum import Enum
 import math
-
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
 
 # ============================================================================
 # ENUMS
 # ============================================================================
 
+
 class SwingType(Enum):
     """Swing point type."""
+
     HIGH = "HIGH"
     LOW = "LOW"
 
 
 class StructureSide(Enum):
     """Bullish or bearish."""
+
     BULL = "BULL"
     BEAR = "BEAR"
 
 
 class EventType(Enum):
     """Structure event types."""
-    BOS = "BOS"           # Break of Structure
-    CHOCH = "CHOCH"       # Change of Character
-    SWEEP = "SWEEP"       # Liquidity sweep
-    ACCEPT = "ACCEPT"     # Acceptance confirmation
-    REJECT = "REJECT"     # Rejection confirmation
+
+    BOS = "BOS"  # Break of Structure
+    CHOCH = "CHOCH"  # Change of Character
+    SWEEP = "SWEEP"  # Liquidity sweep
+    ACCEPT = "ACCEPT"  # Acceptance confirmation
+    REJECT = "REJECT"  # Rejection confirmation
 
 
 class RangeClassification(Enum):
     """Range type classification."""
+
     COMPRESSION = "COMPRESSION"
     ACCUMULATION = "ACCUMULATION"
     DISTRIBUTION = "DISTRIBUTION"
@@ -60,6 +64,7 @@ class RangeClassification(Enum):
 
 class StructureState(Enum):
     """Overall market structure state."""
+
     UP = "UP"
     DOWN = "DOWN"
     RANGE = "RANGE"
@@ -68,6 +73,7 @@ class StructureState(Enum):
 
 class StructuralMomentum(Enum):
     """Time-to-followthrough momentum."""
+
     FAST = "FAST"
     SLOW = "SLOW"
     STALLED = "STALLED"
@@ -75,13 +81,15 @@ class StructuralMomentum(Enum):
 
 class TimeframeAlignment(Enum):
     """Multi-timeframe alignment."""
-    ALIGNED = "ALIGNED"           # Both same direction
-    MIXED = "MIXED"               # HTF trend, LTF range/opposite
+
+    ALIGNED = "ALIGNED"  # Both same direction
+    MIXED = "MIXED"  # HTF trend, LTF range/opposite
     RANGE_DOMINANT = "RANGE_DOMINANT"  # HTF range
 
 
 class TradingMode(Enum):
     """Recommended trading mode."""
+
     TREND_MODE = "TREND_MODE"
     RANGE_MODE = "RANGE_MODE"
     SCALP_ONLY = "SCALP_ONLY"
@@ -89,6 +97,7 @@ class TradingMode(Enum):
 
 class ZoneStatus(Enum):
     """Zone status."""
+
     OPEN = "OPEN"
     FILLED = "FILLED"
     BROKEN = "BROKEN"
@@ -98,9 +107,11 @@ class ZoneStatus(Enum):
 # DATA CLASSES
 # ============================================================================
 
+
 @dataclass
 class Candle:
     """OHLCV candle."""
+
     timestamp: int  # Unix ms
     open: float
     high: float
@@ -112,28 +123,31 @@ class Candle:
 @dataclass
 class SwingPoint:
     """A swing high or swing low."""
+
     swing_type: SwingType
     price: float
-    index: int        # Index in candle array
-    time: int         # Timestamp ms
-    strength: float   # 0-1, based on distance to opposite swing / ATR
+    index: int  # Index in candle array
+    time: int  # Timestamp ms
+    strength: float  # 0-1, based on distance to opposite swing / ATR
 
 
 @dataclass
 class StructureEvent:
     """Market structure event (BOS, CHoCH, SWEEP, etc.)."""
+
     event_type: EventType
     side: StructureSide
-    level: float      # Price level involved
-    time: int         # Timestamp ms
-    index: int        # Candle index
+    level: float  # Price level involved
+    time: int  # Timestamp ms
+    index: int  # Candle index
     details: Dict = field(default_factory=dict)
 
 
 @dataclass
 class Zone:
     """Range or FVG zone."""
-    zone_type: str    # "RANGE" or "FVG"
+
+    zone_type: str  # "RANGE" or "FVG"
     side: Optional[StructureSide]  # BULL/BEAR for FVG, None for RANGE
     top: float
     bottom: float
@@ -144,9 +158,10 @@ class Zone:
 @dataclass
 class MarketStructureState:
     """Complete market structure state for a timeframe."""
-    structure: StructureState           # UP / DOWN / RANGE
-    strength_0_100: float              # Confidence 0-100
-    regime: str                        # "TREND" / "RANGE" / "MIXED"
+
+    structure: StructureState  # UP / DOWN / RANGE
+    strength_0_100: float  # Confidence 0-100
+    regime: str  # "TREND" / "RANGE" / "MIXED"
 
     # Swings
     last_swing_high: Optional[SwingPoint] = None
@@ -172,6 +187,7 @@ class MarketStructureState:
 @dataclass
 class MultiTFAlignment:
     """Multi-timeframe alignment summary."""
+
     alignment: TimeframeAlignment
     recommended_mode: TradingMode
     htf_structure: StructureState
@@ -183,12 +199,13 @@ class MultiTFAlignment:
 @dataclass
 class StructureConfig:
     """Configuration for market structure engine."""
+
     # Swing detection
     pivot_left: int = 3
     pivot_right: int = 3
 
     # BOS/CHoCH buffers
-    bos_buffer_pct: float = 0.05       # Min % move to confirm BOS
+    bos_buffer_pct: float = 0.05  # Min % move to confirm BOS
     bos_buffer_atr_mult: float = 0.15  # OR 0.15 * ATR%
     use_close_for_breaks: bool = True  # Use close vs high/low
 
@@ -203,8 +220,8 @@ class StructureConfig:
     accept_rv_threshold: float = 1.2
 
     # Range detection
-    range_no_bos_candles: int = 20      # No BOS for X candles
-    range_atr_contraction: bool = True   # ATR must be contracting
+    range_no_bos_candles: int = 20  # No BOS for X candles
+    range_atr_contraction: bool = True  # ATR must be contracting
 
     # Range classification
     range_width_history: int = 3  # Compare to last N ranges
@@ -226,6 +243,7 @@ class StructureConfig:
 # HELPER FUNCTIONS
 # ============================================================================
 
+
 def compute_atr(candles: List[Candle], period: int = 14) -> List[float]:
     """
     Compute ATR (Average True Range) for each candle.
@@ -243,11 +261,7 @@ def compute_atr(candles: List[Candle], period: int = 14) -> List[float]:
         low = candles[i].low
         prev_close = candles[i - 1].close
 
-        tr = max(
-            high - low,
-            abs(high - prev_close),
-            abs(low - prev_close)
-        )
+        tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
         true_ranges.append(tr)
 
     # SMA for first ATR
@@ -294,7 +308,7 @@ def compute_rv(volumes: List[float], period: int = 20) -> List[float]:
     rvs = [1.0] * len(volumes)
 
     for i in range(period - 1, len(volumes)):
-        window = volumes[i - period + 1:i + 1]
+        window = volumes[i - period + 1 : i + 1]
         avg = sum(window) / len(window)
         if avg > 0:
             rvs[i] = volumes[i] / avg
@@ -312,7 +326,7 @@ def sma(values: List[float], period: int) -> List[float]:
     result = [0.0] * len(values)
 
     for i in range(period - 1, len(values)):
-        window = values[i - period + 1:i + 1]
+        window = values[i - period + 1 : i + 1]
         result[i] = sum(window) / len(window)
 
     return result
@@ -321,6 +335,7 @@ def sma(values: List[float], period: int) -> List[float]:
 # ============================================================================
 # MARKET STRUCTURE ENGINE
 # ============================================================================
+
 
 class MarketStructureEngine:
     """
@@ -364,9 +379,7 @@ class MarketStructureEngine:
             if len(candles) < 10:
                 # Not enough data
                 states[tf] = MarketStructureState(
-                    structure=StructureState.UNKNOWN,
-                    strength_0_100=0.0,
-                    regime="UNKNOWN"
+                    structure=StructureState.UNKNOWN, strength_0_100=0.0, regime="UNKNOWN"
                 )
                 continue
 
@@ -377,7 +390,9 @@ class MarketStructureEngine:
 
         return states
 
-    def get_mtf_alignment(self, htf_name: str = "HTF", ltf_name: str = "LTF") -> Optional[MultiTFAlignment]:
+    def get_mtf_alignment(
+        self, htf_name: str = "HTF", ltf_name: str = "LTF"
+    ) -> Optional[MultiTFAlignment]:
         """
         Get multi-timeframe alignment between HTF and LTF.
 
@@ -513,39 +528,41 @@ class MarketStructureEngine:
             window_highs = [candles[j].high for j in range(i - L, i + R + 1)]
             if candles[i].high == max(window_highs):
                 # Strictly greater than neighbors
-                if (candles[i].high > candles[i - 1].high and
-                    candles[i].high > candles[i + 1].high):
+                if candles[i].high > candles[i - 1].high and candles[i].high > candles[i + 1].high:
 
                     strength = self._compute_swing_strength(
                         i, candles, atr_pct, SwingType.HIGH, swings
                     )
 
-                    swings.append(SwingPoint(
-                        swing_type=SwingType.HIGH,
-                        price=candles[i].high,
-                        index=i,
-                        time=candles[i].timestamp,
-                        strength=strength
-                    ))
+                    swings.append(
+                        SwingPoint(
+                            swing_type=SwingType.HIGH,
+                            price=candles[i].high,
+                            index=i,
+                            time=candles[i].timestamp,
+                            strength=strength,
+                        )
+                    )
 
             # Check swing low
             window_lows = [candles[j].low for j in range(i - L, i + R + 1)]
             if candles[i].low == min(window_lows):
                 # Strictly less than neighbors
-                if (candles[i].low < candles[i - 1].low and
-                    candles[i].low < candles[i + 1].low):
+                if candles[i].low < candles[i - 1].low and candles[i].low < candles[i + 1].low:
 
                     strength = self._compute_swing_strength(
                         i, candles, atr_pct, SwingType.LOW, swings
                     )
 
-                    swings.append(SwingPoint(
-                        swing_type=SwingType.LOW,
-                        price=candles[i].low,
-                        index=i,
-                        time=candles[i].timestamp,
-                        strength=strength
-                    ))
+                    swings.append(
+                        SwingPoint(
+                            swing_type=SwingType.LOW,
+                            price=candles[i].low,
+                            index=i,
+                            time=candles[i].timestamp,
+                            strength=strength,
+                        )
+                    )
 
         return swings
 
@@ -555,7 +572,7 @@ class MarketStructureEngine:
         candles: List[Candle],
         atr_pct: List[float],
         swing_type: SwingType,
-        existing_swings: List[SwingPoint]
+        existing_swings: List[SwingPoint],
     ) -> float:
         """
         Compute swing strength based on distance to nearest opposite swing / ATR.
@@ -639,7 +656,7 @@ class MarketStructureEngine:
         swings: List[SwingPoint],
         structure: StructureState,
         atr_pct: List[float],
-        tf: str
+        tf: str,
     ) -> List[StructureEvent]:
         """
         Detect BOS (continuation) and CHoCH (reversal) events.
@@ -664,10 +681,7 @@ class MarketStructureEngine:
             atr = atr_pct[i] if i < len(atr_pct) else 0.5
 
             # Adaptive buffer
-            buffer_pct = max(
-                self.config.bos_buffer_pct,
-                self.config.bos_buffer_atr_mult * atr
-            )
+            buffer_pct = max(self.config.bos_buffer_pct, self.config.bos_buffer_atr_mult * atr)
 
             price_to_check = candle.close if self.config.use_close_for_breaks else None
 
@@ -684,7 +698,7 @@ class MarketStructureEngine:
                         level=level,
                         time=candle.timestamp,
                         index=i,
-                        details={"atr_pct": atr, "buffer_pct": buffer_pct}
+                        details={"atr_pct": atr, "buffer_pct": buffer_pct},
                     )
                     events.append(event)
                     self._add_pending_break(tf, event, i)
@@ -701,7 +715,7 @@ class MarketStructureEngine:
                         level=level,
                         time=candle.timestamp,
                         index=i,
-                        details={"atr_pct": atr, "buffer_pct": buffer_pct}
+                        details={"atr_pct": atr, "buffer_pct": buffer_pct},
                     )
                     events.append(event)
                     self._add_pending_break(tf, event, i)
@@ -719,7 +733,7 @@ class MarketStructureEngine:
                         level=level,
                         time=candle.timestamp,
                         index=i,
-                        details={"atr_pct": atr}
+                        details={"atr_pct": atr},
                     )
                     events.append(event)
 
@@ -735,18 +749,14 @@ class MarketStructureEngine:
                         level=level,
                         time=candle.timestamp,
                         index=i,
-                        details={"atr_pct": atr}
+                        details={"atr_pct": atr},
                     )
                     events.append(event)
 
         return events
 
     def _detect_sweeps(
-        self,
-        candles: List[Candle],
-        swings: List[SwingPoint],
-        atr_pct: List[float],
-        rv: List[float]
+        self, candles: List[Candle], swings: List[SwingPoint], atr_pct: List[float], rv: List[float]
     ) -> List[StructureEvent]:
         """
         Detect liquidity sweeps with confirmation.
@@ -769,10 +779,7 @@ class MarketStructureEngine:
             candle = candles[i]
             atr = atr_pct[i] if i < len(atr_pct) else 0.5
 
-            buffer_pct = max(
-                self.config.sweep_buffer_pct,
-                self.config.sweep_buffer_atr_mult * atr
-            )
+            buffer_pct = max(self.config.sweep_buffer_pct, self.config.sweep_buffer_atr_mult * atr)
 
             # Check sweep of liq_lows (bullish sweep)
             for liq_low in liq_lows:
@@ -785,14 +792,16 @@ class MarketStructureEngine:
                             candles, i, rv, StructureSide.BULL
                         )
 
-                        events.append(StructureEvent(
-                            event_type=EventType.SWEEP,
-                            side=StructureSide.BULL,
-                            level=liq_low,
-                            time=candle.timestamp,
-                            index=i,
-                            details={"confirmed": confirmed, "type": "buy_side_liquidity"}
-                        ))
+                        events.append(
+                            StructureEvent(
+                                event_type=EventType.SWEEP,
+                                side=StructureSide.BULL,
+                                level=liq_low,
+                                time=candle.timestamp,
+                                index=i,
+                                details={"confirmed": confirmed, "type": "buy_side_liquidity"},
+                            )
+                        )
 
             # Check sweep of liq_highs (bearish sweep)
             for liq_high in liq_highs:
@@ -805,18 +814,22 @@ class MarketStructureEngine:
                             candles, i, rv, StructureSide.BEAR
                         )
 
-                        events.append(StructureEvent(
-                            event_type=EventType.SWEEP,
-                            side=StructureSide.BEAR,
-                            level=liq_high,
-                            time=candle.timestamp,
-                            index=i,
-                            details={"confirmed": confirmed, "type": "sell_side_liquidity"}
-                        ))
+                        events.append(
+                            StructureEvent(
+                                event_type=EventType.SWEEP,
+                                side=StructureSide.BEAR,
+                                level=liq_high,
+                                time=candle.timestamp,
+                                index=i,
+                                details={"confirmed": confirmed, "type": "sell_side_liquidity"},
+                            )
+                        )
 
         return events
 
-    def _find_liquidity_levels(self, swings: List[SwingPoint], swing_type: SwingType) -> List[float]:
+    def _find_liquidity_levels(
+        self, swings: List[SwingPoint], swing_type: SwingType
+    ) -> List[float]:
         """Find liquidity levels (equal highs/lows)."""
         levels = []
         same_type = [s for s in swings if s.swing_type == swing_type]
@@ -840,11 +853,7 @@ class MarketStructureEngine:
         return list(set(levels))  # Dedupe
 
     def _check_sweep_confirmation(
-        self,
-        candles: List[Candle],
-        sweep_idx: int,
-        rv: List[float],
-        side: StructureSide
+        self, candles: List[Candle], sweep_idx: int, rv: List[float], side: StructureSide
     ) -> bool:
         """
         Check if sweep is confirmed within next K candles.
@@ -879,10 +888,7 @@ class MarketStructureEngine:
         return high_rv_found and rejection_found
 
     def _check_acceptance_rejection(
-        self,
-        tf: str,
-        candles: List[Candle],
-        rv: List[float]
+        self, tf: str, candles: List[Candle], rv: List[float]
     ) -> List[StructureEvent]:
         """
         Check acceptance/rejection for pending breaks.
@@ -925,23 +931,27 @@ class MarketStructureEngine:
 
             # Accepted or rejected?
             if stayed_beyond and high_rv_found:
-                events.append(StructureEvent(
-                    event_type=EventType.ACCEPT,
-                    side=side,
-                    level=level,
-                    time=candles[current_idx].timestamp,
-                    index=current_idx,
-                    details={"original_event": break_event.event_type.value}
-                ))
+                events.append(
+                    StructureEvent(
+                        event_type=EventType.ACCEPT,
+                        side=side,
+                        level=level,
+                        time=candles[current_idx].timestamp,
+                        index=current_idx,
+                        details={"original_event": break_event.event_type.value},
+                    )
+                )
             else:
-                events.append(StructureEvent(
-                    event_type=EventType.REJECT,
-                    side=side,
-                    level=level,
-                    time=candles[current_idx].timestamp,
-                    index=current_idx,
-                    details={"original_event": break_event.event_type.value}
-                ))
+                events.append(
+                    StructureEvent(
+                        event_type=EventType.REJECT,
+                        side=side,
+                        level=level,
+                        time=candles[current_idx].timestamp,
+                        index=current_idx,
+                        details={"original_event": break_event.event_type.value},
+                    )
+                )
 
             completed.append((break_event, break_idx))
 
@@ -962,7 +972,7 @@ class MarketStructureEngine:
         candles: List[Candle],
         swings: List[SwingPoint],
         events: List[StructureEvent],
-        atr_pct: List[float]
+        atr_pct: List[float],
     ) -> Optional[Zone]:
         """
         Detect if market is in a range and classify it.
@@ -1004,7 +1014,7 @@ class MarketStructureEngine:
             top=range_high,
             bottom=range_low,
             created_time=candles[-1].timestamp,
-            status=ZoneStatus.OPEN
+            status=ZoneStatus.OPEN,
         )
 
     def _detect_fvgs(self, candles: List[Candle]) -> List[Zone]:
@@ -1029,14 +1039,16 @@ class MarketStructureEngine:
                         status = ZoneStatus.FILLED
                         break
 
-                fvgs.append(Zone(
-                    zone_type="FVG",
-                    side=StructureSide.BULL,
-                    top=gap_top,
-                    bottom=gap_bottom,
-                    created_time=candles[i].timestamp,
-                    status=status
-                ))
+                fvgs.append(
+                    Zone(
+                        zone_type="FVG",
+                        side=StructureSide.BULL,
+                        top=gap_top,
+                        bottom=gap_bottom,
+                        created_time=candles[i].timestamp,
+                        status=status,
+                    )
+                )
 
             # Bearish FVG
             elif candles[i].high < candles[i - 2].low:
@@ -1050,24 +1062,23 @@ class MarketStructureEngine:
                         status = ZoneStatus.FILLED
                         break
 
-                fvgs.append(Zone(
-                    zone_type="FVG",
-                    side=StructureSide.BEAR,
-                    top=gap_top,
-                    bottom=gap_bottom,
-                    created_time=candles[i].timestamp,
-                    status=status
-                ))
+                fvgs.append(
+                    Zone(
+                        zone_type="FVG",
+                        side=StructureSide.BEAR,
+                        top=gap_top,
+                        bottom=gap_bottom,
+                        created_time=candles[i].timestamp,
+                        status=status,
+                    )
+                )
 
         # Return only open FVGs (last 10)
         open_fvgs = [f for f in fvgs if f.status == ZoneStatus.OPEN]
         return open_fvgs[-10:]
 
     def _compute_momentum(
-        self,
-        candles: List[Candle],
-        events: List[StructureEvent],
-        atr_pct: List[float]
+        self, candles: List[Candle], events: List[StructureEvent], atr_pct: List[float]
     ) -> StructuralMomentum:
         """
         Compute time-to-followthrough momentum.
@@ -1130,7 +1141,7 @@ class MarketStructureEngine:
         structure: StructureState,
         events: List[StructureEvent],
         swings: List[SwingPoint],
-        active_range: Optional[Zone]
+        active_range: Optional[Zone],
     ) -> float:
         """
         Compute structure strength/confidence (0-100).
@@ -1149,16 +1160,20 @@ class MarketStructureEngine:
         bos_events = [e for e in events if e.event_type == EventType.BOS]
         if bos_events:
             # Check if accepted
-            accept_events = [e for e in events
-                           if e.event_type == EventType.ACCEPT
-                           and e.details.get("original_event") == "BOS"]
+            accept_events = [
+                e
+                for e in events
+                if e.event_type == EventType.ACCEPT and e.details.get("original_event") == "BOS"
+            ]
             if accept_events:
                 strength += 20
             else:
                 # Check if rejected
-                reject_events = [e for e in events
-                               if e.event_type == EventType.REJECT
-                               and e.details.get("original_event") == "BOS"]
+                reject_events = [
+                    e
+                    for e in events
+                    if e.event_type == EventType.REJECT and e.details.get("original_event") == "BOS"
+                ]
                 if reject_events:
                     strength -= 15
 
@@ -1174,7 +1189,9 @@ class MarketStructureEngine:
 
         return max(0.0, min(100.0, strength))
 
-    def _get_last_swing(self, swings: List[SwingPoint], swing_type: SwingType) -> Optional[SwingPoint]:
+    def _get_last_swing(
+        self, swings: List[SwingPoint], swing_type: SwingType
+    ) -> Optional[SwingPoint]:
         """Get the most recent swing of given type."""
         for swing in reversed(swings):
             if swing.swing_type == swing_type:

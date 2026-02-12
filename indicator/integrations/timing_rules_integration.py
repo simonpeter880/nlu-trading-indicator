@@ -9,18 +9,18 @@ It consumes outputs from trend, VWAP, momentum, ROC, ATR, CHOP, RSI, and MACD.
 """
 
 from indicator.engines.timing_rules import (
-    TimingRulesEngine,
-    TimingRulesConfig,
     TimingDecision,
-    print_timing_decisions,
+    TimingRulesConfig,
+    TimingRulesEngine,
     format_timing_decision,
     interpret_timing,
+    print_timing_decisions,
 )
-
 
 # ============================================================================
 # EXAMPLE 1: Continuous Runner Integration
 # ============================================================================
+
 
 def example_continuous_integration():
     """
@@ -98,6 +98,7 @@ def example_continuous_integration():
 # EXAMPLE 2: Batch Analysis Integration (runner.py)
 # ============================================================================
 
+
 def example_batch_integration():
     """
     Example: Integrate Timing Rules into runner.py analyze_pair()
@@ -165,6 +166,7 @@ def example_batch_integration():
 # EXAMPLE 3: Multi-Timeframe Alignment
 # ============================================================================
 
+
 def example_multi_timeframe_alignment():
     """
     Example: Use timing decisions across multiple timeframes for confluence.
@@ -202,6 +204,7 @@ def example_multi_timeframe_alignment():
 # ============================================================================
 # EXAMPLE 4: Position Sizing Based on Confidence
 # ============================================================================
+
 
 def example_position_sizing():
     """
@@ -242,6 +245,7 @@ def example_position_sizing():
 # ============================================================================
 # EXAMPLE 5: Compact Display
 # ============================================================================
+
 
 def example_compact_display():
     """
@@ -330,6 +334,7 @@ def example_compact_display():
 # ============================================================================
 # EXAMPLE 6: Real-time Decision Updates
 # ============================================================================
+
 
 def example_realtime_updates():
     """

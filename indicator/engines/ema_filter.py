@@ -31,19 +31,20 @@ USAGE:
     mtf_state = engine.get_mtf_state()
 """
 
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
-from collections import deque
-from enum import Enum
 import math
-
+from collections import deque
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
 
 # ============================================================================
 # ENUMS
 # ============================================================================
 
+
 class EMABias(Enum):
     """EMA directional bias."""
+
     BULL = "BULL"
     BEAR = "BEAR"
     NEUTRAL = "NEUTRAL"
@@ -51,21 +52,24 @@ class EMABias(Enum):
 
 class EMARegime(Enum):
     """Market regime based on EMA."""
+
     TREND = "TREND"
     RANGE = "RANGE"
 
 
 class EMAAlignment(Enum):
     """EMA stacking alignment."""
-    STACKED_UP = "STACKED_UP"       # 9 > 21 > 50
-    STACKED_DOWN = "STACKED_DOWN"   # 9 < 21 < 50
+
+    STACKED_UP = "STACKED_UP"  # 9 > 21 > 50
+    STACKED_DOWN = "STACKED_DOWN"  # 9 < 21 < 50
     MIXED = "MIXED"
 
 
 class MTFAlignment(Enum):
     """Multi-timeframe alignment."""
-    ALIGNED = "ALIGNED"             # HTF and LTF bias match
-    MIXED = "MIXED"                 # HTF and LTF disagree
+
+    ALIGNED = "ALIGNED"  # HTF and LTF bias match
+    MIXED = "MIXED"  # HTF and LTF disagree
     RANGE_DOMINANT = "RANGE_DOMINANT"  # HTF in range
 
 
@@ -73,9 +77,11 @@ class MTFAlignment(Enum):
 # DATA CLASSES
 # ============================================================================
 
+
 @dataclass
 class Candle:
     """OHLCV candle."""
+
     timestamp: int
     open: float
     high: float
@@ -92,14 +98,16 @@ class EMAConfig:
     ema_periods: List[int] = field(default_factory=lambda: [9, 21, 50])
 
     # Slope lookback (bars to look back per timeframe)
-    slope_lookback_by_tf: Dict[str, int] = field(default_factory=lambda: {
-        "15s": 20,
-        "1m": 15,
-        "5m": 10,
-        "15m": 8,
-        "1h": 4,
-        "4h": 3,
-    })
+    slope_lookback_by_tf: Dict[str, int] = field(
+        default_factory=lambda: {
+            "15s": 20,
+            "1m": 15,
+            "5m": 10,
+            "15m": 8,
+            "1h": 4,
+            "4h": 3,
+        }
+    )
     slope_lookback_default: int = 10
 
     # Helper periods
@@ -107,46 +115,54 @@ class EMAConfig:
     atr_period: int = 14
 
     # Adaptive threshold factors (multiplied by ATR%)
-    slope_threshold_factor: float = 0.15      # Trend slope threshold
-    width_threshold_factor: float = 0.10      # Ribbon width for range
-    extended_factor: float = 0.60             # Extension threshold
-    pullback_band_factor: float = 0.25        # Pullback zone around EMA21
+    slope_threshold_factor: float = 0.15  # Trend slope threshold
+    width_threshold_factor: float = 0.10  # Ribbon width for range
+    extended_factor: float = 0.60  # Extension threshold
+    pullback_band_factor: float = 0.25  # Pullback zone around EMA21
 
     # Static fallback thresholds (when ATR% unavailable)
-    slope_threshold_static_by_tf: Dict[str, float] = field(default_factory=lambda: {
-        "15s": 0.0001,
-        "1m": 0.0002,
-        "5m": 0.0002,
-        "15m": 0.0005,
-        "1h": 0.0010,
-        "4h": 0.0020,
-    })
+    slope_threshold_static_by_tf: Dict[str, float] = field(
+        default_factory=lambda: {
+            "15s": 0.0001,
+            "1m": 0.0002,
+            "5m": 0.0002,
+            "15m": 0.0005,
+            "1h": 0.0010,
+            "4h": 0.0020,
+        }
+    )
 
-    width_threshold_static_by_tf: Dict[str, float] = field(default_factory=lambda: {
-        "15s": 0.0004,
-        "1m": 0.0006,
-        "5m": 0.0010,
-        "15m": 0.0015,
-        "1h": 0.0020,
-        "4h": 0.0040,
-    })
+    width_threshold_static_by_tf: Dict[str, float] = field(
+        default_factory=lambda: {
+            "15s": 0.0004,
+            "1m": 0.0006,
+            "5m": 0.0010,
+            "15m": 0.0015,
+            "1h": 0.0020,
+            "4h": 0.0040,
+        }
+    )
 
-    extended_static_by_tf: Dict[str, float] = field(default_factory=lambda: {
-        "15s": 0.0010,
-        "1m": 0.0015,
-        "5m": 0.0030,
-        "15m": 0.0050,
-        "1h": 0.0080,
-        "4h": 0.0150,
-    })
+    extended_static_by_tf: Dict[str, float] = field(
+        default_factory=lambda: {
+            "15s": 0.0010,
+            "1m": 0.0015,
+            "5m": 0.0030,
+            "15m": 0.0050,
+            "1h": 0.0080,
+            "4h": 0.0150,
+        }
+    )
 
     # Weights for trend strength composite
-    strength_weights: Dict[str, float] = field(default_factory=lambda: {
-        "slope": 0.35,
-        "width": 0.25,
-        "alignment": 0.25,
-        "bias": 0.15,
-    })
+    strength_weights: Dict[str, float] = field(
+        default_factory=lambda: {
+            "slope": 0.35,
+            "width": 0.25,
+            "alignment": 0.25,
+            "bias": 0.15,
+        }
+    )
 
 
 @dataclass
@@ -188,6 +204,7 @@ class EMAState:
 @dataclass
 class EMAMultiTFState:
     """Multi-timeframe EMA state."""
+
     states_by_tf: Dict[str, EMAState]
     alignment_summary: MTFAlignment
     htf_bias: EMABias
@@ -197,6 +214,7 @@ class EMAMultiTFState:
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
+
 
 def compute_sma(values: List[float], period: int) -> float:
     """Compute simple moving average."""
@@ -216,11 +234,7 @@ def compute_atr(candles: List[Candle], period: int = 14) -> float:
         low = candles[i].low
         prev_close = candles[i - 1].close
 
-        tr = max(
-            high - low,
-            abs(high - prev_close),
-            abs(low - prev_close)
-        )
+        tr = max(high - low, abs(high - prev_close), abs(low - prev_close))
         true_ranges.append(tr)
 
     if len(true_ranges) < period:
@@ -256,6 +270,7 @@ def compute_rv(candles: List[Candle], period: int = 20) -> float:
 # ============================================================================
 # EMA FILTER ENGINE
 # ============================================================================
+
 
 class EMAFilterEngine:
     """
@@ -310,10 +325,7 @@ class EMAFilterEngine:
 
             # Compute state
             state = self._compute_state(
-                tf,
-                candles[-1],
-                self._atr_percent.get(tf),
-                self._rv.get(tf)
+                tf, candles[-1], self._atr_percent.get(tf), self._rv.get(tf)
             )
 
             states[tf] = state
@@ -328,7 +340,7 @@ class EMAFilterEngine:
         tf: str,
         candle: Candle,
         atr_percent: Optional[float] = None,
-        rv: Optional[float] = None
+        rv: Optional[float] = None,
     ) -> EMAState:
         """
         Incremental update on new candle close (O(1) operation).
@@ -352,12 +364,7 @@ class EMAFilterEngine:
             self._rv[tf] = rv
 
         # Compute state
-        state = self._compute_state(
-            tf,
-            candle,
-            self._atr_percent.get(tf),
-            self._rv.get(tf)
-        )
+        state = self._compute_state(tf, candle, self._atr_percent.get(tf), self._rv.get(tf))
 
         self._states[tf] = state
         self._last_close[tf] = candle.close
@@ -368,7 +375,7 @@ class EMAFilterEngine:
         self,
         candles_by_tf: Dict[str, List[Candle]],
         atr_percent_by_tf: Optional[Dict[str, float]] = None,
-        rv_by_tf: Optional[Dict[str, float]] = None
+        rv_by_tf: Optional[Dict[str, float]] = None,
     ) -> Dict[str, EMAState]:
         """
         Convenience method for batch recompute (e.g., on restart).
@@ -381,11 +388,7 @@ class EMAFilterEngine:
         """Get current EMA state for timeframe."""
         return self._states.get(tf)
 
-    def get_mtf_state(
-        self,
-        htf: str = "1h",
-        ltf: str = "1m"
-    ) -> Optional[EMAMultiTFState]:
+    def get_mtf_state(self, htf: str = "1h", ltf: str = "1m") -> Optional[EMAMultiTFState]:
         """
         Get multi-timeframe alignment state.
 
@@ -483,11 +486,7 @@ class EMAFilterEngine:
                 self._ema_history[tf][period].append(new_ema)
 
     def _compute_state(
-        self,
-        tf: str,
-        candle: Candle,
-        atr_percent: Optional[float],
-        rv: Optional[float]
+        self, tf: str, candle: Candle, atr_percent: Optional[float], rv: Optional[float]
     ) -> EMAState:
         """Compute complete EMA state."""
 
@@ -518,10 +517,7 @@ class EMAFilterEngine:
         bias = self._classify_bias(close, ema50, slope_50, thresholds["slope_threshold"])
 
         # Regime
-        regime = self._classify_regime(
-            close, ema50, slope_50, ribbon_width,
-            alignment, thresholds
-        )
+        regime = self._classify_regime(close, ema50, slope_50, ribbon_width, alignment, thresholds)
 
         # Extended flag
         extended = ext_21 > thresholds["extended_threshold"]
@@ -587,11 +583,7 @@ class EMAFilterEngine:
             return EMAAlignment.MIXED
 
     def _classify_bias(
-        self,
-        close: float,
-        ema50: float,
-        slope_50: float,
-        slope_threshold: float
+        self, close: float, ema50: float, slope_50: float, slope_threshold: float
     ) -> EMABias:
         """Classify EMA bias."""
         # BULL: close > ema50 AND slope_50 > +slope_threshold*0.5
@@ -611,7 +603,7 @@ class EMAFilterEngine:
         slope_50: float,
         ribbon_width: float,
         alignment: EMAAlignment,
-        thresholds: Dict
+        thresholds: Dict,
     ) -> EMARegime:
         """Classify market regime (TREND or RANGE)."""
         slope_thr = thresholds["slope_threshold"]
@@ -646,7 +638,7 @@ class EMAFilterEngine:
         alignment: EMAAlignment,
         bias: EMABias,
         regime: EMARegime,
-        thresholds: Dict
+        thresholds: Dict,
     ) -> float:
         """Compute composite trend strength (0-100)."""
 
@@ -657,16 +649,18 @@ class EMAFilterEngine:
         slope_component = min(1.0, abs(slope_50) / (2 * slope_thr + 1e-10))
         width_component = min(1.0, ribbon_width / (2 * width_thr + 1e-10))
 
-        alignment_component = 1.0 if alignment in [EMAAlignment.STACKED_UP, EMAAlignment.STACKED_DOWN] else 0.4
+        alignment_component = (
+            1.0 if alignment in [EMAAlignment.STACKED_UP, EMAAlignment.STACKED_DOWN] else 0.4
+        )
         bias_component = 1.0 if bias != EMABias.NEUTRAL else 0.5
 
         # Weighted sum
         weights = self.config.strength_weights
         strength = (
-            weights["slope"] * slope_component +
-            weights["width"] * width_component +
-            weights["alignment"] * alignment_component +
-            weights["bias"] * bias_component
+            weights["slope"] * slope_component
+            + weights["width"] * width_component
+            + weights["alignment"] * alignment_component
+            + weights["bias"] * bias_component
         ) * 100
 
         # Cap at 40 if RANGE
@@ -707,7 +701,10 @@ class EMAFilterEngine:
 # CONVENIENCE FUNCTIONS
 # ============================================================================
 
-def create_candle(timestamp: int, o: float, h: float, l: float, c: float, v: float = 1000.0) -> Candle:
+
+def create_candle(
+    timestamp: int, o: float, h: float, l: float, c: float, v: float = 1000.0
+) -> Candle:
     """Helper to create a candle."""
     return Candle(timestamp=timestamp, open=o, high=h, low=l, close=c, volume=v)
 
@@ -720,24 +717,34 @@ def print_ema_state(tf: str, state: EMAState, compact: bool = True):
     regime_color = Colors.GREEN if state.ema_regime == EMARegime.TREND else Colors.YELLOW
 
     # Bias color
-    bias_color = Colors.GREEN if state.ema_bias == EMABias.BULL else \
-                 Colors.RED if state.ema_bias == EMABias.BEAR else Colors.DIM
+    bias_color = (
+        Colors.GREEN
+        if state.ema_bias == EMABias.BULL
+        else Colors.RED if state.ema_bias == EMABias.BEAR else Colors.DIM
+    )
 
     # Alignment color
-    align_color = Colors.GREEN if state.ema_alignment == EMAAlignment.STACKED_UP else \
-                  Colors.RED if state.ema_alignment == EMAAlignment.STACKED_DOWN else Colors.YELLOW
+    align_color = (
+        Colors.GREEN
+        if state.ema_alignment == EMAAlignment.STACKED_UP
+        else Colors.RED if state.ema_alignment == EMAAlignment.STACKED_DOWN else Colors.YELLOW
+    )
 
     # Strength color
     strength = state.trend_strength_0_100
-    strength_color = Colors.GREEN if strength >= 70 else Colors.YELLOW if strength >= 50 else Colors.RED
+    strength_color = (
+        Colors.GREEN if strength >= 70 else Colors.YELLOW if strength >= 50 else Colors.RED
+    )
 
     if compact:
         # Compact single line
-        print(f"  {Colors.BOLD}{tf:6}{Colors.RESET} "
-              f"Regime {regime_color}{state.ema_regime.value:5}{Colors.RESET} | "
-              f"Bias {bias_color}{state.ema_bias.value:7}{Colors.RESET} | "
-              f"Align {align_color}{state.ema_alignment.value:11}{Colors.RESET} | "
-              f"Strength {strength_color}{strength:>3.0f}{Colors.RESET}")
+        print(
+            f"  {Colors.BOLD}{tf:6}{Colors.RESET} "
+            f"Regime {regime_color}{state.ema_regime.value:5}{Colors.RESET} | "
+            f"Bias {bias_color}{state.ema_bias.value:7}{Colors.RESET} | "
+            f"Align {align_color}{state.ema_alignment.value:11}{Colors.RESET} | "
+            f"Strength {strength_color}{strength:>3.0f}{Colors.RESET}"
+        )
 
         # Details line
         slope_thr = state.debug.get("slope_threshold", 0.0)
@@ -746,9 +753,11 @@ def print_ema_state(tf: str, state: EMAState, compact: bool = True):
         extended_str = f"{Colors.YELLOW}YES{Colors.RESET}" if state.extended else "NO"
         pullback_str = f"{Colors.GREEN}YES{Colors.RESET}" if state.pullback_zone_hit else "NO"
 
-        print(f"    slope50={state.slope_50:+.5f} (thr={slope_thr:.5f}) "
-              f"width={state.ribbon_width:.4f} (thr={width_thr:.4f}) "
-              f"ext21={state.ext_21:.4f} extended={extended_str} pullback={pullback_str}")
+        print(
+            f"    slope50={state.slope_50:+.5f} (thr={slope_thr:.5f}) "
+            f"width={state.ribbon_width:.4f} (thr={width_thr:.4f}) "
+            f"ext21={state.ext_21:.4f} extended={extended_str} pullback={pullback_str}"
+        )
     else:
         # Full detail
         print(f"\n{Colors.BOLD}{Colors.CYAN}EMA STATE - {tf}{Colors.RESET}")
@@ -782,7 +791,12 @@ def print_ema_block(engine: EMAFilterEngine, ltf: str = "1m", htf: str = "1h"):
     # Multi-TF
     mtf = engine.get_mtf_state(htf, ltf)
     if mtf:
-        align_color = Colors.GREEN if mtf.alignment_summary == MTFAlignment.ALIGNED else \
-                     Colors.YELLOW if mtf.alignment_summary == MTFAlignment.MIXED else Colors.DIM
+        align_color = (
+            Colors.GREEN
+            if mtf.alignment_summary == MTFAlignment.ALIGNED
+            else Colors.YELLOW if mtf.alignment_summary == MTFAlignment.MIXED else Colors.DIM
+        )
 
-        print(f"  {Colors.BOLD}Multi-TF:{Colors.RESET} {align_color}{mtf.alignment_summary.value}{Colors.RESET}")
+        print(
+            f"  {Colors.BOLD}Multi-TF:{Colors.RESET} {align_color}{mtf.alignment_summary.value}{Colors.RESET}"
+        )

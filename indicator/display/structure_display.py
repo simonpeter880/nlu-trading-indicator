@@ -4,26 +4,30 @@ Market Structure Display Functions
 Beautiful terminal output for market structure analysis.
 """
 
-from typing import Optional, List
+from typing import List, Optional
+
+from continuous.market_structure_adapter import MarketStructureSignal
 from market_structure import (
+    FairValueGap,
     MarketStructureState,
-    TrendDirection,
-    StructureEvent,
     RangeType,
     StructuralMomentum,
-    TimeframeAlignment,
-    FairValueGap,
     StructureBreak,
+    StructureEvent,
     SwingPoint,
+    TimeframeAlignment,
+    TrendDirection,
 )
-from continuous.market_structure_adapter import MarketStructureSignal
+
 from .colors import Colors
 
 
 def print_structure_header() -> None:
     """Print market structure section header."""
     print(f"\n{Colors.BOLD}{Colors.CYAN}┌{'─' * 78}┐{Colors.RESET}")
-    print(f"{Colors.BOLD}{Colors.CYAN}│  MARKET STRUCTURE - THE FOUNDATION{' ' * 44}│{Colors.RESET}")
+    print(
+        f"{Colors.BOLD}{Colors.CYAN}│  MARKET STRUCTURE - THE FOUNDATION{' ' * 44}│{Colors.RESET}"
+    )
     print(f"{Colors.BOLD}{Colors.CYAN}└{'─' * 78}┘{Colors.RESET}")
 
 
@@ -83,10 +87,12 @@ def print_structure_summary(state: MarketStructureState) -> None:
     htf_color = _trend_color(state.htf_trend)
     align_icon = _alignment_icon(state.tf_alignment)
 
-    print(f"  {Colors.BOLD}Trend:{Colors.RESET} "
-          f"LTF: {ltf_color}{state.ltf_trend.value.upper()}{Colors.RESET}  │  "
-          f"HTF: {htf_color}{state.htf_trend.value.upper()}{Colors.RESET}  │  "
-          f"Alignment: {align_icon}")
+    print(
+        f"  {Colors.BOLD}Trend:{Colors.RESET} "
+        f"LTF: {ltf_color}{state.ltf_trend.value.upper()}{Colors.RESET}  │  "
+        f"HTF: {htf_color}{state.htf_trend.value.upper()}{Colors.RESET}  │  "
+        f"Alignment: {align_icon}"
+    )
 
     # Last event
     if state.last_event:
@@ -102,9 +108,11 @@ def print_structure_summary(state: MarketStructureState) -> None:
         else:
             acceptance_str = f"{Colors.YELLOW}PENDING{Colors.RESET}"
 
-        print(f"  {Colors.BOLD}Last Event:{Colors.RESET} "
-              f"{event_color}{event.event_type.value.upper()}{Colors.RESET} {direction_icon} "
-              f"${event.broken_level:,.2f} → {acceptance_str}")
+        print(
+            f"  {Colors.BOLD}Last Event:{Colors.RESET} "
+            f"{event_color}{event.event_type.value.upper()}{Colors.RESET} {direction_icon} "
+            f"${event.broken_level:,.2f} → {acceptance_str}"
+        )
     else:
         print(f"  {Colors.BOLD}Last Event:{Colors.RESET} {Colors.DIM}None{Colors.RESET}")
 
@@ -112,13 +120,17 @@ def print_structure_summary(state: MarketStructureState) -> None:
     if state.in_range:
         range_color = Colors.YELLOW
         range_icon = "⊡"
-        range_desc = f"{state.range_type.value.upper()} (${state.range_low:,.2f} - ${state.range_high:,.2f})"
+        range_desc = (
+            f"{state.range_type.value.upper()} (${state.range_low:,.2f} - ${state.range_high:,.2f})"
+        )
         if state.range_type == RangeType.COMPRESSION:
             range_color = Colors.MAGENTA
             tightness_pct = state.range_tightness * 100
             range_desc += f" {Colors.BOLD}[{tightness_pct:.0f}% tight]{Colors.RESET}"
 
-        print(f"  {Colors.BOLD}Range:{Colors.RESET} {range_color}{range_icon} {range_desc}{Colors.RESET}")
+        print(
+            f"  {Colors.BOLD}Range:{Colors.RESET} {range_color}{range_icon} {range_desc}{Colors.RESET}"
+        )
 
     # Momentum
     momentum_icons = {
@@ -126,16 +138,22 @@ def print_structure_summary(state: MarketStructureState) -> None:
         StructuralMomentum.SLOW: f"{Colors.YELLOW}⏱ SLOW{Colors.RESET}",
         StructuralMomentum.STALLED: f"{Colors.RED}⏸ STALLED{Colors.RESET}",
     }
-    print(f"  {Colors.BOLD}Momentum:{Colors.RESET} {momentum_icons.get(state.structural_momentum, 'UNKNOWN')}")
+    print(
+        f"  {Colors.BOLD}Momentum:{Colors.RESET} {momentum_icons.get(state.structural_momentum, 'UNKNOWN')}"
+    )
 
     # Confidence
     conf = state.structure_confidence
     conf_color = Colors.GREEN if conf >= 70 else Colors.YELLOW if conf >= 50 else Colors.RED
     conf_bar_width = 20
     filled = int(conf / 100 * conf_bar_width)
-    conf_bar = f"{Colors.GREEN}{'█' * filled}{Colors.DIM}{'░' * (conf_bar_width - filled)}{Colors.RESET}"
+    conf_bar = (
+        f"{Colors.GREEN}{'█' * filled}{Colors.DIM}{'░' * (conf_bar_width - filled)}{Colors.RESET}"
+    )
 
-    print(f"  {Colors.BOLD}Confidence:{Colors.RESET} {conf_color}{conf:.0f}%{Colors.RESET} {conf_bar}")
+    print(
+        f"  {Colors.BOLD}Confidence:{Colors.RESET} {conf_color}{conf:.0f}%{Colors.RESET} {conf_bar}"
+    )
 
 
 def print_structure_deep_dive(state: MarketStructureState) -> None:
@@ -163,20 +181,28 @@ def print_structure_deep_dive(state: MarketStructureState) -> None:
         if len(highs) >= 2:
             h1, h2 = highs[-2:]
             if h2.price > h1.price:
-                print(f"    Highs: {Colors.GREEN}HH{Colors.RESET} "
-                      f"(${h1.price:,.2f} → ${h2.price:,.2f})")
+                print(
+                    f"    Highs: {Colors.GREEN}HH{Colors.RESET} "
+                    f"(${h1.price:,.2f} → ${h2.price:,.2f})"
+                )
             else:
-                print(f"    Highs: {Colors.RED}LH{Colors.RESET} "
-                      f"(${h1.price:,.2f} → ${h2.price:,.2f})")
+                print(
+                    f"    Highs: {Colors.RED}LH{Colors.RESET} "
+                    f"(${h1.price:,.2f} → ${h2.price:,.2f})"
+                )
 
         if len(lows) >= 2:
             l1, l2 = lows[-2:]
             if l2.price > l1.price:
-                print(f"    Lows:  {Colors.GREEN}HL{Colors.RESET} "
-                      f"(${l1.price:,.2f} → ${l2.price:,.2f})")
+                print(
+                    f"    Lows:  {Colors.GREEN}HL{Colors.RESET} "
+                    f"(${l1.price:,.2f} → ${l2.price:,.2f})"
+                )
             else:
-                print(f"    Lows:  {Colors.RED}LL{Colors.RESET} "
-                      f"(${l1.price:,.2f} → ${l2.price:,.2f})")
+                print(
+                    f"    Lows:  {Colors.RED}LL{Colors.RESET} "
+                    f"(${l1.price:,.2f} → ${l2.price:,.2f})"
+                )
 
     # BOS/CHoCH section
     events_to_show = []
@@ -209,9 +235,11 @@ def print_structure_deep_dive(state: MarketStructureState) -> None:
                 else:
                     followthrough_str = f" │ Follow: {Colors.RED}{ft:.0f}s{Colors.RESET}"
 
-            print(f"    {event_color}{label:6}{Colors.RESET} {direction_icon} "
-                  f"${event.broken_level:>10,.2f} → ${event.break_price:>10,.2f}"
-                  f"{acceptance_str}{followthrough_str}")
+            print(
+                f"    {event_color}{label:6}{Colors.RESET} {direction_icon} "
+                f"${event.broken_level:>10,.2f} → ${event.break_price:>10,.2f}"
+                f"{acceptance_str}{followthrough_str}"
+            )
 
     # FVG section
     if state.active_fvgs:
@@ -219,9 +247,11 @@ def print_structure_deep_dive(state: MarketStructureState) -> None:
         for i, fvg in enumerate(state.active_fvgs[-5:], 1):  # Show last 5
             fvg_color = Colors.GREEN if fvg.is_bullish else Colors.RED
             fvg_type = "Bullish" if fvg.is_bullish else "Bearish"
-            print(f"    {i}. {fvg_color}{fvg_type} FVG{Colors.RESET}: "
-                  f"${fvg.price_bottom:,.2f} - ${fvg.price_top:,.2f} "
-                  f"({fvg.gap_size_pct:.2f}%)")
+            print(
+                f"    {i}. {fvg_color}{fvg_type} FVG{Colors.RESET}: "
+                f"${fvg.price_bottom:,.2f} - ${fvg.price_top:,.2f} "
+                f"({fvg.gap_size_pct:.2f}%)"
+            )
 
     # Warnings
     if state.warnings:
@@ -251,10 +281,12 @@ def print_structure_signal(signal: MarketStructureSignal) -> None:
     else:
         allowed_str = f"{Colors.DIM}NO TRADE{Colors.RESET}"
 
-    print(f"  Structure: {trend_color}{signal.trend_direction.value.upper()}{Colors.RESET} "
-          f"│ Score: {signal.score:+.2f} "
-          f"│ Allowed: {allowed_str} "
-          f"│ Conf: {signal.structure_confidence:.0f}%")
+    print(
+        f"  Structure: {trend_color}{signal.trend_direction.value.upper()}{Colors.RESET} "
+        f"│ Score: {signal.score:+.2f} "
+        f"│ Allowed: {allowed_str} "
+        f"│ Conf: {signal.structure_confidence:.0f}%"
+    )
 
     # Events line
     event_parts = []
@@ -288,10 +320,12 @@ def print_structure_signal(signal: MarketStructureSignal) -> None:
         StructuralMomentum.STALLED: f"{Colors.RED}⏸{Colors.RESET}",
     }.get(signal.structural_momentum, "")
 
-    print(f"  MTF: HTF:{htf_color}{signal.htf_trend.value}{Colors.RESET} "
-          f"│ LTF:{ltf_color}{signal.ltf_trend.value}{Colors.RESET} "
-          f"│ Align:{align_icon} "
-          f"│ Mom:{momentum_icon}")
+    print(
+        f"  MTF: HTF:{htf_color}{signal.htf_trend.value}{Colors.RESET} "
+        f"│ LTF:{ltf_color}{signal.ltf_trend.value}{Colors.RESET} "
+        f"│ Align:{align_icon} "
+        f"│ Mom:{momentum_icon}"
+    )
 
     # Warnings
     if signal.warnings:
@@ -323,7 +357,9 @@ def print_structure_allowed_trades(state: MarketStructureState) -> None:
             bull_fvgs = [f for f in state.active_fvgs if f.is_bullish]
             if bull_fvgs:
                 nearest = bull_fvgs[-1]
-                print(f"    Pullback target: ${nearest.price_bottom:,.2f} - ${nearest.price_top:,.2f}")
+                print(
+                    f"    Pullback target: ${nearest.price_bottom:,.2f} - ${nearest.price_top:,.2f}"
+                )
 
     elif allowed == "short":
         print(f"  {Colors.RED}✓ SHORT ALLOWED{Colors.RESET}")
@@ -332,7 +368,9 @@ def print_structure_allowed_trades(state: MarketStructureState) -> None:
             bear_fvgs = [f for f in state.active_fvgs if not f.is_bullish]
             if bear_fvgs:
                 nearest = bear_fvgs[-1]
-                print(f"    Pullback target: ${nearest.price_bottom:,.2f} - ${nearest.price_top:,.2f}")
+                print(
+                    f"    Pullback target: ${nearest.price_bottom:,.2f} - ${nearest.price_top:,.2f}"
+                )
 
     elif allowed == "both":
         print(f"  {Colors.YELLOW}◆ RANGE - BOTH DIRECTIONS{Colors.RESET}")
@@ -344,8 +382,10 @@ def print_structure_allowed_trades(state: MarketStructureState) -> None:
 
     # Confidence warning
     if state.structure_confidence < 50:
-        print(f"\n  {Colors.YELLOW}⚠ Low confidence ({state.structure_confidence:.0f}%) - "
-              f"reduce position size{Colors.RESET}")
+        print(
+            f"\n  {Colors.YELLOW}⚠ Low confidence ({state.structure_confidence:.0f}%) - "
+            f"reduce position size{Colors.RESET}"
+        )
 
     # CHoCH warning
     if state.last_choch:
@@ -388,5 +428,7 @@ def get_structure_status_line(signal: Optional[MarketStructureSignal]) -> str:
     score_color = Colors.GREEN if score > 0.3 else Colors.RED if score < -0.3 else Colors.YELLOW
     score_str = f"{score:+.1f}"
 
-    return (f"Struct: {trend_color}{trend_short}{Colors.RESET} "
-            f"{allowed_icon} {score_color}{score_str}{Colors.RESET}")
+    return (
+        f"Struct: {trend_color}{trend_short}{Colors.RESET} "
+        f"{allowed_icon} {score_color}{score_str}{Colors.RESET}"
+    )

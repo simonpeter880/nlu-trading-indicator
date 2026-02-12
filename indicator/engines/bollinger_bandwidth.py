@@ -33,19 +33,20 @@ Usage:
         # Exhaustion risk - be cautious
 """
 
-from dataclasses import dataclass, field
-from collections import deque
-from typing import Optional
 import math
-
+from collections import deque
+from dataclasses import dataclass, field
+from typing import Optional
 
 # ============================================================================
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class Candle:
     """OHLCV candle."""
+
     timestamp: int
     open: float
     high: float
@@ -66,32 +67,32 @@ class BollingerBandwidthConfig:
     bb_k: float = 2.0
 
     # Bandwidth smoothing and lookback
-    bw_sma_period: int = 50               # SMA for bw_ratio
-    smooth_bw_ema_period: int = 3         # EMA smoothing for bandwidth (1 disables)
+    bw_sma_period: int = 50  # SMA for bw_ratio
+    smooth_bw_ema_period: int = 3  # EMA smoothing for bandwidth (1 disables)
     eps: float = 1e-12
 
     # State thresholds (ratio-based)
     ratio_compress: float = 0.80
     ratio_expand: float = 1.20
     ratio_extreme: float = 1.60
-    fade_slope_thr: float = -0.02         # negative slope threshold for FADE_RISK
+    fade_slope_thr: float = -0.02  # negative slope threshold for FADE_RISK
 
 
 @dataclass
 class BollingerBandwidthState:
     """Bollinger Bandwidth state output."""
 
-    mid: Optional[float]                  # SMA(close, n)
-    std: Optional[float]                  # stdev(close, n)
-    upper: Optional[float]                # mid + k*std
-    lower: Optional[float]                # mid - k*std
-    bandwidth: Optional[float]            # (upper - lower) / mid
-    bandwidth_smooth: Optional[float]     # EMA-smoothed bandwidth
-    bandwidth_slope: Optional[float]      # bandwidth_smooth - prev_bandwidth_smooth
-    bw_sma: Optional[float]               # SMA(bandwidth_smooth, m)
-    bw_ratio: Optional[float]             # bandwidth_smooth / bw_sma
-    bw_state: str                         # WARMUP/COMPRESSED/NORMAL/EXPANDING/EXTREME/FADE_RISK
-    bw_score_0_100: Optional[float]       # 0-100 score
+    mid: Optional[float]  # SMA(close, n)
+    std: Optional[float]  # stdev(close, n)
+    upper: Optional[float]  # mid + k*std
+    lower: Optional[float]  # mid - k*std
+    bandwidth: Optional[float]  # (upper - lower) / mid
+    bandwidth_smooth: Optional[float]  # EMA-smoothed bandwidth
+    bandwidth_slope: Optional[float]  # bandwidth_smooth - prev_bandwidth_smooth
+    bw_sma: Optional[float]  # SMA(bandwidth_smooth, m)
+    bw_ratio: Optional[float]  # bandwidth_smooth / bw_sma
+    bw_state: str  # WARMUP/COMPRESSED/NORMAL/EXPANDING/EXTREME/FADE_RISK
+    bw_score_0_100: Optional[float]  # 0-100 score
     debug: dict
 
 
@@ -99,14 +100,15 @@ class BollingerBandwidthState:
 # INTERNAL STATE
 # ============================================================================
 
+
 @dataclass
 class _TimeframeState:
     """Internal state per timeframe (O(1) operations)."""
 
     # Rolling stats for close window (bb_period)
     close_deque: deque = field(default_factory=deque)
-    sum_x: float = 0.0                    # sum of close
-    sum_x2: float = 0.0                   # sum of close^2
+    sum_x: float = 0.0  # sum of close
+    sum_x2: float = 0.0  # sum of close^2
 
     # Bollinger Bands
     mid: Optional[float] = None
@@ -139,6 +141,7 @@ class _TimeframeState:
 # ENGINE
 # ============================================================================
 
+
 class BollingerBandwidthEngine:
     """
     Bollinger Bandwidth Engine - Volatility compression/expansion detector.
@@ -153,7 +156,7 @@ class BollingerBandwidthEngine:
         for tf in config.timeframes:
             self.states[tf] = _TimeframeState(
                 close_deque=deque(maxlen=config.bb_period),
-                bw_deque=deque(maxlen=config.bw_sma_period)
+                bw_deque=deque(maxlen=config.bw_sma_period),
             )
 
     def reset(self, timeframe: str) -> None:
@@ -161,7 +164,7 @@ class BollingerBandwidthEngine:
         if timeframe in self.states:
             self.states[timeframe] = _TimeframeState(
                 close_deque=deque(maxlen=self.config.bb_period),
-                bw_deque=deque(maxlen=self.config.bw_sma_period)
+                bw_deque=deque(maxlen=self.config.bw_sma_period),
             )
 
     def warmup(self, candles_by_tf: dict[str, list[Candle]]) -> dict[str, BollingerBandwidthState]:
@@ -180,7 +183,7 @@ class BollingerBandwidthEngine:
             if tf not in self.states:
                 self.states[tf] = _TimeframeState(
                     close_deque=deque(maxlen=self.config.bb_period),
-                    bw_deque=deque(maxlen=self.config.bw_sma_period)
+                    bw_deque=deque(maxlen=self.config.bw_sma_period),
                 )
 
             state = None
@@ -206,7 +209,7 @@ class BollingerBandwidthEngine:
         if timeframe not in self.states:
             self.states[timeframe] = _TimeframeState(
                 close_deque=deque(maxlen=self.config.bb_period),
-                bw_deque=deque(maxlen=self.config.bw_sma_period)
+                bw_deque=deque(maxlen=self.config.bw_sma_period),
             )
 
         state = self.states[timeframe]
@@ -428,7 +431,10 @@ class BollingerBandwidthEngine:
 
         # FADE_RISK override
         if ratio >= self.config.ratio_expand:
-            if state.bandwidth_slope is not None and state.bandwidth_slope <= self.config.fade_slope_thr:
+            if (
+                state.bandwidth_slope is not None
+                and state.bandwidth_slope <= self.config.fade_slope_thr
+            ):
                 state.bw_state = "FADE_RISK"
 
     # ========================================================================
@@ -491,13 +497,14 @@ class BollingerBandwidthEngine:
             bw_ratio=state.bw_ratio,
             bw_state=state.bw_state,
             bw_score_0_100=state.bw_score_0_100,
-            debug=debug
+            debug=debug,
         )
 
 
 # ============================================================================
 # PRINT HELPERS
 # ============================================================================
+
 
 def print_bollinger_bandwidth(states: dict[str, BollingerBandwidthState]) -> None:
     """
@@ -537,11 +544,15 @@ def interpret_bandwidth(state: BollingerBandwidthState) -> str:
     if bw_state == "WARMUP":
         return "Warming up - not enough data yet"
     elif bw_state == "COMPRESSED":
-        return f"Compressed (ratio={state.bw_ratio:.2f}) - squeeze building, potential breakout setup"
+        return (
+            f"Compressed (ratio={state.bw_ratio:.2f}) - squeeze building, potential breakout setup"
+        )
     elif bw_state == "NORMAL":
         return f"Normal (ratio={state.bw_ratio:.2f}) - typical volatility"
     elif bw_state == "EXPANDING":
-        return f"Expanding (ratio={state.bw_ratio:.2f}) - breakout in progress, volatility increasing"
+        return (
+            f"Expanding (ratio={state.bw_ratio:.2f}) - breakout in progress, volatility increasing"
+        )
     elif bw_state == "EXTREME":
         return f"Extreme (ratio={state.bw_ratio:.2f}) - high volatility, exhaustion risk"
     elif bw_state == "FADE_RISK":

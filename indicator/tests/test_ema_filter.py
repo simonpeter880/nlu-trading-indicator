@@ -10,19 +10,21 @@ Tests:
 - Multi-timeframe alignment
 """
 
-import pytest
 from typing import List
+
+import pytest
+
 from ..ema_filter import (
-    EMAFilterEngine,
-    EMAConfig,
     Candle,
-    EMABias,
-    EMARegime,
     EMAAlignment,
+    EMABias,
+    EMAConfig,
+    EMAFilterEngine,
+    EMARegime,
     MTFAlignment,
-    create_candle,
-    compute_sma,
     compute_atr_percent,
+    compute_sma,
+    create_candle,
 )
 
 
@@ -37,14 +39,9 @@ def create_uptrend_candles(count: int = 50, start_price: float = 100.0) -> List[
         open_price = price + 0.2
         close = price + 0.8
 
-        candles.append(create_candle(
-            timestamp=i * 60000,
-            o=open_price,
-            h=high,
-            l=low,
-            c=close,
-            v=1000.0
-        ))
+        candles.append(
+            create_candle(timestamp=i * 60000, o=open_price, h=high, l=low, c=close, v=1000.0)
+        )
 
         price += 0.5  # Steady uptrend
 
@@ -62,23 +59,21 @@ def create_downtrend_candles(count: int = 50, start_price: float = 100.0) -> Lis
         open_price = price - 0.2
         close = price - 0.8
 
-        candles.append(create_candle(
-            timestamp=i * 60000,
-            o=open_price,
-            h=high,
-            l=low,
-            c=close,
-            v=1000.0
-        ))
+        candles.append(
+            create_candle(timestamp=i * 60000, o=open_price, h=high, l=low, c=close, v=1000.0)
+        )
 
         price -= 0.5  # Steady downtrend
 
     return candles
 
 
-def create_range_candles(count: int = 50, center: float = 100.0, amplitude: float = 2.0) -> List[Candle]:
+def create_range_candles(
+    count: int = 50, center: float = 100.0, amplitude: float = 2.0
+) -> List[Candle]:
     """Create synthetic ranging candles."""
     import math
+
     candles = []
 
     for i in range(count):
@@ -91,14 +86,9 @@ def create_range_candles(count: int = 50, center: float = 100.0, amplitude: floa
         open_price = price - 0.1
         close = price + 0.1
 
-        candles.append(create_candle(
-            timestamp=i * 60000,
-            o=open_price,
-            h=high,
-            l=low,
-            c=close,
-            v=1000.0
-        ))
+        candles.append(
+            create_candle(timestamp=i * 60000, o=open_price, h=high, l=low, c=close, v=1000.0)
+        )
 
     return candles
 
@@ -222,7 +212,11 @@ class TestAlignmentDetection:
 
         # Likely MIXED (EMAs crossing)
         # Note: May not always be MIXED depending on phase
-        assert state.ema_alignment in [EMAAlignment.MIXED, EMAAlignment.STACKED_UP, EMAAlignment.STACKED_DOWN]
+        assert state.ema_alignment in [
+            EMAAlignment.MIXED,
+            EMAAlignment.STACKED_UP,
+            EMAAlignment.STACKED_DOWN,
+        ]
 
 
 class TestRegimeClassification:
@@ -326,7 +320,7 @@ class TestExtendedDetection:
             h=last_price + 5.0,  # Big spike
             l=last_price,
             c=last_price + 4.5,
-            v=2000.0
+            v=2000.0,
         )
         candles.append(spike)
 
@@ -359,12 +353,7 @@ class TestPullbackZone:
 
         # Create candle near EMA21
         pullback_candle = create_candle(
-            timestamp=len(candles) * 60000,
-            o=ema21,
-            h=ema21 + 0.1,
-            l=ema21 - 0.1,
-            c=ema21,
-            v=1000.0
+            timestamp=len(candles) * 60000, o=ema21, h=ema21 + 0.1, l=ema21 - 0.1, c=ema21, v=1000.0
         )
 
         # Update
@@ -534,7 +523,7 @@ class TestIncrementalUpdates:
                 h=candles[-1].close + i * 0.5 + 1.0,
                 l=candles[-1].close + i * 0.5,
                 c=candles[-1].close + i * 0.5 + 0.8,
-                v=1000.0
+                v=1000.0,
             )
 
             state = engine.on_candle_close("1m", new_candle)
@@ -590,7 +579,7 @@ class TestEdgeCases:
             h=candles[-1].close + 1,
             l=candles[-1].close,
             c=candles[-1].close + 0.8,
-            v=1000.0
+            v=1000.0,
         )
 
         state = engine.on_candle_close("1m", new_candle, atr_percent=None)
@@ -612,10 +601,12 @@ class TestIntegration:
         engine = EMAFilterEngine()
 
         # Warmup
-        states = engine.warmup({
-            "1m": ltf_candles,
-            "1h": htf_candles,
-        })
+        states = engine.warmup(
+            {
+                "1m": ltf_candles,
+                "1h": htf_candles,
+            }
+        )
 
         # Check states
         assert "1m" in states
@@ -624,7 +615,11 @@ class TestIntegration:
         # Get MTF alignment
         mtf = engine.get_mtf_state("1h", "1m")
         assert mtf is not None
-        assert mtf.alignment_summary in [MTFAlignment.ALIGNED, MTFAlignment.MIXED, MTFAlignment.RANGE_DOMINANT]
+        assert mtf.alignment_summary in [
+            MTFAlignment.ALIGNED,
+            MTFAlignment.MIXED,
+            MTFAlignment.RANGE_DOMINANT,
+        ]
 
         # Incremental update on LTF
         new_candle = create_candle(
@@ -633,7 +628,7 @@ class TestIntegration:
             h=ltf_candles[-1].close + 1,
             l=ltf_candles[-1].close,
             c=ltf_candles[-1].close + 0.8,
-            v=1200.0
+            v=1200.0,
         )
 
         state = engine.on_candle_close("1m", new_candle, atr_percent=0.005)
@@ -658,6 +653,7 @@ class TestIntegration:
         for i in range(20):
             # Oscillate around last price
             import math
+
             oscillation = 0.3 * math.sin(i / 2.0)
             new_candle = create_candle(
                 timestamp=(len(candles) + i) * 60000,
@@ -665,7 +661,7 @@ class TestIntegration:
                 h=last_price + oscillation + 0.2,
                 l=last_price + oscillation - 0.2,
                 c=last_price + oscillation + 0.1,
-                v=1000.0
+                v=1000.0,
             )
 
             state = engine.on_candle_close("1m", new_candle)

@@ -5,13 +5,14 @@ Demonstrates how to integrate the EMA Ribbon Engine into a streaming trading sys
 Shows warmup, incremental updates, and compact output formatting.
 """
 
-from nlu_analyzer.indicators.ema_ribbon import (
-    EMARibbonEngine,
-    EMARibbonConfig,
-    Candle,
-    format_ribbon_output
-)
 from typing import Dict, Optional
+
+from nlu_analyzer.indicators.ema_ribbon import (
+    Candle,
+    EMARibbonConfig,
+    EMARibbonEngine,
+    format_ribbon_output,
+)
 
 
 def example_streaming_integration():
@@ -30,11 +31,7 @@ def example_streaming_integration():
         ribbon_periods=[9, 12, 15, 18, 21, 25, 30, 35, 40, 50],  # Default dense ribbon
         atr_period=14,
         width_smooth_period=5,
-        slope_lookback_by_tf={
-            "1m": 15,
-            "5m": 10,
-            "1h": 4
-        }
+        slope_lookback_by_tf={"1m": 15, "5m": 10, "1h": 4},
     )
 
     # Alternative: Use lighter ribbon preset
@@ -53,15 +50,11 @@ def example_streaming_integration():
     historical_candles_by_tf = {
         "1m": generate_test_candles(100.0, 100, trend="up"),
         "5m": generate_test_candles(100.0, 80, trend="up"),
-        "1h": generate_test_candles(100.0, 60, trend="up")
+        "1h": generate_test_candles(100.0, 60, trend="up"),
     }
 
     # Optional: ATR% values if available (decimal, e.g., 0.01 = 1%)
-    atr_percent_by_tf = {
-        "1m": 0.008,   # 0.8%
-        "5m": 0.012,   # 1.2%
-        "1h": 0.020    # 2.0%
-    }
+    atr_percent_by_tf = {"1m": 0.008, "5m": 0.012, "1h": 0.020}  # 0.8%  # 1.2%  # 2.0%
 
     # Warmup all timeframes
     engine.warmup(historical_candles_by_tf, atr_percent_by_tf)
@@ -77,19 +70,14 @@ def example_streaming_integration():
 
     # Example: New 1m candle closes
     new_candle_1m = Candle(
-        timestamp=100.0,
-        open=110.5,
-        high=110.8,
-        low=110.3,
-        close=110.7,
-        volume=50000.0
+        timestamp=100.0, open=110.5, high=110.8, low=110.3, close=110.7, volume=50000.0
     )
 
     ribbon_state_1m = engine.on_candle_close(
         tf="1m",
         candle=new_candle_1m,
         atr_percent=0.008,
-        ema_system_state=None  # Optional: pass EMA system state if available
+        ema_system_state=None,  # Optional: pass EMA system state if available
     )
 
     print(f"\n[1m CANDLE CLOSED] Price: {new_candle_1m.close:.2f}")
@@ -97,19 +85,10 @@ def example_streaming_integration():
 
     # Example: New 5m candle closes
     new_candle_5m = Candle(
-        timestamp=500.0,
-        open=110.6,
-        high=111.2,
-        low=110.4,
-        close=111.0,
-        volume=250000.0
+        timestamp=500.0, open=110.6, high=111.2, low=110.4, close=111.0, volume=250000.0
     )
 
-    ribbon_state_5m = engine.on_candle_close(
-        tf="5m",
-        candle=new_candle_5m,
-        atr_percent=0.012
-    )
+    ribbon_state_5m = engine.on_candle_close(tf="5m", candle=new_candle_5m, atr_percent=0.012)
 
     print(f"\n[5m CANDLE CLOSED] Price: {new_candle_5m.close:.2f}")
     print(format_ribbon_output({"5m": ribbon_state_5m}, compact=True))
@@ -120,14 +99,10 @@ def example_streaming_integration():
     print("MULTI-TIMEFRAME UPDATE")
     print("=" * 80)
 
-    latest_candles = {
-        "1m": [new_candle_1m],
-        "5m": [new_candle_5m]
-    }
+    latest_candles = {"1m": [new_candle_1m], "5m": [new_candle_5m]}
 
     all_ribbon_states = engine.update(
-        candles_by_tf=latest_candles,
-        atr_percent_by_tf={"1m": 0.008, "5m": 0.012}
+        candles_by_tf=latest_candles, atr_percent_by_tf={"1m": 0.008, "5m": 0.012}
     )
 
     print(format_ribbon_output(all_ribbon_states, compact=True))
@@ -207,24 +182,27 @@ def generate_test_candles(start_price: float, count: int, trend: str = "up"):
     trend_strength = 0.002
 
     for i in range(count):
-        candles.append(Candle(
-            timestamp=float(i),
-            open=price,
-            high=price * 1.001,
-            low=price * 0.999,
-            close=price,
-            volume=10000.0
-        ))
+        candles.append(
+            Candle(
+                timestamp=float(i),
+                open=price,
+                high=price * 1.001,
+                low=price * 0.999,
+                close=price,
+                volume=10000.0,
+            )
+        )
 
         if trend == "up":
-            price *= (1 + trend_strength)
+            price *= 1 + trend_strength
         elif trend == "down":
-            price *= (1 - trend_strength)
+            price *= 1 - trend_strength
 
     return candles
 
 
 # ========== PRODUCTION INTEGRATION TEMPLATE ==========
+
 
 class ProductionRibbonIntegration:
     """
@@ -235,9 +213,9 @@ class ProductionRibbonIntegration:
 
     def __init__(self):
         # Initialize ribbon engine
-        self.ribbon_engine = EMARibbonEngine(EMARibbonConfig(
-            ribbon_periods=[9, 12, 15, 21, 30, 40, 50]  # Lighter preset
-        ))
+        self.ribbon_engine = EMARibbonEngine(
+            EMARibbonConfig(ribbon_periods=[9, 12, 15, 21, 30, 40, 50])  # Lighter preset
+        )
 
         # Track which timeframes are warmed up
         self.warmed_up_tfs = set()
@@ -275,10 +253,7 @@ class ProductionRibbonIntegration:
 
         # Update ribbon
         ribbon_state = self.ribbon_engine.on_candle_close(
-            tf=tf,
-            candle=candle,
-            atr_percent=atr_percent,
-            ema_system_state=ema_system_state
+            tf=tf, candle=candle, atr_percent=atr_percent, ema_system_state=ema_system_state
         )
 
         # Store or process the ribbon state
@@ -291,20 +266,12 @@ class ProductionRibbonIntegration:
     def fetch_historical_candles(self) -> Dict[str, list]:
         """Fetch historical candles from your data source"""
         # TODO: Replace with actual data fetching
-        return {
-            "1m": [],
-            "5m": [],
-            "1h": []
-        }
+        return {"1m": [], "5m": [], "1h": []}
 
     def fetch_current_atr_percent(self) -> Dict[str, float]:
         """Fetch current ATR% values"""
         # TODO: Replace with actual ATR calculation
-        return {
-            "1m": 0.008,
-            "5m": 0.012,
-            "1h": 0.020
-        }
+        return {"1m": 0.008, "5m": 0.012, "1h": 0.020}
 
     def get_current_atr_percent(self, tf: str) -> Optional[float]:
         """Get current ATR% for a timeframe"""

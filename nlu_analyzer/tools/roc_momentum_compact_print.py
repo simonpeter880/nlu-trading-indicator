@@ -142,7 +142,7 @@ def print_roc_mini(roc_state) -> str:
 # =============================================================================
 
 if __name__ == "__main__":
-    from nlu_analyzer.indicators.roc_momentum import ROCConfig, ROCMomentumEngine, Candle
+    from nlu_analyzer.indicators.roc_momentum import Candle, ROCConfig, ROCMomentumEngine
 
     # Create engine
     config = ROCConfig(timeframes=["1m"])
@@ -152,14 +152,16 @@ if __name__ == "__main__":
     candles = []
     for i in range(70):
         close = 100.0 + i * 0.5
-        candles.append(Candle(
-            timestamp=float(i),
-            open=close - 0.1,
-            high=close + 0.2,
-            low=close - 0.2,
-            close=close,
-            volume=1000.0
-        ))
+        candles.append(
+            Candle(
+                timestamp=float(i),
+                open=close - 0.1,
+                high=close + 0.2,
+                low=close - 0.2,
+                close=close,
+                volume=1000.0,
+            )
+        )
 
     # Warmup
     engine.warmup({"1m": candles[:60]})

@@ -8,18 +8,19 @@ Usage:
     python example_institutional_structure.py [SYMBOL]
 """
 
-import asyncio
 import argparse
+import asyncio
+
+from indicator.display.colors import Colors
 from indicator.engines.data_fetcher import BinanceIndicatorFetcher
 from indicator.engines.institutional_structure import (
+    Candle,
+    EventType,
     MarketStructureEngine,
     StructureConfig,
-    Candle,
     StructureState,
-    EventType,
     TradingMode,
 )
-from indicator.display.colors import Colors
 
 
 def print_structure_state(tf_name: str, state, current_price: float):
@@ -29,12 +30,16 @@ def print_structure_state(tf_name: str, state, current_price: float):
     print(f"{Colors.CYAN}{'═' * 70}{Colors.RESET}")
 
     # Structure
-    structure_color = Colors.GREEN if state.structure == StructureState.UP else \
-                     Colors.RED if state.structure == StructureState.DOWN else \
-                     Colors.YELLOW
+    structure_color = (
+        Colors.GREEN
+        if state.structure == StructureState.UP
+        else Colors.RED if state.structure == StructureState.DOWN else Colors.YELLOW
+    )
 
-    print(f"  {Colors.BOLD}Structure:{Colors.RESET} "
-          f"{structure_color}{state.structure.value}{Colors.RESET} ({state.structure_label})")
+    print(
+        f"  {Colors.BOLD}Structure:{Colors.RESET} "
+        f"{structure_color}{state.structure.value}{Colors.RESET} ({state.structure_label})"
+    )
 
     print(f"  {Colors.BOLD}Regime:{Colors.RESET} {state.regime}")
     print(f"  {Colors.BOLD}Strength:{Colors.RESET} {state.strength_0_100:.0f}%")
@@ -44,38 +49,47 @@ def print_structure_state(tf_name: str, state, current_price: float):
     if state.last_bos:
         bos = state.last_bos
         side_color = Colors.GREEN if bos.side.value == "BULL" else Colors.RED
-        print(f"\n  {Colors.BOLD}Last BOS:{Colors.RESET} {side_color}{bos.side.value}{Colors.RESET} "
-              f"@ ${bos.level:,.2f}")
+        print(
+            f"\n  {Colors.BOLD}Last BOS:{Colors.RESET} {side_color}{bos.side.value}{Colors.RESET} "
+            f"@ ${bos.level:,.2f}"
+        )
 
     if state.last_choch:
         choch = state.last_choch
         side_color = Colors.GREEN if choch.side.value == "BULL" else Colors.RED
-        print(f"  {Colors.BOLD}Last CHoCH:{Colors.RESET} {side_color}{choch.side.value}{Colors.RESET} "
-              f"@ ${choch.level:,.2f} {Colors.YELLOW}(reversal warning){Colors.RESET}")
+        print(
+            f"  {Colors.BOLD}Last CHoCH:{Colors.RESET} {side_color}{choch.side.value}{Colors.RESET} "
+            f"@ ${choch.level:,.2f} {Colors.YELLOW}(reversal warning){Colors.RESET}"
+        )
 
     # Active range
     if state.active_range:
         r = state.active_range
-        print(f"\n  {Colors.BOLD}Active Range:{Colors.RESET} "
-              f"${r.bottom:,.2f} - ${r.top:,.2f}")
+        print(f"\n  {Colors.BOLD}Active Range:{Colors.RESET} " f"${r.bottom:,.2f} - ${r.top:,.2f}")
 
     # FVGs
     if state.active_fvgs:
         print(f"\n  {Colors.BOLD}Active FVGs:{Colors.RESET}")
         for i, fvg in enumerate(state.active_fvgs[:5], 1):
             side_color = Colors.GREEN if fvg.side.value == "BULL" else Colors.RED
-            print(f"    {i}. {side_color}{fvg.side.value} FVG{Colors.RESET}: "
-                  f"${fvg.bottom:,.2f} - ${fvg.top:,.2f}")
+            print(
+                f"    {i}. {side_color}{fvg.side.value} FVG{Colors.RESET}: "
+                f"${fvg.bottom:,.2f} - ${fvg.top:,.2f}"
+            )
 
     # Recent swings
     if state.last_swing_high or state.last_swing_low:
         print(f"\n  {Colors.BOLD}Recent Swings:{Colors.RESET}")
         if state.last_swing_high:
-            print(f"    High: ${state.last_swing_high.price:,.2f} "
-                  f"(strength: {state.last_swing_high.strength:.2f})")
+            print(
+                f"    High: ${state.last_swing_high.price:,.2f} "
+                f"(strength: {state.last_swing_high.strength:.2f})"
+            )
         if state.last_swing_low:
-            print(f"    Low:  ${state.last_swing_low.price:,.2f} "
-                  f"(strength: {state.last_swing_low.strength:.2f})")
+            print(
+                f"    Low:  ${state.last_swing_low.price:,.2f} "
+                f"(strength: {state.last_swing_low.strength:.2f})"
+            )
 
     # Recent events summary
     if state.recent_events:
@@ -89,7 +103,11 @@ def print_structure_state(tf_name: str, state, current_price: float):
                 print(f"    Sweeps: {len(sweeps)}")
                 for sweep in sweeps[-2:]:
                     confirmed = sweep.details.get("confirmed", False)
-                    conf_str = f"{Colors.GREEN}✓{Colors.RESET}" if confirmed else f"{Colors.RED}✗{Colors.RESET}"
+                    conf_str = (
+                        f"{Colors.GREEN}✓{Colors.RESET}"
+                        if confirmed
+                        else f"{Colors.RED}✗{Colors.RESET}"
+                    )
                     print(f"      {sweep.side.value} sweep @ ${sweep.level:,.2f} {conf_str}")
             if accepts:
                 print(f"    Acceptances: {len(accepts)}")
@@ -159,10 +177,12 @@ async def analyze_structure(symbol: str = "BTCUSDT"):
     # Update engine
     print(f"\n{Colors.DIM}Analyzing market structure...{Colors.RESET}")
 
-    states = engine.update({
-        "LTF": ltf_candles,
-        "HTF": htf_candles,
-    })
+    states = engine.update(
+        {
+            "LTF": ltf_candles,
+            "HTF": htf_candles,
+        }
+    )
 
     # Get current price
     current_price = ltf_candles[-1].close
@@ -179,18 +199,25 @@ async def analyze_structure(symbol: str = "BTCUSDT"):
         print(f"{Colors.BOLD}MULTI-TIMEFRAME ALIGNMENT{Colors.RESET}")
         print(f"{Colors.CYAN}{'═' * 70}{Colors.RESET}")
 
-        align_color = Colors.GREEN if alignment.alignment.value == "ALIGNED" else \
-                     Colors.YELLOW if alignment.alignment.value == "MIXED" else \
-                     Colors.RED
+        align_color = (
+            Colors.GREEN
+            if alignment.alignment.value == "ALIGNED"
+            else Colors.YELLOW if alignment.alignment.value == "MIXED" else Colors.RED
+        )
 
-        print(f"  {Colors.BOLD}Alignment:{Colors.RESET} "
-              f"{align_color}{alignment.alignment.value}{Colors.RESET}")
+        print(
+            f"  {Colors.BOLD}Alignment:{Colors.RESET} "
+            f"{align_color}{alignment.alignment.value}{Colors.RESET}"
+        )
 
-        mode_color = Colors.GREEN if alignment.recommended_mode == TradingMode.TREND_MODE else \
-                    Colors.YELLOW
+        mode_color = (
+            Colors.GREEN if alignment.recommended_mode == TradingMode.TREND_MODE else Colors.YELLOW
+        )
 
-        print(f"  {Colors.BOLD}Recommended Mode:{Colors.RESET} "
-              f"{mode_color}{alignment.recommended_mode.value}{Colors.RESET}")
+        print(
+            f"  {Colors.BOLD}Recommended Mode:{Colors.RESET} "
+            f"{mode_color}{alignment.recommended_mode.value}{Colors.RESET}"
+        )
 
         print(f"\n  {Colors.BOLD}HTF:{Colors.RESET} {alignment.htf_structure.value}")
         print(f"  {Colors.BOLD}LTF:{Colors.RESET} {alignment.ltf_structure.value}")
@@ -210,14 +237,18 @@ async def analyze_structure(symbol: str = "BTCUSDT"):
             if ltf.active_fvgs:
                 bull_fvgs = [f for f in ltf.active_fvgs if f.side.value == "BULL"]
                 if bull_fvgs:
-                    print(f"    Pullback target: ${bull_fvgs[0].bottom:,.2f} - ${bull_fvgs[0].top:,.2f}")
+                    print(
+                        f"    Pullback target: ${bull_fvgs[0].bottom:,.2f} - ${bull_fvgs[0].top:,.2f}"
+                    )
         elif alignment.htf_structure == StructureState.DOWN:
             print(f"  {Colors.RED}✓ SHORT BIAS{Colors.RESET}")
             print(f"    Both timeframes in downtrend")
             if ltf.active_fvgs:
                 bear_fvgs = [f for f in ltf.active_fvgs if f.side.value == "BEAR"]
                 if bear_fvgs:
-                    print(f"    Pullback target: ${bear_fvgs[0].bottom:,.2f} - ${bear_fvgs[0].top:,.2f}")
+                    print(
+                        f"    Pullback target: ${bear_fvgs[0].bottom:,.2f} - ${bear_fvgs[0].top:,.2f}"
+                    )
     elif alignment and alignment.alignment.value == "RANGE_DOMINANT":
         print(f"  {Colors.YELLOW}⊡ RANGE MODE{Colors.RESET}")
         print(f"    HTF in range - mean reversion trades")
@@ -261,14 +292,9 @@ async def analyze_structure(symbol: str = "BTCUSDT"):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Institutional Market Structure Analysis"
-    )
+    parser = argparse.ArgumentParser(description="Institutional Market Structure Analysis")
     parser.add_argument(
-        "symbol",
-        nargs="?",
-        default="BTCUSDT",
-        help="Trading pair symbol (default: BTCUSDT)"
+        "symbol", nargs="?", default="BTCUSDT", help="Trading pair symbol (default: BTCUSDT)"
     )
     args = parser.parse_args()
 

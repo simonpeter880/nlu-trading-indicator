@@ -15,14 +15,15 @@ Features:
 - Bucketing: WEAK / EMERGING / STRONG
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Deque
 from collections import deque
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import Deque, Dict, List, Optional
 
 
 class Bucket(Enum):
     """Trend strength bucket classification"""
+
     WEAK = "WEAK"
     EMERGING = "EMERGING"
     STRONG = "STRONG"
@@ -31,6 +32,7 @@ class Bucket(Enum):
 @dataclass
 class Candle:
     """OHLCV candle structure"""
+
     timestamp: float
     open: float
     high: float
@@ -52,11 +54,7 @@ class TrendStrengthConfig:
     rv_period: int = 20
 
     # EMA slope normalization
-    ema_slope_k_by_tf: Dict[str, int] = field(default_factory=lambda: {
-        "1m": 15,
-        "5m": 10,
-        "1h": 4
-    })
+    ema_slope_k_by_tf: Dict[str, int] = field(default_factory=lambda: {"1m": 15, "5m": 10, "1h": 4})
     ema_slope_k_default: int = 10
     ema_slope_strong_factor: float = 0.20  # Slope strong if ~0.20 × ATR% over k bars
 
@@ -69,11 +67,9 @@ class TrendStrengthConfig:
     rv_high: float = 2.0
 
     # OI expansion normalization
-    oi_ref_by_tf: Dict[str, float] = field(default_factory=lambda: {
-        "1m": 0.003,
-        "5m": 0.006,
-        "1h": 0.020
-    })
+    oi_ref_by_tf: Dict[str, float] = field(
+        default_factory=lambda: {"1m": 0.003, "5m": 0.006, "1h": 0.020}
+    )
     oi_ref_default: float = 0.006
 
     # Component weights
@@ -93,8 +89,7 @@ class TrendStrengthConfig:
 
     def __post_init__(self):
         """Validate weights"""
-        total_weight = (self.w_ema_slope + self.w_ribbon +
-                       self.w_rv + self.w_oi)
+        total_weight = self.w_ema_slope + self.w_ribbon + self.w_rv + self.w_oi
         if abs(total_weight - 1.0) > 1e-6:
             raise ValueError(f"Weights must sum to 1.0, got {total_weight}")
 
@@ -106,8 +101,8 @@ class TrendStrengthState:
     # Strength scores
     strength_raw: float
     strength_smooth: float
-    strength_signed: float      # -100..+100 (direction_bias * strength_smooth)
-    direction_bias: int         # -1 (bear), 0 (neutral), +1 (bull)
+    strength_signed: float  # -100..+100 (direction_bias * strength_smooth)
+    direction_bias: int  # -1 (bear), 0 (neutral), +1 (bull)
     bucket: Bucket
 
     # Normalized components (0..1)
@@ -235,9 +230,13 @@ class TrendStrengthEngine:
         """Clip value to range [lo, hi]"""
         return max(lo, min(hi, value))
 
-    def _compute_atr_percent(self, state: _TimeframeState, close: float,
-                            atr_provided: Optional[float],
-                            atr_percent_provided: Optional[float]) -> float:
+    def _compute_atr_percent(
+        self,
+        state: _TimeframeState,
+        close: float,
+        atr_provided: Optional[float],
+        atr_percent_provided: Optional[float],
+    ) -> float:
         """
         Get ATR% either from provided values or internal computation.
 
@@ -255,9 +254,14 @@ class TrendStrengthEngine:
 
         return 0.0
 
-    def _normalize_ema_slope(self, slope: Optional[float], ema50_now: Optional[float],
-                            ema50_k: Optional[float], atr_percent: float,
-                            tf: str) -> Optional[float]:
+    def _normalize_ema_slope(
+        self,
+        slope: Optional[float],
+        ema50_now: Optional[float],
+        ema50_k: Optional[float],
+        atr_percent: float,
+        tf: str,
+    ) -> Optional[float]:
         """
         Normalize EMA slope magnitude.
 
@@ -301,8 +305,7 @@ class TrendStrengthEngine:
 
         wr_range = self.config.ribbon_wr_high - self.config.ribbon_wr_low + self._eps
         ribbon_norm = self._clip(
-            (ribbon_width_rate - self.config.ribbon_wr_low) / wr_range,
-            0.0, 1.0
+            (ribbon_width_rate - self.config.ribbon_wr_low) / wr_range, 0.0, 1.0
         )
 
         return ribbon_norm
@@ -326,8 +329,9 @@ class TrendStrengthEngine:
 
         return rv
 
-    def _normalize_rv(self, rv_provided: Optional[float],
-                     state: _TimeframeState, volume: float) -> Optional[float]:
+    def _normalize_rv(
+        self, rv_provided: Optional[float], state: _TimeframeState, volume: float
+    ) -> Optional[float]:
         """
         Normalize relative volume.
 
@@ -350,15 +354,13 @@ class TrendStrengthEngine:
 
         # Normalize with saturation
         rv_range = self.config.rv_high - self.config.rv_low + self._eps
-        rv_norm = self._clip(
-            (rv - self.config.rv_low) / rv_range,
-            0.0, 1.0
-        )
+        rv_norm = self._clip((rv - self.config.rv_low) / rv_range, 0.0, 1.0)
 
         return rv_norm
 
-    def _normalize_oi(self, oi_now: Optional[float], oi_prev: Optional[float],
-                     tf: str) -> Optional[float]:
+    def _normalize_oi(
+        self, oi_now: Optional[float], oi_prev: Optional[float], tf: str
+    ) -> Optional[float]:
         """
         Normalize OI expansion rate.
 
@@ -384,7 +386,9 @@ class TrendStrengthEngine:
 
         return oi_norm
 
-    def _compute_weighted_strength(self, components_norm: Dict[str, Optional[float]]) -> tuple[float, Dict[str, float]]:
+    def _compute_weighted_strength(
+        self, components_norm: Dict[str, Optional[float]]
+    ) -> tuple[float, Dict[str, float]]:
         """
         Compute weighted strength from normalized components.
 
@@ -396,10 +400,10 @@ class TrendStrengthEngine:
         # Collect available components and their weights
         available = {}
         weights_map = {
-            'ema_slope': self.config.w_ema_slope,
-            'ribbon': self.config.w_ribbon,
-            'rv': self.config.w_rv,
-            'oi': self.config.w_oi
+            "ema_slope": self.config.w_ema_slope,
+            "ribbon": self.config.w_ribbon,
+            "rv": self.config.w_rv,
+            "oi": self.config.w_oi,
         }
 
         for key, value in components_norm.items():
@@ -433,14 +437,14 @@ class TrendStrengthEngine:
             state.strength_smooth = strength_raw
         else:
             state.strength_smooth = (
-                state.smooth_alpha * strength_raw +
-                (1 - state.smooth_alpha) * state.strength_smooth
+                state.smooth_alpha * strength_raw + (1 - state.smooth_alpha) * state.strength_smooth
             )
 
         return state.strength_smooth
 
-    def _apply_safety_caps(self, strength: float, flags: Optional[Dict[str, bool]],
-                          rv: Optional[float]) -> float:
+    def _apply_safety_caps(
+        self, strength: float, flags: Optional[Dict[str, bool]], rv: Optional[float]
+    ) -> float:
         """
         Apply optional safety caps based on external conditions.
 
@@ -456,11 +460,11 @@ class TrendStrengthEngine:
             flags = {}
 
         # Structure range cap
-        if flags.get('structure_is_range', False):
+        if flags.get("structure_is_range", False):
             strength = min(strength, self.config.cap_when_structure_range)
 
         # Supertrend chop cap
-        if flags.get('supertrend_is_chop', False):
+        if flags.get("supertrend_is_chop", False):
             strength = min(strength, self.config.cap_when_supertrend_chop)
 
         # RV dead cap
@@ -486,10 +490,13 @@ class TrendStrengthEngine:
         else:
             return Bucket.STRONG
 
-    def warmup(self, candles_by_tf: Dict[str, List[Candle]],
-               ema_states_by_tf: Optional[Dict] = None,
-               ribbon_states_by_tf: Optional[Dict] = None,
-               oi_series_by_tf: Optional[Dict] = None) -> Dict[str, TrendStrengthState]:
+    def warmup(
+        self,
+        candles_by_tf: Dict[str, List[Candle]],
+        ema_states_by_tf: Optional[Dict] = None,
+        ribbon_states_by_tf: Optional[Dict] = None,
+        oi_series_by_tf: Optional[Dict] = None,
+    ) -> Dict[str, TrendStrengthState]:
         """
         Warm up the engine with historical candles.
 
@@ -517,21 +524,23 @@ class TrendStrengthEngine:
 
         return results
 
-    def on_candle_close(self,
-                       tf: str,
-                       candle: Candle,
-                       ema50_now: Optional[float] = None,
-                       ema50_k: Optional[float] = None,
-                       slope_50: Optional[float] = None,
-                       ribbon_width_rate: Optional[float] = None,
-                       rv: Optional[float] = None,
-                       oi_now: Optional[float] = None,
-                       oi_prev: Optional[float] = None,
-                       atr: Optional[float] = None,
-                       atr_percent: Optional[float] = None,
-                       bias: Optional[str] = None,
-                       direction_bias: Optional[int] = None,
-                       flags: Optional[Dict[str, bool]] = None) -> TrendStrengthState:
+    def on_candle_close(
+        self,
+        tf: str,
+        candle: Candle,
+        ema50_now: Optional[float] = None,
+        ema50_k: Optional[float] = None,
+        slope_50: Optional[float] = None,
+        ribbon_width_rate: Optional[float] = None,
+        rv: Optional[float] = None,
+        oi_now: Optional[float] = None,
+        oi_prev: Optional[float] = None,
+        atr: Optional[float] = None,
+        atr_percent: Optional[float] = None,
+        bias: Optional[str] = None,
+        direction_bias: Optional[int] = None,
+        flags: Optional[Dict[str, bool]] = None,
+    ) -> TrendStrengthState:
         """
         Process a candle close and return trend strength state.
 
@@ -571,10 +580,10 @@ class TrendStrengthEngine:
         oi_norm = self._normalize_oi(oi_now, oi_prev, tf)
 
         components_norm = {
-            'ema_slope': ema_slope_norm,
-            'ribbon': ribbon_norm,
-            'rv': rv_norm,
-            'oi': oi_norm
+            "ema_slope": ema_slope_norm,
+            "ribbon": ribbon_norm,
+            "rv": rv_norm,
+            "oi": oi_norm,
         }
 
         # Compute raw strength
@@ -606,29 +615,29 @@ class TrendStrengthEngine:
         # Build raw components dict
         components_raw = {}
         if slope_50 is not None:
-            components_raw['slope'] = slope_50
+            components_raw["slope"] = slope_50
         elif ema50_now is not None and ema50_k is not None:
-            components_raw['slope'] = abs((ema50_now - ema50_k) / (ema50_k + self._eps))
+            components_raw["slope"] = abs((ema50_now - ema50_k) / (ema50_k + self._eps))
 
         if ribbon_width_rate is not None:
-            components_raw['wr'] = ribbon_width_rate
+            components_raw["wr"] = ribbon_width_rate
 
         if rv_actual is not None:
-            components_raw['RV'] = rv_actual
+            components_raw["RV"] = rv_actual
 
         if oi_now is not None and oi_prev is not None:
-            components_raw['dOI'] = abs((oi_now - oi_prev) / (oi_prev + self._eps))
+            components_raw["dOI"] = abs((oi_now - oi_prev) / (oi_prev + self._eps))
 
         # Build debug info
         debug_info = {
-            'atr_percent': atr_pct,
-            'is_ready': state.is_ready,
-            'candle_count': state.candle_count,
-            'missing_components': [k for k, v in components_norm.items() if v is None],
-            'ema_slope_strong_factor': self.config.ema_slope_strong_factor,
-            'ribbon_wr_range': (self.config.ribbon_wr_low, self.config.ribbon_wr_high),
-            'rv_range': (self.config.rv_low, self.config.rv_high),
-            'oi_ref': self.config.oi_ref_by_tf.get(tf, self.config.oi_ref_default)
+            "atr_percent": atr_pct,
+            "is_ready": state.is_ready,
+            "candle_count": state.candle_count,
+            "missing_components": [k for k, v in components_norm.items() if v is None],
+            "ema_slope_strong_factor": self.config.ema_slope_strong_factor,
+            "ribbon_wr_range": (self.config.ribbon_wr_low, self.config.ribbon_wr_high),
+            "rv_range": (self.config.rv_low, self.config.rv_high),
+            "oi_ref": self.config.oi_ref_by_tf.get(tf, self.config.oi_ref_default),
         }
 
         result = TrendStrengthState(
@@ -640,7 +649,7 @@ class TrendStrengthEngine:
             components_norm={k: v for k, v in components_norm.items() if v is not None},
             components_raw=components_raw,
             weights=weights_used,
-            debug=debug_info
+            debug=debug_info,
         )
 
         # Update state for next iteration
@@ -670,8 +679,9 @@ class TrendStrengthEngine:
         return None
 
 
-def format_trend_strength_output(states: Dict[str, TrendStrengthState],
-                                 compact: bool = True) -> str:
+def format_trend_strength_output(
+    states: Dict[str, TrendStrengthState], compact: bool = True
+) -> str:
     """
     Format trend strength states for display.
 
@@ -690,17 +700,19 @@ def format_trend_strength_output(states: Dict[str, TrendStrengthState],
         if compact:
             # Compact format with directional signing
             sign_str = "+" if state.direction_bias >= 0 else ""
-            line = (f"{tf}: {sign_str}{state.strength_signed:.0f} ({state.bucket.value}) "
-                   f"raw={state.strength_raw:.0f} smooth={state.strength_smooth:.0f} "
-                   f"bias={state.direction_bias:+d}")
+            line = (
+                f"{tf}: {sign_str}{state.strength_signed:.0f} ({state.bucket.value}) "
+                f"raw={state.strength_raw:.0f} smooth={state.strength_smooth:.0f} "
+                f"bias={state.direction_bias:+d}"
+            )
             lines.append(line)
 
             # Components normalized
             comp_norm_strs = []
-            for key in ['ema_slope', 'ribbon', 'rv', 'oi']:
+            for key in ["ema_slope", "ribbon", "rv", "oi"]:
                 if key in state.components_norm:
                     val = state.components_norm[key]
-                    label = key if key != 'ema_slope' else 'slope'
+                    label = key if key != "ema_slope" else "slope"
                     comp_norm_strs.append(f"{label}={val:.2f}")
 
             if comp_norm_strs:
@@ -708,12 +720,12 @@ def format_trend_strength_output(states: Dict[str, TrendStrengthState],
 
             # Components raw
             comp_raw_strs = []
-            for key in ['slope', 'wr', 'RV', 'dOI']:
+            for key in ["slope", "wr", "RV", "dOI"]:
                 if key in state.components_raw:
                     val = state.components_raw[key]
-                    if key in ['slope', 'dOI']:
+                    if key in ["slope", "dOI"]:
                         comp_raw_strs.append(f"{key}={val:.5f}")
-                    elif key == 'wr':
+                    elif key == "wr":
                         comp_raw_strs.append(f"{key}={val:+.2f}")
                     else:
                         comp_raw_strs.append(f"{key}={val:.2f}")

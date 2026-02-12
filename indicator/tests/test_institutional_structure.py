@@ -10,16 +10,18 @@ Tests:
 - Multi-TF alignment
 """
 
-import pytest
 from typing import List
+
+import pytest
+
 from ..institutional_structure import (
+    Candle,
+    EventType,
     MarketStructureEngine,
     StructureConfig,
-    Candle,
-    SwingType,
-    StructureState,
-    EventType,
     StructureSide,
+    StructureState,
+    SwingType,
     ZoneStatus,
     compute_atr,
     compute_atr_pct,
@@ -28,7 +30,9 @@ from ..institutional_structure import (
 )
 
 
-def create_candle(timestamp: int, o: float, h: float, l: float, c: float, v: float = 1000.0) -> Candle:
+def create_candle(
+    timestamp: int, o: float, h: float, l: float, c: float, v: float = 1000.0
+) -> Candle:
     """Helper to create a candle."""
     return Candle(timestamp=timestamp, open=o, high=h, low=l, close=c, volume=v)
 
@@ -45,14 +49,11 @@ def create_uptrend_candles(count: int = 20, start_price: float = 100.0) -> List[
         open_price = price + 0.5
         close = price + 1.5
 
-        candles.append(create_candle(
-            timestamp=i * 60000,  # 1 min apart
-            o=open_price,
-            h=high,
-            l=low,
-            c=close,
-            v=1000.0
-        ))
+        candles.append(
+            create_candle(
+                timestamp=i * 60000, o=open_price, h=high, l=low, c=close, v=1000.0  # 1 min apart
+            )
+        )
 
         price += 1.0  # Move up
 
@@ -71,14 +72,9 @@ def create_downtrend_candles(count: int = 20, start_price: float = 100.0) -> Lis
         open_price = price - 0.5
         close = price - 1.5
 
-        candles.append(create_candle(
-            timestamp=i * 60000,
-            o=open_price,
-            h=high,
-            l=low,
-            c=close,
-            v=1000.0
-        ))
+        candles.append(
+            create_candle(timestamp=i * 60000, o=open_price, h=high, l=low, c=close, v=1000.0)
+        )
 
         price -= 1.0  # Move down
 
@@ -93,24 +89,28 @@ def create_range_candles(count: int = 20, low: float = 95.0, high: float = 105.0
         # Oscillate between range high and low
         if i % 4 < 2:
             # Move toward high
-            candles.append(create_candle(
-                timestamp=i * 60000,
-                o=low + (high - low) * 0.3,
-                h=high,
-                l=low + (high - low) * 0.2,
-                c=high - (high - low) * 0.1,
-                v=1000.0
-            ))
+            candles.append(
+                create_candle(
+                    timestamp=i * 60000,
+                    o=low + (high - low) * 0.3,
+                    h=high,
+                    l=low + (high - low) * 0.2,
+                    c=high - (high - low) * 0.1,
+                    v=1000.0,
+                )
+            )
         else:
             # Move toward low
-            candles.append(create_candle(
-                timestamp=i * 60000,
-                o=high - (high - low) * 0.3,
-                h=high - (high - low) * 0.2,
-                l=low,
-                c=low + (high - low) * 0.1,
-                v=1000.0
-            ))
+            candles.append(
+                create_candle(
+                    timestamp=i * 60000,
+                    o=high - (high - low) * 0.3,
+                    h=high - (high - low) * 0.2,
+                    l=low,
+                    c=low + (high - low) * 0.1,
+                    v=1000.0,
+                )
+            )
 
     return candles
 
@@ -265,7 +265,7 @@ class TestBOSandCHoCH:
             h=last_price + 5.0,  # Strong move up
             l=last_price,
             c=last_price + 4.5,
-            v=2000.0  # High volume
+            v=2000.0,  # High volume
         )
         candles.append(breakout)
 
@@ -296,7 +296,7 @@ class TestBOSandCHoCH:
                 h=last_price - i * 2 + 1,
                 l=last_price - i * 2 - 3,
                 c=last_price - i * 2 - 2.5,
-                v=1500.0
+                v=1500.0,
             )
             candles.append(reversal)
 
@@ -326,18 +326,13 @@ class TestLiquiditySweeps:
             h=97.0,
             l=94.0,  # Breach below range low
             c=96.5,  # Close back above
-            v=2000.0  # High volume
+            v=2000.0,  # High volume
         )
         candles.append(sweep)
 
         # Add confirmation candle
         confirm = create_candle(
-            timestamp=(len(candles)) * 60000,
-            o=96.5,
-            h=99.0,
-            l=96.0,
-            c=98.0,
-            v=2500.0  # High RV
+            timestamp=(len(candles)) * 60000, o=96.5, h=99.0, l=96.0, c=98.0, v=2500.0  # High RV
         )
         candles.append(confirm)
 
@@ -370,14 +365,16 @@ class TestAcceptanceRejection:
 
         # Add more candles with high volume
         for i in range(5):
-            candles.append(create_candle(
-                timestamp=(len(candles)) * 60000,
-                o=candles[-1].close,
-                h=candles[-1].close + 2,
-                l=candles[-1].close,
-                c=candles[-1].close + 1.5,
-                v=3000.0  # High volume for acceptance
-            ))
+            candles.append(
+                create_candle(
+                    timestamp=(len(candles)) * 60000,
+                    o=candles[-1].close,
+                    h=candles[-1].close + 2,
+                    l=candles[-1].close,
+                    c=candles[-1].close + 1.5,
+                    v=3000.0,  # High volume for acceptance
+                )
+            )
 
         # Second update
         states2 = engine.update({"LTF": candles})
@@ -394,7 +391,7 @@ class TestFVGDetection:
         candles = []
 
         # Create gap: low[i] > high[i-2]
-        candles.append(create_candle(0, 100, 102, 99, 101, 1000))   # i-2
+        candles.append(create_candle(0, 100, 102, 99, 101, 1000))  # i-2
         candles.append(create_candle(60000, 101, 103, 100, 102, 1000))  # i-1
         candles.append(create_candle(120000, 105, 107, 104, 106, 1000))  # i (gap up)
 
@@ -415,9 +412,9 @@ class TestFVGDetection:
         candles = []
 
         # Create gap: high[i] < low[i-2]
-        candles.append(create_candle(0, 100, 102, 99, 101, 1000))    # i-2
-        candles.append(create_candle(60000, 101, 103, 100, 102, 1000))   # i-1
-        candles.append(create_candle(120000, 96, 98, 95, 97, 1000))   # i (gap down)
+        candles.append(create_candle(0, 100, 102, 99, 101, 1000))  # i-2
+        candles.append(create_candle(60000, 101, 103, 100, 102, 1000))  # i-1
+        candles.append(create_candle(120000, 96, 98, 95, 97, 1000))  # i (gap down)
 
         engine = MarketStructureEngine(StructureConfig(enable_fvg=True))
         states = engine.update({"LTF": candles})
@@ -441,14 +438,16 @@ class TestMomentum:
         # Add strong breakout with immediate follow-through
         last = candles[-1].close
         for i in range(3):
-            candles.append(create_candle(
-                timestamp=(len(candles)) * 60000,
-                o=last + i * 3,
-                h=last + i * 3 + 4,
-                l=last + i * 3,
-                c=last + i * 3 + 3.5,
-                v=2000.0
-            ))
+            candles.append(
+                create_candle(
+                    timestamp=(len(candles)) * 60000,
+                    o=last + i * 3,
+                    h=last + i * 3 + 4,
+                    l=last + i * 3,
+                    c=last + i * 3 + 3.5,
+                    v=2000.0,
+                )
+            )
 
         engine = MarketStructureEngine()
         states = engine.update({"LTF": candles})
@@ -456,7 +455,11 @@ class TestMomentum:
         ltf_state = states["LTF"]
 
         # Momentum should be calculated
-        assert ltf_state.momentum in [StructuralMomentum.FAST, StructuralMomentum.SLOW, StructuralMomentum.STALLED]
+        assert ltf_state.momentum in [
+            StructuralMomentum.FAST,
+            StructuralMomentum.SLOW,
+            StructuralMomentum.STALLED,
+        ]
 
 
 class TestMultiTimeframeAlignment:
@@ -516,7 +519,11 @@ class TestIntegration:
         assert ltf_state.strength_0_100 >= 0
         assert ltf_state.strength_0_100 <= 100
         assert ltf_state.regime in ["TREND", "RANGE", "MIXED", "UNKNOWN"]
-        assert ltf_state.momentum in [StructuralMomentum.FAST, StructuralMomentum.SLOW, StructuralMomentum.STALLED]
+        assert ltf_state.momentum in [
+            StructuralMomentum.FAST,
+            StructuralMomentum.SLOW,
+            StructuralMomentum.STALLED,
+        ]
 
     def test_multiple_updates(self):
         """Test engine can handle multiple updates."""

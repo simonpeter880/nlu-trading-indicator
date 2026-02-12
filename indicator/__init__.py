@@ -9,7 +9,6 @@ from __future__ import annotations
 import importlib
 from typing import Dict, Tuple
 
-
 __all__ = [
     # Data fetcher
     "BinanceIndicatorFetcher",

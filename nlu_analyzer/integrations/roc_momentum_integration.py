@@ -10,21 +10,21 @@ Integration points:
 4. Display ROC momentum in analysis output
 """
 
-from typing import Optional, Dict, List
 from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 from nlu_analyzer.indicators.roc_momentum import (
+    Candle,
     ROCConfig,
     ROCMomentumEngine,
     ROCState,
-    Candle,
     print_roc_momentum,
 )
-
 
 # =============================================================================
 # INTEGRATION WITH CONTINUOUS ANALYZER
 # =============================================================================
+
 
 class ROCMomentumAdapter:
     """
@@ -48,14 +48,14 @@ class ROCMomentumAdapter:
             config = ROCConfig(
                 timeframes=["1m", "5m", "15m", "1h"],
                 roc_lookbacks_by_tf={
-                    "1m": [5, 20, 60],      # Fast intraday
-                    "5m": [3, 12, 36],      # Medium intraday
-                    "15m": [4, 16, 48],     # Swing
-                    "1h": [3, 6, 12],       # Position
+                    "1m": [5, 20, 60],  # Fast intraday
+                    "5m": [3, 12, 36],  # Medium intraday
+                    "15m": [4, 16, 48],  # Swing
+                    "1h": [3, 6, 12],  # Position
                 },
                 use_log_returns=False,
                 atr_period=14,
-                accel_smooth_period=3,      # Smooth out noise
+                accel_smooth_period=3,  # Smooth out noise
                 noise_norm_threshold=0.3,
                 impulse_norm_threshold=0.8,
                 blowoff_norm_threshold=1.5,
@@ -73,7 +73,7 @@ class ROCMomentumAdapter:
         tf: str,
         candle: Candle,
         atr_percent: Optional[float] = None,
-        bias: Optional[int] = None
+        bias: Optional[int] = None,
     ) -> Optional[ROCState]:
         """Process new candle and return ROC state."""
         return self.engine.on_candle_close(tf, candle, atr_percent, bias)
@@ -104,6 +104,7 @@ class ROCMomentumAdapter:
 # =============================================================================
 # TRADE FILTERING WITH ROC MOMENTUM
 # =============================================================================
+
 
 @dataclass
 class ROCTradeFilter:
@@ -229,10 +230,11 @@ class ROCTradeFilter:
 # INTEGRATION WITH MARKET STRUCTURE
 # =============================================================================
 
+
 def combine_roc_with_structure(
     roc_state: Optional[ROCState],
     structure_trend: str,  # "BULL", "BEAR", "RANGE"
-    direction: str  # "long" or "short"
+    direction: str,  # "long" or "short"
 ) -> tuple[bool, float, str]:
     """
     Combine ROC momentum with market structure for trade decision.
@@ -254,7 +256,10 @@ def combine_roc_with_structure(
             confidence = 1.0 + (roc_state.momentum_score_0_100 - 50) / 100
             return True, min(confidence, 1.5), "impulse_structure_confluence"
 
-        if roc_state.momentum_state == "PULLBACK" and roc_state.debug.get("context") == "BULL_PULLBACK":
+        if (
+            roc_state.momentum_state == "PULLBACK"
+            and roc_state.debug.get("context") == "BULL_PULLBACK"
+        ):
             confidence = 0.8
             return True, confidence, "pullback_entry"
 
@@ -268,7 +273,10 @@ def combine_roc_with_structure(
             confidence = 1.0 + (roc_state.momentum_score_0_100 - 50) / 100
             return True, min(confidence, 1.5), "impulse_structure_confluence"
 
-        if roc_state.momentum_state == "PULLBACK" and roc_state.debug.get("context") == "BEAR_PULLBACK":
+        if (
+            roc_state.momentum_state == "PULLBACK"
+            and roc_state.debug.get("context") == "BEAR_PULLBACK"
+        ):
             confidence = 0.8
             return True, confidence, "pullback_entry"
 
@@ -278,6 +286,7 @@ def combine_roc_with_structure(
 # =============================================================================
 # COMPACT DISPLAY INTEGRATION
 # =============================================================================
+
 
 def print_roc_compact(engine: ROCMomentumEngine, primary_tf: str = "1m") -> None:
     """
@@ -337,7 +346,7 @@ if __name__ == "__main__":
             high=close + 0.15,
             low=close - 0.15,
             close=close,
-            volume=1000.0 + i * 10
+            volume=1000.0 + i * 10,
         )
         sample_candles.append(candle)
 

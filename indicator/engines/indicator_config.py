@@ -9,7 +9,6 @@ making it easy to tune indicators without hunting through multiple files.
 from dataclasses import dataclass, field
 from typing import Optional
 
-
 # =============================================================================
 # UTILITY FUNCTIONS
 # =============================================================================
@@ -35,10 +34,11 @@ def safe_divide(numerator: float, denominator: float, default: float = 0.0) -> f
 @dataclass
 class VolumeThresholds:
     """Volume-related thresholds."""
+
     # Volume ratio thresholds (current_vol / avg_vol)
-    high_ratio: float = 2.0          # Very high volume
-    moderate_ratio: float = 1.5      # Moderately high volume
-    low_ratio: float = 0.5           # Low volume
+    high_ratio: float = 2.0  # Very high volume
+    moderate_ratio: float = 1.5  # Moderately high volume
+    low_ratio: float = 0.5  # Low volume
 
     # Volume confirmation strength adjustments
     high_volume_base_strength: float = 50.0
@@ -52,15 +52,16 @@ class VolumeThresholds:
 @dataclass
 class OpenInterestThresholds:
     """Open Interest thresholds."""
+
     # OI change percentage thresholds
-    significant_change_pct: float = 5.0    # Significant OI change
+    significant_change_pct: float = 5.0  # Significant OI change
     strong_oi_base_strength: float = 60.0
     weak_oi_strength: float = 55.0
     neutral_strength: float = 50.0
 
     # OI regime thresholds
     price_move_threshold_pct: float = 0.5  # % to consider price "moving"
-    oi_change_threshold_pct: float = 1.0   # % to consider OI "changing"
+    oi_change_threshold_pct: float = 1.0  # % to consider OI "changing"
 
     # Rate of change analysis thresholds
     rate_acceleration_periods: int = 5
@@ -90,14 +91,15 @@ class OpenInterestThresholds:
 @dataclass
 class FundingThresholds:
     """Funding rate thresholds."""
+
     # Funding rate percentage thresholds (rate * 100)
-    extreme_positive_pct: float = 0.1      # Very positive funding (crowded long)
-    high_positive_pct: float = 0.05        # High positive funding
-    positive_pct: float = 0.03             # Moderately positive
-    neutral_pct: float = 0.01              # Near-zero funding
-    negative_pct: float = -0.03            # Moderately negative
-    high_negative_pct: float = -0.05       # High negative funding
-    extreme_negative_pct: float = -0.1     # Very negative funding (crowded short)
+    extreme_positive_pct: float = 0.1  # Very positive funding (crowded long)
+    high_positive_pct: float = 0.05  # High positive funding
+    positive_pct: float = 0.03  # Moderately positive
+    neutral_pct: float = 0.01  # Near-zero funding
+    negative_pct: float = -0.03  # Moderately negative
+    high_negative_pct: float = -0.05  # High negative funding
+    extreme_negative_pct: float = -0.1  # Very negative funding (crowded short)
 
     # Percentile thresholds for zone classification
     extreme_percentile: float = 95.0
@@ -114,13 +116,14 @@ class FundingThresholds:
 @dataclass
 class OrderbookThresholds:
     """Orderbook/liquidity thresholds."""
+
     # Depth imbalance thresholds (bid_depth - ask_depth) / total
-    strong_imbalance: float = 0.3          # Strong support/resistance
-    moderate_imbalance: float = 0.1        # Moderate support/resistance
+    strong_imbalance: float = 0.3  # Strong support/resistance
+    moderate_imbalance: float = 0.1  # Moderate support/resistance
 
     # Spread thresholds (percentage)
-    wide_spread_pct: float = 0.1           # Wide spread (low liquidity)
-    tight_spread_pct: float = 0.01         # Tight spread (high liquidity)
+    wide_spread_pct: float = 0.1  # Wide spread (low liquidity)
+    tight_spread_pct: float = 0.01  # Tight spread (high liquidity)
 
     # Strength values
     strong_imbalance_base_strength: float = 50.0
@@ -145,7 +148,9 @@ class OrderbookThresholds:
     spoof_price_tolerance_ratio: float = 0.001
     spoof_wall_persist_ratio: float = 0.5
     spoof_price_approach_pct: float = 1.0
-    spoof_price_snap_min_bps: float = 2.0  # Minimum 2 bps move to confirm price snap (filters noise)
+    spoof_price_snap_min_bps: float = (
+        2.0  # Minimum 2 bps move to confirm price snap (filters noise)
+    )
     spoof_lookback_snapshots: int = 5
     spoof_oi_increase_threshold: float = 1.0
 
@@ -157,17 +162,22 @@ class OrderbookThresholds:
     path_resistance_threshold: float = 0.7  # Ratio < 0.7 = clear path up, > 1.43 = clear path down
     path_hysteresis_factor: float = 0.85  # Harder to flip existing direction (15% hysteresis)
 
-    volume_confirmation_price_change_pct: float = 0.1  # DEPRECATED: use volume_confirmation_ratio_threshold
-    volume_confirmation_ratio_threshold: float = 1.2  # Volume must be 1.2x average to confirm imbalance
+    volume_confirmation_price_change_pct: float = (
+        0.1  # DEPRECATED: use volume_confirmation_ratio_threshold
+    )
+    volume_confirmation_ratio_threshold: float = (
+        1.2  # Volume must be 1.2x average to confirm imbalance
+    )
     directional_signal_ratio: float = 1.3
 
 
 @dataclass
 class DeltaThresholds:
     """Volume delta thresholds for InstitutionalVolumeEngine."""
+
     # Delta percentage thresholds
-    strong_threshold_pct: float = 30.0     # Strong buy/sell bias
-    weak_threshold_pct: float = 10.0       # Weak buy/sell bias
+    strong_threshold_pct: float = 30.0  # Strong buy/sell bias
+    weak_threshold_pct: float = 10.0  # Weak buy/sell bias
 
     # Strength calculation
     strong_base_strength: float = 70.0
@@ -182,70 +192,75 @@ class DeltaThresholds:
 @dataclass
 class AccelerationThresholds:
     """Volume acceleration thresholds."""
-    accelerating: float = 1.5              # 1.5x for accelerating volume
-    decelerating: float = 0.7              # 0.7x for decelerating volume
-    climax: float = 3.0                    # 3x for climax (potential reversal)
+
+    accelerating: float = 1.5  # 1.5x for accelerating volume
+    decelerating: float = 0.7  # 0.7x for decelerating volume
+    climax: float = 3.0  # 3x for climax (potential reversal)
 
     # Bar counting thresholds
-    accel_bar_threshold: float = 1.1       # Threshold for counting accelerating bars
-    decel_bar_threshold: float = 0.9       # Threshold for counting decelerating bars
+    accel_bar_threshold: float = 1.1  # Threshold for counting accelerating bars
+    decel_bar_threshold: float = 0.9  # Threshold for counting decelerating bars
 
 
 @dataclass
 class MTFThresholds:
     """Multi-timeframe agreement thresholds."""
-    high: float = 1.5                      # 1.5x avg for "high" volume
-    low: float = 0.7                       # 0.7x avg for "low" volume
+
+    high: float = 1.5  # 1.5x avg for "high" volume
+    low: float = 0.7  # 0.7x avg for "low" volume
 
 
 @dataclass
 class ExhaustionThresholds:
     """Exhaustion detection thresholds."""
-    body_shrink: float = 0.5               # 50% body reduction for exhaustion
-    volume_spike: float = 1.5              # 1.5x avg volume for spike
-    volume_decline: float = 0.7            # 70% of earlier volume = declining
-    continuation_failure: float = 0.3     # Less than 30% continuation = failure
-    oi_stagnant_pct: float = 1.0          # Less than 1% OI change = stagnant
-    oi_dropping_pct: float = -2.0         # More than 2% OI drop
+
+    body_shrink: float = 0.5  # 50% body reduction for exhaustion
+    volume_spike: float = 1.5  # 1.5x avg volume for spike
+    volume_decline: float = 0.7  # 70% of earlier volume = declining
+    continuation_failure: float = 0.3  # Less than 30% continuation = failure
+    oi_stagnant_pct: float = 1.0  # Less than 1% OI change = stagnant
+    oi_dropping_pct: float = -2.0  # More than 2% OI drop
 
 
 @dataclass
 class UnifiedScoreThresholds:
     """Unified score action thresholds."""
+
     # Action thresholds
-    long_threshold: float = 0.55           # Score >= this = long bias
-    short_threshold: float = -0.55         # Score <= this = short bias
-    neutral_zone: float = 0.25             # |score| < this = no trade
-    strong_threshold: float = 0.75         # |score| >= this = strong signal
+    long_threshold: float = 0.55  # Score >= this = long bias
+    short_threshold: float = -0.55  # Score <= this = short bias
+    neutral_zone: float = 0.25  # |score| < this = no trade
+    strong_threshold: float = 0.75  # |score| >= this = strong signal
 
     # Confidence calculation
-    confidence_divisor: float = 0.85       # Conf = 100 * |score| / this
+    confidence_divisor: float = 0.85  # Conf = 100 * |score| / this
 
     # Component score thresholds
-    volume_strong: float = 0.5             # Strong volume pressure
-    volume_moderate: float = 0.2           # Moderate volume pressure
-    volume_low_rv: float = 0.7             # RV below this = low volume warning
+    volume_strong: float = 0.5  # Strong volume pressure
+    volume_moderate: float = 0.2  # Moderate volume pressure
+    volume_low_rv: float = 0.7  # RV below this = low volume warning
 
     # Volume gating — prevents false bias when volume is dead
-    volume_dead_rv: float = 0.3            # RV below this = hard gate (force neutral)
-    volume_weight_floor: float = 0.3       # Minimum weight scaling at RV=0
+    volume_dead_rv: float = 0.3  # RV below this = hard gate (force neutral)
+    volume_weight_floor: float = 0.3  # Minimum weight scaling at RV=0
 
     # Warning thresholds
-    divergence_warning_threshold: float = 0.3   # Component score for divergence warning
-    funding_extreme_threshold: float = 0.6      # Funding score for extreme warning
+    divergence_warning_threshold: float = 0.3  # Component score for divergence warning
+    funding_extreme_threshold: float = 0.6  # Funding score for extreme warning
 
     # Calculation parameters
-    delta_normalization: float = 0.25      # Delta ratio normalization factor
-    rv_amplification: float = 1.5          # RV amplification factor
-    oi_threshold: float = 2.0              # OI change percentage for "strong"
-    funding_z_threshold: float = 2.5       # Z-score threshold for extreme funding
+    delta_normalization: float = 0.25  # Delta ratio normalization factor
+    rv_amplification: float = 1.5  # RV amplification factor
+    oi_threshold: float = 2.0  # OI change percentage for "strong"
+    funding_z_threshold: float = 2.5  # Z-score threshold for extreme funding
     orderbook_imbalance_threshold: float = 0.25  # Imbalance normalization factor
-    absorption_boost: float = 0.2          # Absorption detection boost
+    absorption_boost: float = 0.2  # Absorption detection boost
 
 
 @dataclass
 class BreakoutThresholds:
     """Breakout validation thresholds."""
+
     # Detection thresholds
     min_margin_pct: float = 0.15
     atr_multiple: float = 0.25
@@ -286,6 +301,7 @@ class BreakoutThresholds:
 @dataclass
 class PreciseDeltaThresholds:
     """Precise volume delta thresholds."""
+
     # Noise filters
     min_notional: float = 50.0
     percentile_filter: float = 0.20
@@ -338,6 +354,7 @@ class IndicatorConfig:
             unified_score=UnifiedScoreThresholds(long_threshold=0.6)
         )
     """
+
     volume: VolumeThresholds = field(default_factory=VolumeThresholds)
     open_interest: OpenInterestThresholds = field(default_factory=OpenInterestThresholds)
     funding: FundingThresholds = field(default_factory=FundingThresholds)
@@ -368,11 +385,9 @@ def create_aggressive_config() -> IndicatorConfig:
     return IndicatorConfig(
         volume=VolumeThresholds(high_ratio=1.5, moderate_ratio=1.2, low_ratio=0.6),
         unified_score=UnifiedScoreThresholds(
-            long_threshold=0.45,
-            short_threshold=-0.45,
-            neutral_zone=0.15
+            long_threshold=0.45, short_threshold=-0.45, neutral_zone=0.15
         ),
-        delta=DeltaThresholds(strong_threshold_pct=20.0, weak_threshold_pct=5.0)
+        delta=DeltaThresholds(strong_threshold_pct=20.0, weak_threshold_pct=5.0),
     )
 
 
@@ -384,10 +399,7 @@ def create_conservative_config() -> IndicatorConfig:
     return IndicatorConfig(
         volume=VolumeThresholds(high_ratio=2.5, moderate_ratio=2.0, low_ratio=0.4),
         unified_score=UnifiedScoreThresholds(
-            long_threshold=0.65,
-            short_threshold=-0.65,
-            neutral_zone=0.35,
-            strong_threshold=0.85
+            long_threshold=0.65, short_threshold=-0.65, neutral_zone=0.35, strong_threshold=0.85
         ),
-        delta=DeltaThresholds(strong_threshold_pct=40.0, weak_threshold_pct=15.0)
+        delta=DeltaThresholds(strong_threshold_pct=40.0, weak_threshold_pct=15.0),
     )

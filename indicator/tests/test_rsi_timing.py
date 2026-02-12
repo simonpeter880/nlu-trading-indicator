@@ -12,13 +12,14 @@ Verifies:
 """
 
 import pytest
+
 from rsi_timing import (
-    RSITimingEngine,
-    RSITimingConfig,
     Candle,
-    print_rsi_timing,
+    RSITimingConfig,
+    RSITimingEngine,
     format_rsi_state,
     interpret_rsi,
+    print_rsi_timing,
 )
 
 
@@ -37,6 +38,7 @@ def config():
 # TEST 1: RSI CALCULATION (WILDER METHOD)
 # ============================================================================
 
+
 def test_rsi_seeding():
     """RSI seeds with SMA of gains/losses."""
     config = RSITimingConfig(rsi_period=3)
@@ -44,8 +46,8 @@ def test_rsi_seeding():
 
     # Create candles with known price changes
     candles = [
-        Candle(1000, 100, 105, 95, 100, 1000),   # No change (first)
-        Candle(2000, 100, 110, 95, 105, 1000),   # +5 gain
+        Candle(1000, 100, 105, 95, 100, 1000),  # No change (first)
+        Candle(2000, 100, 110, 95, 105, 1000),  # +5 gain
         Candle(3000, 105, 115, 100, 108, 1000),  # +3 gain
         Candle(4000, 108, 118, 103, 106, 1000),  # -2 loss
     ]
@@ -74,8 +76,8 @@ def test_rsi_wilder_smoothing():
     seed_candles = [
         Candle(1000, 100, 105, 95, 100, 1000),
         Candle(2000, 100, 110, 95, 106, 1000),  # +6
-        Candle(3000, 106, 116, 101, 109, 1000), # +3
-        Candle(4000, 109, 119, 104, 112, 1000), # +3
+        Candle(3000, 106, 116, 101, 109, 1000),  # +3
+        Candle(4000, 109, 119, 104, 112, 1000),  # +3
     ]
 
     for candle in seed_candles:
@@ -118,6 +120,7 @@ def test_rsi_formula_correctness():
 # ============================================================================
 # TEST 2: REGIME LABELING
 # ============================================================================
+
 
 def test_regime_bullish():
     """RSI >= 55 => BULLISH regime."""
@@ -183,6 +186,7 @@ def test_regime_range():
 # ============================================================================
 # TEST 3: REGULAR DIVERGENCE
 # ============================================================================
+
 
 def test_regular_bearish_divergence():
     """Higher high price + lower high RSI => REG_BEAR."""
@@ -260,6 +264,7 @@ def test_regular_bullish_divergence():
 # TEST 4: HIDDEN DIVERGENCE
 # ============================================================================
 
+
 def test_hidden_bullish_divergence():
     """Higher low price + lower low RSI => HID_BULL."""
     config = RSITimingConfig(rsi_period=5, min_bars_fallback=3)
@@ -336,12 +341,10 @@ def test_hidden_bearish_divergence():
 # TEST 5: MINIMUM SEPARATION AND THRESHOLD
 # ============================================================================
 
+
 def test_min_bars_separation():
     """Divergence should NOT trigger when swings too close."""
-    config = RSITimingConfig(
-        rsi_period=5,
-        min_bars_between_swings_by_tf={"1m": 5}
-    )
+    config = RSITimingConfig(rsi_period=5, min_bars_between_swings_by_tf={"1m": 5})
     engine = RSITimingEngine(config)
 
     # Warmup
@@ -363,11 +366,7 @@ def test_min_bars_separation():
 
 def test_min_price_threshold():
     """Divergence should NOT trigger when price diff below threshold."""
-    config = RSITimingConfig(
-        rsi_period=5,
-        min_bars_fallback=3,
-        min_price_diff_atrp_factor=0.15
-    )
+    config = RSITimingConfig(rsi_period=5, min_bars_fallback=3, min_price_diff_atrp_factor=0.15)
     engine = RSITimingEngine(config)
 
     # Warmup
@@ -382,7 +381,9 @@ def test_min_price_threshold():
     engine.on_swing_high("1m", 11000, 100.0)
 
     for i in range(5):
-        engine.on_candle_close("1m", Candle((12 + i) * 1000, 100, 105, 95, 100, 1000), atr_percent=0.01)
+        engine.on_candle_close(
+            "1m", Candle((12 + i) * 1000, 100, 105, 95, 100, 1000), atr_percent=0.01
+        )
 
     engine.on_swing_high("1m", 17000, 100.05)  # Only 0.05 difference (< 0.15% of 1% ATR)
 
@@ -398,14 +399,10 @@ def test_min_price_threshold():
 # TEST 6: FAILURE SWING
 # ============================================================================
 
+
 def test_failure_swing_bear():
     """Bear failure swing: high -> pullback -> lower high -> break."""
-    config = RSITimingConfig(
-        rsi_period=5,
-        enable_failure_swing=True,
-        fs_high=60.0,
-        fs_mid_low=45.0
-    )
+    config = RSITimingConfig(rsi_period=5, enable_failure_swing=True, fs_high=60.0, fs_mid_low=45.0)
     engine = RSITimingEngine(config)
 
     # Manually create RSI sequence for bear failure swing
@@ -442,6 +439,7 @@ def test_failure_swing_bear():
 # ============================================================================
 # TEST 7: INCREMENTAL BEHAVIOR
 # ============================================================================
+
 
 def test_incremental_updates():
     """Engine should process candles incrementally with O(1) updates."""
@@ -489,6 +487,7 @@ def test_incremental_vs_batch():
 # TEST 8: MULTI-TIMEFRAME
 # ============================================================================
 
+
 def test_multi_timeframe():
     """Engine handles multiple timeframes independently."""
     config = RSITimingConfig(timeframes=["1m", "5m"])
@@ -513,6 +512,7 @@ def test_multi_timeframe():
 # ============================================================================
 # TEST 9: EDGE CASES
 # ============================================================================
+
 
 def test_no_price_change():
     """Handle candles with no price change."""
@@ -566,6 +566,7 @@ def test_reset():
 # TEST 10: HELPER FUNCTIONS
 # ============================================================================
 
+
 def test_print_rsi_timing():
     """print_rsi_timing produces expected output."""
     config = RSITimingConfig(rsi_period=5)
@@ -609,6 +610,7 @@ def test_interpret_rsi():
 # ============================================================================
 # TEST 11: DIVERGENCE STRENGTH
 # ============================================================================
+
 
 def test_divergence_strength():
     """Divergence strength is calculated and in range 0-100."""

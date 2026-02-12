@@ -11,13 +11,14 @@ Verifies:
 """
 
 import pytest
+
 from macd_histogram import (
-    MACDHistogramEngine,
-    MACDHistConfig,
     Candle,
-    print_macd_histogram,
+    MACDHistConfig,
+    MACDHistogramEngine,
     format_macd_state,
     interpret_macd,
+    print_macd_histogram,
 )
 
 
@@ -37,6 +38,7 @@ def config():
 # ============================================================================
 # TEST 1: EMA UPDATE CORRECTNESS
 # ============================================================================
+
 
 def test_ema_seeding():
     """EMA seeds with SMA of first n values."""
@@ -72,7 +74,9 @@ def test_ema_update_formula():
 
     # Next update
     new_price = 106
-    state = engine.on_candle_close("1m", Candle(4000, new_price, new_price + 2, new_price - 2, new_price, 1000))
+    state = engine.on_candle_close(
+        "1m", Candle(4000, new_price, new_price + 2, new_price - 2, new_price, 1000)
+    )
 
     # alpha = 2/(3+1) = 0.5
     # Expected: 0.5 * 106 + 0.5 * 102 = 104
@@ -84,6 +88,7 @@ def test_ema_update_formula():
 # ============================================================================
 # TEST 2: MACD/HISTOGRAM CORRECTNESS
 # ============================================================================
+
 
 def test_macd_formula():
     """MACD = EMA(fast) - EMA(slow)."""
@@ -124,6 +129,7 @@ def test_histogram_formula():
 # TEST 3: SHIFT EVENTS
 # ============================================================================
 
+
 def test_bull_shift():
     """Histogram crosses above 0 with positive slope => BULL_SHIFT."""
     config = MACDHistConfig(
@@ -132,7 +138,7 @@ def test_bull_shift():
         signal_period=3,
         confirm_bars_shift=2,
         slope_thr_norm=0.01,
-        normalize="none"  # Use raw values
+        normalize="none",  # Use raw values
     )
     engine = MACDHistogramEngine(config)
 
@@ -162,7 +168,7 @@ def test_bear_shift():
         signal_period=3,
         confirm_bars_shift=2,
         slope_thr_norm=0.01,
-        normalize="none"
+        normalize="none",
     )
     engine = MACDHistogramEngine(config)
 
@@ -186,6 +192,7 @@ def test_bear_shift():
 # TEST 4: WEAKENING EVENTS
 # ============================================================================
 
+
 def test_bull_weaken():
     """Histogram > 0 but slope negative => BULL_WEAKEN."""
     config = MACDHistConfig(
@@ -194,7 +201,7 @@ def test_bull_weaken():
         signal_period=3,
         confirm_bars_weaken=2,
         slope_thr_norm=0.01,
-        normalize="none"
+        normalize="none",
     )
     engine = MACDHistogramEngine(config)
 
@@ -224,7 +231,7 @@ def test_bear_weaken():
         signal_period=3,
         confirm_bars_weaken=2,
         slope_thr_norm=0.01,
-        normalize="none"
+        normalize="none",
     )
     engine = MACDHistogramEngine(config)
 
@@ -249,14 +256,11 @@ def test_bear_weaken():
 # TEST 5: NORMALIZATION
 # ============================================================================
 
+
 def test_normalization_by_atr():
     """Histogram normalized by ATR."""
     config = MACDHistConfig(
-        fast_period=3,
-        slow_period=5,
-        signal_period=3,
-        normalize="atr",
-        clip_norm=3.0
+        fast_period=3, slow_period=5, signal_period=3, normalize="atr", clip_norm=3.0
     )
     engine = MACDHistogramEngine(config)
 
@@ -277,11 +281,7 @@ def test_normalization_by_atr():
 def test_normalization_clipping():
     """Normalized histogram should be clipped to [-clip_norm, +clip_norm]."""
     config = MACDHistConfig(
-        fast_period=3,
-        slow_period=5,
-        signal_period=3,
-        normalize="atr",
-        clip_norm=2.0
+        fast_period=3, slow_period=5, signal_period=3, normalize="atr", clip_norm=2.0
     )
     engine = MACDHistogramEngine(config)
 
@@ -300,6 +300,7 @@ def test_normalization_clipping():
 # TEST 6: GATING
 # ============================================================================
 
+
 def test_suppress_when_chop():
     """Event should be NONE when chop_state='CHOP' and suppress_when_chop=True."""
     config = MACDHistConfig(
@@ -308,7 +309,7 @@ def test_suppress_when_chop():
         signal_period=3,
         confirm_bars_shift=1,
         suppress_when_chop=True,
-        normalize="none"
+        normalize="none",
     )
     engine = MACDHistogramEngine(config)
 
@@ -324,7 +325,7 @@ def test_suppress_when_chop():
         # Note: need to store this in state for gate to work
         state = engine.on_candle_close("1m", candle)
         # Set internal flag for testing
-        if hasattr(engine._states["1m"], '_chop_state'):
+        if hasattr(engine._states["1m"], "_chop_state"):
             pass  # Already set
         else:
             engine._states["1m"]._chop_state = "CHOP"
@@ -341,6 +342,7 @@ def test_suppress_when_chop():
 # ============================================================================
 # TEST 7: PHASE IDENTIFICATION
 # ============================================================================
+
 
 def test_phase_bull():
     """Histogram > 0 => BULL phase."""
@@ -378,6 +380,7 @@ def test_phase_bear():
 # TEST 8: CONFIRMATION BARS
 # ============================================================================
 
+
 def test_confirmation_required():
     """Event should require confirm_bars consecutive occurrences."""
     config = MACDHistConfig(
@@ -385,7 +388,7 @@ def test_confirmation_required():
         slow_period=5,
         signal_period=3,
         confirm_bars_shift=3,  # Require 3 bars
-        normalize="none"
+        normalize="none",
     )
     engine = MACDHistogramEngine(config)
 
@@ -396,14 +399,15 @@ def test_confirmation_required():
 
     # Check debug info
     state = engine.get_state("1m")
-    if state.debug.get('shift_count') is not None:
+    if state.debug.get("shift_count") is not None:
         # Should be less than 3 initially
-        assert state.debug['shift_count'] < 3 or state.event != "NONE"
+        assert state.debug["shift_count"] < 3 or state.event != "NONE"
 
 
 # ============================================================================
 # TEST 9: INCREMENTAL BEHAVIOR
 # ============================================================================
+
 
 def test_incremental_updates():
     """Engine should process candles incrementally with O(1) updates."""
@@ -449,6 +453,7 @@ def test_incremental_vs_batch():
 # TEST 10: MULTI-TIMEFRAME
 # ============================================================================
 
+
 def test_multi_timeframe():
     """Engine handles multiple timeframes independently."""
     config = MACDHistConfig(timeframes=["1m", "5m"])
@@ -471,6 +476,7 @@ def test_multi_timeframe():
 # ============================================================================
 # TEST 11: EDGE CASES
 # ============================================================================
+
 
 def test_constant_price():
     """Handle constant price (all EMAs converge)."""
@@ -524,6 +530,7 @@ def test_reset():
 # TEST 12: HELPER FUNCTIONS
 # ============================================================================
 
+
 def test_print_macd_histogram():
     """print_macd_histogram produces expected output."""
     config = MACDHistConfig(fast_period=3, slow_period=5, signal_period=3)
@@ -542,7 +549,9 @@ def test_format_macd_state():
     engine = MACDHistogramEngine(config)
 
     for i in range(20):
-        state = engine.on_candle_close("1m", Candle(i * 1000, 100 + i, 105 + i, 95 + i, 102 + i, 1000))
+        state = engine.on_candle_close(
+            "1m", Candle(i * 1000, 100 + i, 105 + i, 95 + i, 102 + i, 1000)
+        )
 
     formatted = format_macd_state("1m", state)
     assert "1m:" in formatted
@@ -555,7 +564,9 @@ def test_interpret_macd():
     engine = MACDHistogramEngine(config)
 
     for i in range(20):
-        state = engine.on_candle_close("1m", Candle(i * 1000, 100 + i, 105 + i, 95 + i, 102 + i, 1000))
+        state = engine.on_candle_close(
+            "1m", Candle(i * 1000, 100 + i, 105 + i, 95 + i, 102 + i, 1000)
+        )
 
     interpretation = interpret_macd(state)
     assert isinstance(interpretation, str)

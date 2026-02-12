@@ -8,19 +8,20 @@ Usage:
     python example_ema_filter.py [SYMBOL]
 """
 
-import asyncio
 import argparse
+import asyncio
+
+from indicator.display.colors import Colors
 from indicator.engines.data_fetcher import BinanceIndicatorFetcher
 from indicator.engines.ema_filter import (
-    EMAFilterEngine,
-    EMAConfig,
     Candle,
     EMABias,
+    EMAConfig,
+    EMAFilterEngine,
     EMARegime,
     MTFAlignment,
     print_ema_block,
 )
-from indicator.display.colors import Colors
 
 
 async def demo_ema_filter(symbol: str = "BTCUSDT"):
@@ -97,11 +98,13 @@ async def demo_ema_filter(symbol: str = "BTCUSDT"):
     # Warmup
     print(f"{Colors.DIM}Warming up EMA engine...{Colors.RESET}\n")
 
-    states = engine.warmup({
-        "1m": candles_1m,
-        "5m": candles_5m,
-        "1h": candles_1h,
-    })
+    states = engine.warmup(
+        {
+            "1m": candles_1m,
+            "5m": candles_5m,
+            "1h": candles_1h,
+        }
+    )
 
     # Print results
     print_ema_block(engine, ltf="1m", htf="1h")
@@ -127,16 +130,25 @@ async def demo_ema_filter(symbol: str = "BTCUSDT"):
         regime_color = Colors.GREEN if state.ema_regime == EMARegime.TREND else Colors.YELLOW
         print(f"  Regime: {regime_color}{state.ema_regime.value}{Colors.RESET}")
 
-        bias_color = Colors.GREEN if state.ema_bias == EMABias.BULL else \
-                    Colors.RED if state.ema_bias == EMABias.BEAR else Colors.DIM
+        bias_color = (
+            Colors.GREEN
+            if state.ema_bias == EMABias.BULL
+            else Colors.RED if state.ema_bias == EMABias.BEAR else Colors.DIM
+        )
         print(f"  Bias: {bias_color}{state.ema_bias.value}{Colors.RESET}")
 
-        align_color = Colors.GREEN if "UP" in state.ema_alignment.value else \
-                     Colors.RED if "DOWN" in state.ema_alignment.value else Colors.YELLOW
+        align_color = (
+            Colors.GREEN
+            if "UP" in state.ema_alignment.value
+            else Colors.RED if "DOWN" in state.ema_alignment.value else Colors.YELLOW
+        )
         print(f"  Alignment: {align_color}{state.ema_alignment.value}{Colors.RESET}")
 
-        strength_color = Colors.GREEN if state.trend_strength_0_100 >= 70 else \
-                        Colors.YELLOW if state.trend_strength_0_100 >= 50 else Colors.RED
+        strength_color = (
+            Colors.GREEN
+            if state.trend_strength_0_100 >= 70
+            else Colors.YELLOW if state.trend_strength_0_100 >= 50 else Colors.RED
+        )
         print(f"  Strength: {strength_color}{state.trend_strength_0_100:.0f}%{Colors.RESET}")
         print()
 
@@ -206,8 +218,10 @@ async def demo_ema_filter(symbol: str = "BTCUSDT"):
     # Incremental update
     new_state = engine.on_candle_close("1m", new_candle, atr_percent=0.003)
 
-    print(f"New candle: ${new_candle.close:,.2f} "
-          f"(was ${last_candle.close:,.2f}, +${new_candle.close - last_candle.close:,.2f})")
+    print(
+        f"New candle: ${new_candle.close:,.2f} "
+        f"(was ${last_candle.close:,.2f}, +${new_candle.close - last_candle.close:,.2f})"
+    )
     print()
 
     print(f"Updated EMA state:")
@@ -223,10 +237,7 @@ async def demo_ema_filter(symbol: str = "BTCUSDT"):
 def main():
     parser = argparse.ArgumentParser(description="EMA Filter Demo")
     parser.add_argument(
-        "symbol",
-        nargs="?",
-        default="BTCUSDT",
-        help="Trading pair symbol (default: BTCUSDT)"
+        "symbol", nargs="?", default="BTCUSDT", help="Trading pair symbol (default: BTCUSDT)"
     )
     args = parser.parse_args()
 

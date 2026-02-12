@@ -5,64 +5,53 @@ Wraps your existing sophisticated engines to consume continuous data
 from rolling windows instead of discrete REST fetches.
 """
 
-import time
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass
-
-from .data_types import (
-    TradeEvent,
-    OrderbookSnapshot,
-    OIUpdate,
-    FundingUpdate,
-    VolumeSignal,
-    DeltaSignal,
-    BookSignal,
-    OIFundingSignal,
-    SignalDirection,
-)
-from .rolling_window import (
-    MultiTimeframeWindows,
-    TradeWindow,
-    OrderbookHistory,
-)
-from .ring_buffer import TimestampedRingBuffer
-
 # Import existing engines
 import sys
+import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from .data_types import (
+    BookSignal,
+    DeltaSignal,
+    FundingUpdate,
+    OIFundingSignal,
+    OIUpdate,
+    OrderbookSnapshot,
+    SignalDirection,
+    TradeEvent,
+    VolumeSignal,
+)
+from .ring_buffer import TimestampedRingBuffer
+from .rolling_window import MultiTimeframeWindows, OrderbookHistory, TradeWindow
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from volume_engine import (
-    InstitutionalVolumeEngine,
-    VolumeEngineResult,
-    AggressionBias,
-    ExhaustionRisk,
-    VolumeAcceleration,
-)
-from volume_analysis import (
-    AdvancedVolumeAnalyzer,
-    VolumeAnalysisSummary,
-)
-from orderbook_analysis import (
-    AdvancedOrderbookAnalyzer,
-    OrderbookAnalysisSummary,
-    AbsorptionSide,
-    ImbalanceDirection,
-    OrderbookSnapshot as AnalyzerOrderbookSnapshot,
-)
-from oi_analysis import (
-    AdvancedOIAnalyzer,
-    OIAnalysisSummary,
-    OIRegime,
-)
 from funding_analysis import (
     AdvancedFundingAnalyzer,
+    CrowdPosition,
     FundingAnalysisSummary,
     FundingZone,
-    CrowdPosition,
 )
-from unified_score import calculate_unified_score, UnifiedScore
+from oi_analysis import AdvancedOIAnalyzer, OIAnalysisSummary, OIRegime
+from orderbook_analysis import (
+    AbsorptionSide,
+    AdvancedOrderbookAnalyzer,
+    ImbalanceDirection,
+    OrderbookAnalysisSummary,
+)
+from orderbook_analysis import OrderbookSnapshot as AnalyzerOrderbookSnapshot
 from signals import Signal
+from unified_score import UnifiedScore, calculate_unified_score
+from volume_analysis import AdvancedVolumeAnalyzer, VolumeAnalysisSummary
+from volume_engine import (
+    AggressionBias,
+    ExhaustionRisk,
+    InstitutionalVolumeEngine,
+    VolumeAcceleration,
+    VolumeEngineResult,
+)
 
 
 def _bias_to_direction(bias: AggressionBias) -> SignalDirection:
@@ -159,8 +148,8 @@ class VolumeEngineAdapter:
         # not a real institutional event. Allowing it fires exhaustion_long/short
         # and generates false reversal signals.
         raw_climax = (
-            result.acceleration.acceleration == VolumeAcceleration.CLIMAX or
-            result.exhaustion.risk in [ExhaustionRisk.HIGH, ExhaustionRisk.EXTREME]
+            result.acceleration.acceleration == VolumeAcceleration.CLIMAX
+            or result.exhaustion.risk in [ExhaustionRisk.HIGH, ExhaustionRisk.EXTREME]
         )
         is_climax = raw_climax and relative_volume >= 1.0
 
@@ -176,7 +165,9 @@ class VolumeEngineAdapter:
             buy_volume=trade_window.buy_volume,
             sell_volume=trade_window.sell_volume,
             delta=result.delta.delta if used_precise else trade_window.delta,
-            delta_ratio=(result.delta.delta_percent / 100.0) if used_precise else trade_window.delta_ratio,
+            delta_ratio=(
+                (result.delta.delta_percent / 100.0) if used_precise else trade_window.delta_ratio
+            ),
             relative_volume=relative_volume,
             direction=_bias_to_direction(result.delta.aggression_bias),
             strength=strength,
@@ -207,7 +198,7 @@ class VolumeEngineAdapter:
         opens, highs, lows, closes, volumes = [], [], [], [], []
 
         for i in range(0, len(trades), trades_per_bar):
-            bar_trades = trades[i:i + trades_per_bar]
+            bar_trades = trades[i : i + trades_per_bar]
             if not bar_trades:
                 continue
 
@@ -262,40 +253,39 @@ class VolumeEngineAdapter:
     ) -> tuple[VolumeEngineResult, bool]:
         """Run volume engine, preferring precise delta when data coverage is sufficient."""
         has_precise = (
-            len(trades) >= self._precise_min_trades and
-            trade_window.coverage >= self._precise_min_coverage and
-            len(closes) >= 2
+            len(trades) >= self._precise_min_trades
+            and trade_window.coverage >= self._precise_min_coverage
+            and len(closes) >= 2
         )
 
         if has_precise:
             agg_trades = self._trades_to_agg_trades(trades)
             if agg_trades:
                 bar_count = max(5, min(self._precise_bar_target, len(closes)))
-                bar_size_ms = max(
-                    1000,
-                    int((trade_window.window_seconds * 1000) / bar_count)
-                )
+                bar_size_ms = max(1000, int((trade_window.window_seconds * 1000) / bar_count))
                 window_start = min(t.timestamp_ms for t in trades)
                 window_end = max(t.timestamp_ms for t in trades)
                 try:
                     return (
                         self._engine.full_analysis_with_precise_delta(
-                        agg_trades=agg_trades,
-                        opens=opens,
-                        highs=highs,
-                        lows=lows,
-                        closes=closes,
-                        volumes=volumes,
-                        bar_size_ms=bar_size_ms,
-                        htf_volumes=htf_volumes,
-                        oi_change_percent=oi_change_percent,
-                        window_start_ms=window_start,
-                        window_end_ms=window_end,
+                            agg_trades=agg_trades,
+                            opens=opens,
+                            highs=highs,
+                            lows=lows,
+                            closes=closes,
+                            volumes=volumes,
+                            bar_size_ms=bar_size_ms,
+                            htf_volumes=htf_volumes,
+                            oi_change_percent=oi_change_percent,
+                            window_start_ms=window_start,
+                            window_end_ms=window_end,
                         ),
                         True,
                     )
                 except Exception as e:
-                    logger.debug(f"Precise delta computation failed, falling back to candle approximation: {e}")
+                    logger.debug(
+                        f"Precise delta computation failed, falling back to candle approximation: {e}"
+                    )
                     pass
 
         return (
@@ -360,9 +350,7 @@ class VolumeEngineAdapter:
         primary_window_seconds: int,
     ) -> Optional[int]:
         """Pick a higher timeframe window for MTF confirmation."""
-        candidates = sorted(
-            [sec for sec in windows.windows.keys() if sec > primary_window_seconds]
-        )
+        candidates = sorted([sec for sec in windows.windows.keys() if sec > primary_window_seconds])
         if not candidates:
             return None
         for sec in candidates:
@@ -433,8 +421,8 @@ class DeltaEngineAdapter:
         return {
             "cumulative_cvd": self._cumulative_cvd,
             "last_processed_trade_id": self._last_processed_trade_id,
-            "cvd_history": self._cvd_history[-self._max_history:],
-            "price_history": self._price_history[-self._max_history:],
+            "cvd_history": self._cvd_history[-self._max_history :],
+            "price_history": self._price_history[-self._max_history :],
         }
 
     def restore(self, snapshot: Dict[str, Any]) -> None:
@@ -442,8 +430,8 @@ class DeltaEngineAdapter:
         try:
             self._cumulative_cvd = float(snapshot.get("cumulative_cvd", 0.0))
             self._last_processed_trade_id = int(snapshot.get("last_processed_trade_id", 0))
-            self._cvd_history = list(snapshot.get("cvd_history", []))[-self._max_history:]
-            self._price_history = list(snapshot.get("price_history", []))[-self._max_history:]
+            self._cvd_history = list(snapshot.get("cvd_history", []))[-self._max_history :]
+            self._price_history = list(snapshot.get("price_history", []))[-self._max_history :]
         except Exception:
             self.reset_cvd()
 
@@ -477,8 +465,8 @@ class DeltaEngineAdapter:
 
         # Trim history
         if len(self._cvd_history) > self._max_history:
-            self._cvd_history = self._cvd_history[-self._max_history:]
-            self._price_history = self._price_history[-self._max_history:]
+            self._cvd_history = self._cvd_history[-self._max_history :]
+            self._price_history = self._price_history[-self._max_history :]
 
         # Calculate changes
         lookback = min(10, len(self._cvd_history))
@@ -494,22 +482,22 @@ class DeltaEngineAdapter:
 
         # Determine directions
         price_direction = (
-            SignalDirection.BULLISH if price_change > 0 else
-            SignalDirection.BEARISH if price_change < 0 else
-            SignalDirection.NEUTRAL
+            SignalDirection.BULLISH
+            if price_change > 0
+            else SignalDirection.BEARISH if price_change < 0 else SignalDirection.NEUTRAL
         )
 
         cvd_direction = (
-            SignalDirection.BULLISH if cvd_change > 0 else
-            SignalDirection.BEARISH if cvd_change < 0 else
-            SignalDirection.NEUTRAL
+            SignalDirection.BULLISH
+            if cvd_change > 0
+            else SignalDirection.BEARISH if cvd_change < 0 else SignalDirection.NEUTRAL
         )
 
         # Detect divergence
         is_divergent = (
-            price_direction != SignalDirection.NEUTRAL and
-            cvd_direction != SignalDirection.NEUTRAL and
-            price_direction != cvd_direction
+            price_direction != SignalDirection.NEUTRAL
+            and cvd_direction != SignalDirection.NEUTRAL
+            and price_direction != cvd_direction
         )
 
         # Determine who's aggressing (use window delta_ratio for recent activity)
@@ -807,6 +795,7 @@ class OIFundingEngineAdapter:
         Returns:
             OIFundingSignal or None
         """
+
         def _extract_price_points(
             price_series: List[float],
         ) -> List[tuple[int, float]]:
@@ -925,7 +914,9 @@ class OIFundingEngineAdapter:
         # Align prices to OI timestamps (so lookbacks are comparable)
         price_points = _extract_price_points(prices)
         if price_points:
-            aligned_prices = _align_prices_to_oi_exact(price_points, price_window_seconds, oi_values)
+            aligned_prices = _align_prices_to_oi_exact(
+                price_points, price_window_seconds, oi_values
+            )
         else:
             aligned_prices = _align_prices_to_oi_approx(prices, price_window_seconds, oi_values)
 
@@ -951,7 +942,11 @@ class OIFundingEngineAdapter:
         # Price change (aligned to OI window)
         price_change_pct = 0
         if len(aligned_prices) >= 2:
-            price_change_pct = (aligned_prices[-1] - aligned_prices[0]) / aligned_prices[0] * 100 if aligned_prices[0] > 0 else 0
+            price_change_pct = (
+                (aligned_prices[-1] - aligned_prices[0]) / aligned_prices[0] * 100
+                if aligned_prices[0] > 0
+                else 0
+            )
 
         # Run OI analysis with aligned OI data
         highs_aligned, lows_aligned = _compute_highs_lows(aligned_prices)
@@ -970,9 +965,7 @@ class OIFundingEngineAdapter:
         funding_values = funding_history.values()
         if not funding_values:
             # Return OI-only signal
-            return self._build_signal_oi_only(
-                current_oi, oi_change_pct, oi_direction, oi_result
-            )
+            return self._build_signal_oi_only(current_oi, oi_change_pct, oi_direction, oi_result)
 
         current_funding = funding_values[-1].funding_rate
         funding_rates = [f.funding_rate for f in funding_values]
@@ -1101,7 +1094,7 @@ class UnifiedScoreAdapter:
         """
         self._funding_history.append(rate)
         if len(self._funding_history) > self._max_funding_history:
-            self._funding_history = self._funding_history[-self._max_funding_history:]
+            self._funding_history = self._funding_history[-self._max_funding_history :]
 
     def _calculate_funding_stats(self) -> tuple[Optional[float], Optional[float]]:
         """
@@ -1118,7 +1111,7 @@ class UnifiedScoreAdapter:
 
         # Calculate standard deviation
         variance = sum((x - mean) ** 2 for x in self._funding_history) / n
-        std = variance ** 0.5
+        std = variance**0.5
 
         # Ensure std is not too small (avoid division issues)
         if std < 0.00001:
@@ -1165,8 +1158,12 @@ class UnifiedScoreAdapter:
         spoof_detected = False
         if book_signal:
             depth_imbalance = book_signal.imbalance
-            absorption_bullish = book_signal.absorption_detected and book_signal.absorption_side == "bid"
-            absorption_bearish = book_signal.absorption_detected and book_signal.absorption_side == "ask"
+            absorption_bullish = (
+                book_signal.absorption_detected and book_signal.absorption_side == "bid"
+            )
+            absorption_bearish = (
+                book_signal.absorption_detected and book_signal.absorption_side == "ask"
+            )
             spoof_detected = book_signal.spoof_detected
             # Bait = imbalance without volume confirmation.
             # The BookEngineAdapter already carries spoof_detected; for bait we check
@@ -1190,7 +1187,9 @@ class UnifiedScoreAdapter:
             self.add_funding_rate(current_funding)
 
             # Get funding history for percentile-based analysis
-            historical_funding = self._funding_history.copy() if len(self._funding_history) >= 10 else None
+            historical_funding = (
+                self._funding_history.copy() if len(self._funding_history) >= 10 else None
+            )
 
         unified = calculate_unified_score(
             delta_ratio=delta_ratio,

@@ -5,13 +5,14 @@ Demonstrates how to integrate the Trend Strength composite module
 with EMA Ribbon, Supertrend, and other systems for lag-free trend measurement.
 """
 
-from nlu_analyzer.indicators.trend_strength import (
-    TrendStrengthEngine,
-    TrendStrengthConfig,
-    Candle,
-    format_trend_strength_output
-)
 from typing import Dict
+
+from nlu_analyzer.indicators.trend_strength import (
+    Candle,
+    TrendStrengthConfig,
+    TrendStrengthEngine,
+    format_trend_strength_output,
+)
 
 
 def example_basic_integration():
@@ -30,37 +31,30 @@ def example_basic_integration():
     config = TrendStrengthConfig(
         # Timeframes
         timeframes=["1m", "5m", "1h"],
-
         # Smoothing and periods
         smooth_period=5,
         atr_period=14,
         rv_period=20,
-
         # EMA slope normalization
         ema_slope_strong_factor=0.20,
-
         # Ribbon normalization
         ribbon_wr_low=-0.10,
         ribbon_wr_high=0.20,
-
         # RV normalization
         rv_low=0.8,
         rv_high=2.0,
-
         # Component weights
         w_ema_slope=0.35,
         w_ribbon=0.25,
         w_rv=0.20,
         w_oi=0.20,
-
         # Safety caps
         cap_when_structure_range=50,
         cap_when_supertrend_chop=50,
         cap_when_rv_dead=25,
-
         # Bucketing
         bucket_weak_max=30.0,
-        bucket_emerging_max=60.0
+        bucket_emerging_max=60.0,
     )
 
     # ========== INITIALIZATION ==========
@@ -73,7 +67,7 @@ def example_basic_integration():
     historical_candles_by_tf = {
         "1m": generate_test_candles(100.0, 100, 0.002),
         "5m": generate_test_candles(100.0, 80, 0.003),
-        "1h": generate_test_candles(100.0, 60, 0.004)
+        "1h": generate_test_candles(100.0, 60, 0.004),
     }
 
     warmup_results = engine.warmup(historical_candles_by_tf)
@@ -86,22 +80,17 @@ def example_basic_integration():
 
     # Example: New 1m candle closes
     new_candle = Candle(
-        timestamp=100.0,
-        open=110.5,
-        high=110.8,
-        low=110.3,
-        close=110.7,
-        volume=50000.0
+        timestamp=100.0, open=110.5, high=110.8, low=110.3, close=110.7, volume=50000.0
     )
 
     # Get external indicators from other systems
     # (EMA Ribbon, Supertrend, Volume analyzer, etc.)
-    slope_50 = 0.0025              # From EMA system (slope magnitude)
-    ribbon_width_rate = 0.15       # From EMA Ribbon
-    rv = 1.5                       # From volume analyzer
-    oi_now = 100000.0              # Current OI
-    oi_prev = 97000.0              # Previous OI (for change rate calculation)
-    bias = "BULL"                  # From EMA or structure analysis
+    slope_50 = 0.0025  # From EMA system (slope magnitude)
+    ribbon_width_rate = 0.15  # From EMA Ribbon
+    rv = 1.5  # From volume analyzer
+    oi_now = 100000.0  # Current OI
+    oi_prev = 97000.0  # Previous OI (for change rate calculation)
+    bias = "BULL"  # From EMA or structure analysis
 
     # Update Trend Strength with directional bias
     result = engine.on_candle_close(
@@ -112,7 +101,7 @@ def example_basic_integration():
         rv=rv,
         oi_now=oi_now,
         oi_prev=oi_prev,
-        bias=bias  # NEW: Directional bias
+        bias=bias,  # NEW: Directional bias
     )
 
     print(f"\n[1m CANDLE CLOSED] Price: {new_candle.close:.2f}")
@@ -130,7 +119,7 @@ def example_basic_integration():
     latest_candles = {
         "1m": [new_candle],
         "5m": [Candle(100.0, 110.5, 111.5, 110.0, 111.0, 250000.0)],
-        "1h": [Candle(100.0, 109.0, 112.0, 108.5, 111.5, 3000000.0)]
+        "1h": [Candle(100.0, 109.0, 112.0, 108.5, 111.5, 3000000.0)],
     }
 
     # External indicators per timeframe (with directional bias)
@@ -141,7 +130,7 @@ def example_basic_integration():
             "rv": 1.5,
             "oi_now": 100000.0,
             "oi_prev": 97000.0,
-            "bias": "BULL"  # NEW
+            "bias": "BULL",  # NEW
         },
         "5m": {
             "slope_50": 0.0030,
@@ -149,7 +138,7 @@ def example_basic_integration():
             "rv": 1.7,
             "oi_now": 100000.0,
             "oi_prev": 96000.0,
-            "bias": "BULL"  # NEW
+            "bias": "BULL",  # NEW
         },
         "1h": {
             "slope_50": 0.0035,
@@ -157,18 +146,14 @@ def example_basic_integration():
             "rv": 1.8,
             "oi_now": 100000.0,
             "oi_prev": 95000.0,
-            "direction_bias": 1  # NEW: Can also use int directly
-        }
+            "direction_bias": 1,  # NEW: Can also use int directly
+        },
     }
 
     all_results = {}
     for tf, candles in latest_candles.items():
         for candle in candles:
-            all_results[tf] = engine.on_candle_close(
-                tf,
-                candle,
-                **external_by_tf[tf]
-            )
+            all_results[tf] = engine.on_candle_close(tf, candle, **external_by_tf[tf])
 
     print(format_trend_strength_output(all_results, compact=True))
 
@@ -217,22 +202,22 @@ def example_basic_integration():
             signals.append("  → Avoid adding to positions")
 
         # Component-specific insights
-        if ts_state.components_norm.get('ema_slope') is not None:
-            ema_comp = ts_state.components_norm['ema_slope']
+        if ts_state.components_norm.get("ema_slope") is not None:
+            ema_comp = ts_state.components_norm["ema_slope"]
             if ema_comp > 0.8:
                 signals.append(f"  EMA slope very strong ({ema_comp:.2f})")
             elif ema_comp < 0.3:
                 signals.append(f"  EMA slope weak ({ema_comp:.2f})")
 
-        if ts_state.components_norm.get('ribbon') is not None:
-            ribbon_comp = ts_state.components_norm['ribbon']
+        if ts_state.components_norm.get("ribbon") is not None:
+            ribbon_comp = ts_state.components_norm["ribbon"]
             if ribbon_comp > 0.7:
                 signals.append(f"  Ribbon expanding well ({ribbon_comp:.2f})")
             elif ribbon_comp < 0.2:
                 signals.append(f"  Ribbon contracting ({ribbon_comp:.2f})")
 
-        if ts_state.components_norm.get('rv') is not None:
-            rv_comp = ts_state.components_norm['rv']
+        if ts_state.components_norm.get("rv") is not None:
+            rv_comp = ts_state.components_norm["rv"]
             if rv_comp > 0.7:
                 signals.append(f"  Volume strong ({rv_comp:.2f})")
             elif rv_comp < 0.3:
@@ -277,7 +262,7 @@ def example_directional_signing():
         slope_50=0.0030,
         ribbon_width_rate=0.15,
         rv=1.5,
-        bias="BULL"  # or direction_bias=+1
+        bias="BULL",  # or direction_bias=+1
     )
     print(f"  Strength (unsigned): {result_bull.strength_smooth:.1f}")
     print(f"  Direction bias: {result_bull.direction_bias:+d}")
@@ -292,7 +277,7 @@ def example_directional_signing():
         slope_50=0.0030,
         ribbon_width_rate=0.15,
         rv=1.5,
-        bias="BEAR"  # or direction_bias=-1
+        bias="BEAR",  # or direction_bias=-1
     )
     print(f"  Strength (unsigned): {result_bear.strength_smooth:.1f}")
     print(f"  Direction bias: {result_bear.direction_bias:+d}")
@@ -307,7 +292,7 @@ def example_directional_signing():
         slope_50=0.0030,
         ribbon_width_rate=0.15,
         rv=1.5,
-        bias="NEUTRAL"  # or direction_bias=0
+        bias="NEUTRAL",  # or direction_bias=0
     )
     print(f"  Strength (unsigned): {result_neutral.strength_smooth:.1f}")
     print(f"  Direction bias: {result_neutral.direction_bias:+d}")
@@ -323,7 +308,7 @@ def example_directional_signing():
         ribbon_width_rate=0.15,
         rv=1.5,
         bias="BULL",  # This will be ignored
-        direction_bias=-1  # This takes precedence
+        direction_bias=-1,  # This takes precedence
     )
     print(f"  bias='BULL' but direction_bias=-1")
     print(f"  Direction bias used: {result_int.direction_bias:+d}")
@@ -347,14 +332,9 @@ def generate_test_candles(start_price: float, count: int, trend: float):
         low = price * 0.998
         close = price * (1 + trend)
 
-        candles.append(Candle(
-            timestamp=float(i),
-            open=price,
-            high=high,
-            low=low,
-            close=close,
-            volume=100000.0
-        ))
+        candles.append(
+            Candle(timestamp=float(i), open=price, high=high, low=low, close=close, volume=100000.0)
+        )
 
         price = close
 
@@ -362,6 +342,7 @@ def generate_test_candles(start_price: float, count: int, trend: float):
 
 
 # ========== INTEGRATION WITH OTHER MODULES ==========
+
 
 def example_with_ema_ribbon_and_supertrend():
     """

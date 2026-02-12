@@ -17,14 +17,15 @@ Formula:
 - Histogram = MACD Line - Signal Line
 """
 
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List
 from collections import deque
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
 @dataclass
 class Candle:
     """OHLCV candle data."""
+
     timestamp: int
     open: float
     high: float
@@ -36,6 +37,7 @@ class Candle:
 @dataclass
 class MACDHistConfig:
     """Configuration for MACD Histogram."""
+
     timeframes: List[str] = field(default_factory=lambda: ["1m", "5m", "1h"])
 
     # MACD periods (standard: 12, 26, 9)
@@ -44,8 +46,8 @@ class MACDHistConfig:
     signal_period: int = 9
 
     # Confirmation (anti-noise)
-    confirm_bars_shift: int = 2     # Bars to confirm shift
-    confirm_bars_weaken: int = 2    # Bars to confirm weakening
+    confirm_bars_shift: int = 2  # Bars to confirm shift
+    confirm_bars_weaken: int = 2  # Bars to confirm weakening
 
     # Normalization
     normalize: str = "atr"  # "atr" / "price" / "none"
@@ -57,13 +59,14 @@ class MACDHistConfig:
     suppress_when_squeeze: bool = False
 
     # Thresholds (for normalized or raw hist/slope)
-    slope_thr_norm: float = 0.05   # Minimum slope magnitude
-    hist_thr_norm: float = 0.02    # Near-zero threshold
+    slope_thr_norm: float = 0.05  # Minimum slope magnitude
+    hist_thr_norm: float = 0.02  # Near-zero threshold
 
 
 @dataclass
 class MACDHistState:
     """MACD Histogram state for a timeframe."""
+
     ema_fast: Optional[float]
     ema_slow: Optional[float]
     macd: Optional[float]
@@ -71,9 +74,9 @@ class MACDHistState:
     hist: Optional[float]
     hist_slope: Optional[float]
     hist_accel: Optional[float]  # Second derivative (optional)
-    hist_norm: Optional[float]   # Normalized histogram
-    phase: str                   # BULL / BEAR / WARMUP
-    event: str                   # BULL_SHIFT / BEAR_SHIFT / BULL_WEAKEN / BEAR_WEAKEN / NONE
+    hist_norm: Optional[float]  # Normalized histogram
+    phase: str  # BULL / BEAR / WARMUP
+    event: str  # BULL_SHIFT / BEAR_SHIFT / BULL_WEAKEN / BEAR_WEAKEN / NONE
     event_confidence_0_100: Optional[float]
     debug: Dict
 
@@ -166,7 +169,7 @@ class MACDHistogramEngine:
         atr: Optional[float] = None,
         atr_percent: Optional[float] = None,
         chop_state: Optional[str] = None,
-        atr_exp_state: Optional[str] = None
+        atr_exp_state: Optional[str] = None,
     ) -> MACDHistState:
         """
         Process candle close and update MACD histogram state.
@@ -225,18 +228,14 @@ class MACDHistogramEngine:
                 self._normalize_hist(state, candle.close, atr, atr_percent)
 
                 # Detect events
-                self._detect_events(
-                    state,
-                    chop_state=chop_state,
-                    atr_exp_state=atr_exp_state
-                )
+                self._detect_events(state, chop_state=chop_state, atr_exp_state=atr_exp_state)
 
         return self._build_state(state)
 
     def warmup(
         self,
         candles_by_tf: Dict[str, List[Candle]],
-        atr_by_tf: Optional[Dict[str, List[float]]] = None
+        atr_by_tf: Optional[Dict[str, List[float]]] = None,
     ) -> Dict[str, MACDHistState]:
         """
         Warmup engine with historical candles.
@@ -278,7 +277,7 @@ class MACDHistogramEngine:
         state: _TimeframeState,
         close: float,
         atr: Optional[float],
-        atr_percent: Optional[float]
+        atr_percent: Optional[float],
     ) -> None:
         """Normalize histogram by ATR or price."""
         if state.hist is None:
@@ -290,8 +289,9 @@ class MACDHistogramEngine:
             state.hist_norm_prev = state.hist_norm
             state.hist_norm = state.hist / denom
             # Clip
-            state.hist_norm = max(-self.config.clip_norm,
-                                 min(self.config.clip_norm, state.hist_norm))
+            state.hist_norm = max(
+                -self.config.clip_norm, min(self.config.clip_norm, state.hist_norm)
+            )
 
         elif self.config.normalize == "atr":
             # Normalize by ATR
@@ -308,18 +308,16 @@ class MACDHistogramEngine:
             state.hist_norm_prev = state.hist_norm
             state.hist_norm = state.hist / denom
             # Clip
-            state.hist_norm = max(-self.config.clip_norm,
-                                 min(self.config.clip_norm, state.hist_norm))
+            state.hist_norm = max(
+                -self.config.clip_norm, min(self.config.clip_norm, state.hist_norm)
+            )
 
         else:  # "none"
             state.hist_norm_prev = state.hist_norm
             state.hist_norm = None
 
     def _detect_events(
-        self,
-        state: _TimeframeState,
-        chop_state: Optional[str],
-        atr_exp_state: Optional[str]
+        self, state: _TimeframeState, chop_state: Optional[str], atr_exp_state: Optional[str]
     ) -> None:
         """Detect momentum shift and weakening events."""
         if state.hist is None or state.hist_slope is None:
@@ -384,11 +382,7 @@ class MACDHistogramEngine:
             state.weaken_count = 0
 
     def _calculate_event_confidence(
-        self,
-        state: _TimeframeState,
-        event: str,
-        h: float,
-        s: float
+        self, state: _TimeframeState, event: str, h: float, s: float
     ) -> Optional[float]:
         """Calculate event confidence (0-100)."""
         if event == "NONE":
@@ -435,14 +429,18 @@ class MACDHistogramEngine:
         # Apply gates (suppress events but keep values)
         gates_suppress = False
 
-        if (self.config.suppress_when_chop and
-            hasattr(state, '_chop_state') and
-            getattr(state, '_chop_state') == "CHOP"):
+        if (
+            self.config.suppress_when_chop
+            and hasattr(state, "_chop_state")
+            and getattr(state, "_chop_state") == "CHOP"
+        ):
             gates_suppress = True
 
-        if (self.config.suppress_when_squeeze and
-            hasattr(state, '_atr_exp_state') and
-            getattr(state, '_atr_exp_state') == "SQUEEZE"):
+        if (
+            self.config.suppress_when_squeeze
+            and hasattr(state, "_atr_exp_state")
+            and getattr(state, "_atr_exp_state") == "SQUEEZE"
+        ):
             gates_suppress = True
 
         if gates_suppress:
@@ -451,9 +449,11 @@ class MACDHistogramEngine:
         # Calculate confidence
         if state.hist is not None and state.hist_slope is not None:
             h = state.hist_norm if state.hist_norm is not None else state.hist
-            s = (state.hist_norm - state.hist_norm_prev
-                 if state.hist_norm is not None and state.hist_norm_prev is not None
-                 else state.hist_slope)
+            s = (
+                state.hist_norm - state.hist_norm_prev
+                if state.hist_norm is not None and state.hist_norm_prev is not None
+                else state.hist_slope
+            )
             event_conf = self._calculate_event_confidence(state, event, h, s)
         else:
             event_conf = None
@@ -487,7 +487,7 @@ class MACDHistogramEngine:
                 "weaken_count": state.weaken_count,
                 "confirm_bars_shift": self.config.confirm_bars_shift,
                 "confirm_bars_weaken": self.config.confirm_bars_weaken,
-            }
+            },
         )
 
 

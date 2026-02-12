@@ -4,12 +4,12 @@ Tests for VWAP Interaction State Machine
 
 import pytest
 from vwap_state_machine import (
-    VWAPStateMachine,
-    VWAPStateConfig,
-    VWAPInteractionState,
-    Position,
     InteractionState,
-    Regime
+    Position,
+    Regime,
+    VWAPInteractionState,
+    VWAPStateConfig,
+    VWAPStateMachine,
 )
 
 
@@ -21,12 +21,7 @@ class TestPositionClassification:
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 
-        result = sm.on_update(
-            tf="1m",
-            timestamp=1,
-            close=100.5,
-            vwap=100.0
-        )
+        result = sm.on_update(tf="1m", timestamp=1, close=100.5, vwap=100.0)
 
         assert result.position == Position.ABOVE.value
         assert result.side == 1
@@ -37,12 +32,7 @@ class TestPositionClassification:
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 
-        result = sm.on_update(
-            tf="1m",
-            timestamp=1,
-            close=99.5,
-            vwap=100.0
-        )
+        result = sm.on_update(tf="1m", timestamp=1, close=99.5, vwap=100.0)
 
         assert result.position == Position.BELOW.value
         assert result.side == -1
@@ -54,12 +44,7 @@ class TestPositionClassification:
         sm = VWAPStateMachine(config)
 
         # Within 0.01% (0.0001) for 1m
-        result = sm.on_update(
-            tf="1m",
-            timestamp=1,
-            close=100.009,
-            vwap=100.0
-        )
+        result = sm.on_update(tf="1m", timestamp=1, close=100.009, vwap=100.0)
 
         assert result.position == Position.AT.value
         assert result.side == 0
@@ -71,11 +56,7 @@ class TestPositionClassification:
 
         # Within 0.15 sigma
         result = sm.on_update(
-            tf="1m",
-            timestamp=1,
-            close=100.1,
-            vwap=100.0,
-            std=1.0  # 0.1 / 1.0 = 0.1 < 0.15
+            tf="1m", timestamp=1, close=100.1, vwap=100.0, std=1.0  # 0.1 / 1.0 = 0.1 < 0.15
         )
 
         assert result.position == Position.AT.value
@@ -87,13 +68,7 @@ class TestPositionClassification:
         sm = VWAPStateMachine(config)
 
         # ATR% = 0.005, touch_atr = 0.05 × 0.005 = 0.00025
-        result = sm.on_update(
-            tf="1m",
-            timestamp=1,
-            close=100.02,
-            vwap=100.0,
-            atr_percent=0.005
-        )
+        result = sm.on_update(tf="1m", timestamp=1, close=100.02, vwap=100.0, atr_percent=0.005)
 
         assert result.position == Position.AT.value
         assert result.side == 0
@@ -113,12 +88,7 @@ class TestCrossingsDetection:
 
         result = None
         for i, close in enumerate(closes):
-            result = sm.on_update(
-                tf="1m",
-                timestamp=i,
-                close=close,
-                vwap=vwap
-            )
+            result = sm.on_update(tf="1m", timestamp=i, close=close, vwap=vwap)
 
         # Should have 2 crossings: above->below, below->above
         assert result.crossings_20 == 2
@@ -136,12 +106,7 @@ class TestCrossingsDetection:
 
         result = None
         for i, close in enumerate(closes):
-            result = sm.on_update(
-                tf="1m",
-                timestamp=i,
-                close=close,
-                vwap=vwap
-            )
+            result = sm.on_update(tf="1m", timestamp=i, close=close, vwap=vwap)
 
         # Should have many crossings (19 for alternating pattern)
         assert result.crossings_20 >= 15
@@ -152,10 +117,7 @@ class TestReclaimState:
 
     def test_reclaim_from_below_trend(self):
         """Test RECLAIM when price crosses from below in TREND"""
-        config = VWAPStateConfig(
-            N_reclaim_trend=2,
-            reclaim_buffer_pct_by_tf={"1m": 0.001}
-        )
+        config = VWAPStateConfig(N_reclaim_trend=2, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -173,10 +135,7 @@ class TestReclaimState:
 
     def test_reclaim_requires_confirmation_in_range(self):
         """Test RECLAIM requires confirmation in RANGE regime"""
-        config = VWAPStateConfig(
-            N_reclaim_range=2,
-            reclaim_buffer_pct_by_tf={"1m": 0.001}
-        )
+        config = VWAPStateConfig(N_reclaim_range=2, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -201,10 +160,7 @@ class TestReclaimState:
 
     def test_reclaim_reset_on_drop_below_buffer(self):
         """Test RECLAIM hold resets if price drops back below buffer"""
-        config = VWAPStateConfig(
-            N_reclaim_trend=3,
-            reclaim_buffer_pct_by_tf={"1m": 0.001}
-        )
+        config = VWAPStateConfig(N_reclaim_trend=3, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -232,10 +188,7 @@ class TestLossState:
 
     def test_loss_from_above_trend(self):
         """Test LOSS when price crosses from above in TREND"""
-        config = VWAPStateConfig(
-            N_loss_trend=2,
-            reclaim_buffer_pct_by_tf={"1m": 0.001}
-        )
+        config = VWAPStateConfig(N_loss_trend=2, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -253,10 +206,7 @@ class TestLossState:
 
     def test_loss_requires_confirmation_in_range(self):
         """Test LOSS requires confirmation in RANGE"""
-        config = VWAPStateConfig(
-            N_loss_range=2,
-            reclaim_buffer_pct_by_tf={"1m": 0.001}
-        )
+        config = VWAPStateConfig(N_loss_range=2, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -285,10 +235,7 @@ class TestRejectState:
 
     def test_reject_after_touch_and_move_away(self):
         """Test REJECT after touching VWAP and moving away"""
-        config = VWAPStateConfig(
-            N_reject_trend=3,
-            touch_pct_by_tf={"1m": 0.0001}
-        )
+        config = VWAPStateConfig(N_reject_trend=3, touch_pct_by_tf={"1m": 0.0001})
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -305,10 +252,7 @@ class TestRejectState:
 
     def test_reject_requires_recent_touch(self):
         """Test REJECT requires recent touch (within 2 bars)"""
-        config = VWAPStateConfig(
-            N_reject_trend=2,
-            touch_pct_by_tf={"1m": 0.0001}
-        )
+        config = VWAPStateConfig(N_reject_trend=2, touch_pct_by_tf={"1m": 0.0001})
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -329,10 +273,7 @@ class TestRejectState:
 
     def test_reject_reset_on_touch(self):
         """Test REJECT hold resets on new touch"""
-        config = VWAPStateConfig(
-            N_reject_trend=3,
-            touch_pct_by_tf={"1m": 0.0001}
-        )
+        config = VWAPStateConfig(N_reject_trend=3, touch_pct_by_tf={"1m": 0.0001})
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -388,11 +329,7 @@ class TestAcceptState:
 
     def test_accept_suppressed_in_chop(self):
         """Test ACCEPT suppressed when crossings high (chop)"""
-        config = VWAPStateConfig(
-            N_accept_trend=3,
-            crossings_chop_threshold=4,
-            window_crossings=10
-        )
+        config = VWAPStateConfig(N_accept_trend=3, crossings_chop_threshold=4, window_crossings=10)
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -417,10 +354,7 @@ class TestChopSuppression:
 
     def test_high_crossings_infers_range_regime(self):
         """Test high crossings automatically infers RANGE regime"""
-        config = VWAPStateConfig(
-            crossings_chop_threshold=4,
-            window_crossings=10
-        )
+        config = VWAPStateConfig(crossings_chop_threshold=4, window_crossings=10)
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -431,15 +365,11 @@ class TestChopSuppression:
             result = sm.on_update("1m", i, close, vwap)
 
         # Should infer RANGE regime
-        assert result.debug['regime_used'] == Regime.RANGE.value
+        assert result.debug["regime_used"] == Regime.RANGE.value
 
     def test_chop_suppression_overridden_by_strong_confirmation(self):
         """Test chop suppression can be overridden with strong confirmation"""
-        config = VWAPStateConfig(
-            N_accept_trend=3,
-            crossings_chop_threshold=4,
-            window_crossings=10
-        )
+        config = VWAPStateConfig(N_accept_trend=3, crossings_chop_threshold=4, window_crossings=10)
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -466,10 +396,7 @@ class TestRegimeAwareBehavior:
 
     def test_trend_regime_uses_trend_params(self):
         """Test TREND regime uses trend hold parameters"""
-        config = VWAPStateConfig(
-            N_reclaim_trend=2,
-            N_reclaim_range=4
-        )
+        config = VWAPStateConfig(N_reclaim_trend=2, N_reclaim_range=4)
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -483,14 +410,11 @@ class TestRegimeAwareBehavior:
 
         # Should RECLAIM after 2 bars (TREND params)
         assert result.state == InteractionState.RECLAIM.value
-        assert result.debug['N_reclaim'] == 2
+        assert result.debug["N_reclaim"] == 2
 
     def test_range_regime_uses_range_params(self):
         """Test RANGE regime uses range hold parameters"""
-        config = VWAPStateConfig(
-            N_reclaim_trend=2,
-            N_reclaim_range=4
-        )
+        config = VWAPStateConfig(N_reclaim_trend=2, N_reclaim_range=4)
         sm = VWAPStateMachine(config)
 
         vwap = 100.0
@@ -510,7 +434,7 @@ class TestRegimeAwareBehavior:
 
         # Now should RECLAIM
         assert result.state == InteractionState.RECLAIM.value
-        assert result.debug['N_reclaim'] == 4
+        assert result.debug["N_reclaim"] == 4
 
 
 class TestStability:
@@ -569,9 +493,7 @@ class TestStatePriority:
     def test_reclaim_has_priority_over_accept(self):
         """Test RECLAIM takes priority over ACCEPT"""
         config = VWAPStateConfig(
-            N_reclaim_trend=2,
-            N_accept_trend=2,
-            reclaim_buffer_pct_by_tf={"1m": 0.001}
+            N_reclaim_trend=2, N_accept_trend=2, reclaim_buffer_pct_by_tf={"1m": 0.001}
         )
         sm = VWAPStateMachine(config)
 
@@ -590,9 +512,7 @@ class TestStatePriority:
     def test_loss_has_priority_over_reject(self):
         """Test LOSS takes priority over REJECT"""
         config = VWAPStateConfig(
-            N_loss_trend=2,
-            N_reject_trend=2,
-            reclaim_buffer_pct_by_tf={"1m": 0.001}
+            N_loss_trend=2, N_reject_trend=2, reclaim_buffer_pct_by_tf={"1m": 0.001}
         )
         sm = VWAPStateMachine(config)
 

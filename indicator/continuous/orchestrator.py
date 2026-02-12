@@ -14,42 +14,37 @@ import json
 import logging
 import os
 import time
-from typing import Optional, Callable, List, Dict, Any
 from dataclasses import dataclass
-
-from .data_types import (
-    TradeEvent,
-    OrderbookSnapshot,
-    OIUpdate,
-    FundingUpdate,
-    MarketState,
-    VolumeSignal,
-    DeltaSignal,
-    BookSignal,
-    OIFundingSignal,
-    IngestionConfig,
-    WindowConfig,
-)
-from .ingestion import DataIngestionManager
-from .rolling_window import MultiTimeframeWindows
-from .engine_adapters import (
-    VolumeEngineAdapter,
-    VolumeAnalysisAdapter,
-    DeltaEngineAdapter,
-    BookEngineAdapter,
-    OIFundingEngineAdapter,
-    UnifiedScoreAdapter,
-)
-from .atr_expansion_adapter import ATRExpansionAdapter, ATRSignal
-from .state_machine import (
-    TradingStateMachine,
-    MarketRegime,
-    StateTransition,
-    TradeSignal,
-)
-from .metrics import MetricsCollector, get_metrics
+from typing import Any, Callable, Dict, List, Optional
 
 from indicators import VolatilityIndicators
+
+from .atr_expansion_adapter import ATRExpansionAdapter, ATRSignal
+from .data_types import (
+    BookSignal,
+    DeltaSignal,
+    FundingUpdate,
+    IngestionConfig,
+    MarketState,
+    OIFundingSignal,
+    OIUpdate,
+    OrderbookSnapshot,
+    TradeEvent,
+    VolumeSignal,
+    WindowConfig,
+)
+from .engine_adapters import (
+    BookEngineAdapter,
+    DeltaEngineAdapter,
+    OIFundingEngineAdapter,
+    UnifiedScoreAdapter,
+    VolumeAnalysisAdapter,
+    VolumeEngineAdapter,
+)
+from .ingestion import DataIngestionManager
+from .metrics import MetricsCollector, get_metrics
+from .rolling_window import MultiTimeframeWindows
+from .state_machine import MarketRegime, StateTransition, TradeSignal, TradingStateMachine
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +52,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AnalyzerConfig:
     """Configuration for the continuous analyzer."""
+
     # Ingestion settings
     ingestion: IngestionConfig = None
 
@@ -71,7 +67,7 @@ class AnalyzerConfig:
     min_volume_ratio: float = 0.7
     state_cooldown_ms: int = 5000
     min_state_duration_ms: int = 15000  # Min time in risk-on state before switching
-    state_confirmation_count: int = 3   # Consecutive ticks required for risk-on transition
+    state_confirmation_count: int = 3  # Consecutive ticks required for risk-on transition
 
     # Primary decision window (seconds)
     primary_window_seconds: int = 60
@@ -400,7 +396,7 @@ class ContinuousAnalyzer:
         if current_price > 0:
             self._price_history.append((now, current_price))
             if len(self._price_history) > self._max_price_history:
-                self._price_history = self._price_history[-self._max_price_history:]
+                self._price_history = self._price_history[-self._max_price_history :]
 
         # Calculate price change
         price_change_pct = 0.0
@@ -426,7 +422,11 @@ class ContinuousAnalyzer:
                 if len(all_oi) >= 2:
                     oi_values = all_oi[-2:]
             if len(oi_values) >= 2 and oi_values[0].open_interest > 0:
-                oi_change_pct = (oi_values[-1].open_interest - oi_values[0].open_interest) / oi_values[0].open_interest * 100
+                oi_change_pct = (
+                    (oi_values[-1].open_interest - oi_values[0].open_interest)
+                    / oi_values[0].open_interest
+                    * 100
+                )
 
         # Compute Volume Signal (with latency tracking)
         primary_window = windows.get_window(self.config.primary_window_seconds)
@@ -445,8 +445,7 @@ class ContinuousAnalyzer:
             # Compute ATR expansion signal (timing gate)
             with self._metrics.time("atr_expansion"):
                 self._atr_adapter.compute_from_window(
-                    f"{self.config.primary_window_seconds}s",
-                    primary_window
+                    f"{self.config.primary_window_seconds}s", primary_window
                 )
 
         # Compute Delta Signal (with latency tracking)
@@ -554,7 +553,9 @@ class ContinuousAnalyzer:
 
         return sum(scores) / len(scores) if scores else 0.0
 
-    def _compute_atr(self, windows: MultiTimeframeWindows) -> tuple[Optional[float], Optional[float]]:
+    def _compute_atr(
+        self, windows: MultiTimeframeWindows
+    ) -> tuple[Optional[float], Optional[float]]:
         """Compute ATR from recent trade data."""
         atr_window = windows.get_window(self.config.atr_window_seconds)
         if atr_window is None or len(atr_window) < self.config.atr_period + 1:
@@ -568,7 +569,9 @@ class ContinuousAnalyzer:
 
         bar_count = max(self.config.atr_bar_count, self.config.atr_period + 1)
         opens, highs, lows, closes, _ = self._trades_to_ohlcv(trades, bar_count=bar_count)
-        atr_values = VolatilityIndicators.calculate_atr(highs, lows, closes, period=self.config.atr_period)
+        atr_values = VolatilityIndicators.calculate_atr(
+            highs, lows, closes, period=self.config.atr_period
+        )
         if not atr_values:
             return None, None
         atr = atr_values[-1]
@@ -588,7 +591,7 @@ class ContinuousAnalyzer:
         opens, highs, lows, closes, volumes = [], [], [], [], []
 
         for i in range(0, len(trades), trades_per_bar):
-            bar_trades = trades[i:i + trades_per_bar]
+            bar_trades = trades[i : i + trades_per_bar]
             if not bar_trades:
                 continue
             prices = [t.price for t in bar_trades]
@@ -656,6 +659,7 @@ class ContinuousAnalyzer:
                 break
             except Exception as e:
                 import traceback
+
                 logger.error(f"Signal loop error: {e}")
                 logger.error(f"Traceback: {traceback.format_exc()}")
                 self._metrics.increment("errors")
@@ -700,7 +704,7 @@ class ContinuousAnalyzer:
                         parsed_history.append((int(item[0]), float(item[1])))
                     except (TypeError, ValueError):
                         continue
-            self._price_history = parsed_history[-self._max_price_history:]
+            self._price_history = parsed_history[-self._max_price_history :]
             warmup = payload.get("warmup", {})
             self._warmup_start_time = warmup.get("start_time")
             self._warmup_complete = warmup.get("complete", False)
@@ -725,7 +729,7 @@ class ContinuousAnalyzer:
                 "timestamp_ms": int(time.time() * 1000),
                 "state_machine": self._state_machine.snapshot(),
                 "delta_engine": self._delta_adapter.snapshot(),
-                "price_history": self._price_history[-self._max_price_history:],
+                "price_history": self._price_history[-self._max_price_history :],
                 "warmup": {
                     "start_time": self._warmup_start_time,
                     "complete": self._warmup_complete,
@@ -814,9 +818,15 @@ class ContinuousAnalyzer:
             "current_state": self._state_machine.current_state.value,
             "state_duration_ms": self._state_machine.state_duration_ms,
             "latest_price": self._ingestion.latest_price,
-            "unified_score": self._latest_market_state.unified_score if self._latest_market_state else None,
-            "confidence": self._latest_market_state.confidence if self._latest_market_state else None,
-            "data_quality": self._latest_market_state.data_quality if self._latest_market_state else None,
+            "unified_score": (
+                self._latest_market_state.unified_score if self._latest_market_state else None
+            ),
+            "confidence": (
+                self._latest_market_state.confidence if self._latest_market_state else None
+            ),
+            "data_quality": (
+                self._latest_market_state.data_quality if self._latest_market_state else None
+            ),
             "stream_states": {k: v.value for k, v in self._ingestion.get_state().items()},
         }
 
@@ -852,26 +862,68 @@ class ContinuousAnalyzer:
         """Get summary of current signals."""
         return {
             "volume": {
-                "delta_ratio": self._latest_volume_signal.delta_ratio if self._latest_volume_signal else None,
-                "relative_volume": self._latest_volume_signal.relative_volume if self._latest_volume_signal else None,
-                "direction": self._latest_volume_signal.direction.value if self._latest_volume_signal else None,
-                "is_climax": self._latest_volume_signal.is_climax if self._latest_volume_signal else None,
+                "delta_ratio": (
+                    self._latest_volume_signal.delta_ratio if self._latest_volume_signal else None
+                ),
+                "relative_volume": (
+                    self._latest_volume_signal.relative_volume
+                    if self._latest_volume_signal
+                    else None
+                ),
+                "direction": (
+                    self._latest_volume_signal.direction.value
+                    if self._latest_volume_signal
+                    else None
+                ),
+                "is_climax": (
+                    self._latest_volume_signal.is_climax if self._latest_volume_signal else None
+                ),
             },
             "delta": {
                 "cvd": self._latest_delta_signal.cvd if self._latest_delta_signal else None,
-                "is_divergent": self._latest_delta_signal.is_divergent if self._latest_delta_signal else None,
-                "who_aggressing": self._latest_delta_signal.who_aggressing if self._latest_delta_signal else None,
+                "is_divergent": (
+                    self._latest_delta_signal.is_divergent if self._latest_delta_signal else None
+                ),
+                "who_aggressing": (
+                    self._latest_delta_signal.who_aggressing if self._latest_delta_signal else None
+                ),
             },
             "book": {
-                "imbalance": self._latest_book_signal.imbalance if self._latest_book_signal else None,
-                "path": self._latest_book_signal.path_of_least_resistance if self._latest_book_signal else None,
-                "absorption": self._latest_book_signal.absorption_side if self._latest_book_signal and self._latest_book_signal.absorption_detected else None,
+                "imbalance": (
+                    self._latest_book_signal.imbalance if self._latest_book_signal else None
+                ),
+                "path": (
+                    self._latest_book_signal.path_of_least_resistance
+                    if self._latest_book_signal
+                    else None
+                ),
+                "absorption": (
+                    self._latest_book_signal.absorption_side
+                    if self._latest_book_signal and self._latest_book_signal.absorption_detected
+                    else None
+                ),
             },
             "oi_funding": {
-                "oi_direction": self._latest_oi_funding_signal.oi_direction if self._latest_oi_funding_signal else None,
-                "regime": self._latest_oi_funding_signal.regime if self._latest_oi_funding_signal else None,
-                "crowd_position": self._latest_oi_funding_signal.crowd_position if self._latest_oi_funding_signal else None,
-                "squeeze_risk": self._latest_oi_funding_signal.squeeze_risk if self._latest_oi_funding_signal else None,
+                "oi_direction": (
+                    self._latest_oi_funding_signal.oi_direction
+                    if self._latest_oi_funding_signal
+                    else None
+                ),
+                "regime": (
+                    self._latest_oi_funding_signal.regime
+                    if self._latest_oi_funding_signal
+                    else None
+                ),
+                "crowd_position": (
+                    self._latest_oi_funding_signal.crowd_position
+                    if self._latest_oi_funding_signal
+                    else None
+                ),
+                "squeeze_risk": (
+                    self._latest_oi_funding_signal.squeeze_risk
+                    if self._latest_oi_funding_signal
+                    else None
+                ),
             },
         }
 
@@ -904,13 +956,13 @@ class ContinuousAnalyzer:
     def get_all_full_results(self):
         """Get all full analysis results in a dict for convenience."""
         return {
-            'volume_analysis': self.get_volume_analysis_full(),
-            'volume_engine': self.get_volume_engine_full(),
-            'orderbook': self.get_orderbook_analysis_full(),
-            'oi': self.get_oi_analysis_full(),
-            'funding': self.get_funding_analysis_full(),
-            'unified_score': self.get_unified_score_full(),
-            'atr_signals': self.get_atr_signals(),
+            "volume_analysis": self.get_volume_analysis_full(),
+            "volume_engine": self.get_volume_engine_full(),
+            "orderbook": self.get_orderbook_analysis_full(),
+            "oi": self.get_oi_analysis_full(),
+            "funding": self.get_funding_analysis_full(),
+            "unified_score": self.get_unified_score_full(),
+            "atr_signals": self.get_atr_signals(),
         }
 
     def get_atr_signal(self, timeframe: str) -> Optional[ATRSignal]:

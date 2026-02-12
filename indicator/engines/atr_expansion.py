@@ -17,8 +17,7 @@ All computations are O(1) per candle using rolling windows.
 
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Optional, Dict, List
-
+from typing import Dict, List, Optional
 
 # ============================================================================
 # CONSTANTS
@@ -31,9 +30,11 @@ EPS = 1e-12  # Epsilon for safe division
 # DATA STRUCTURES
 # ============================================================================
 
+
 @dataclass
 class Candle:
     """OHLCV candle data."""
+
     timestamp: int  # Unix timestamp in ms
     open: float
     high: float
@@ -45,6 +46,7 @@ class Candle:
 @dataclass
 class ATRExpansionConfig:
     """Configuration for ATR expansion analysis."""
+
     timeframes: List[str] = field(default_factory=lambda: ["1m", "5m", "1h"])
     atr_period: int = 14  # Wilder ATR period
     sma_period: int = 20  # SMA period for TR and ATR
@@ -61,6 +63,7 @@ class ATRExpansionConfig:
 @dataclass
 class ATRExpansionState:
     """ATR expansion state for a single timeframe."""
+
     tr: float  # Current True Range
     atr: Optional[float] = None  # Current ATR (None until seeded)
     atr_percent: Optional[float] = None  # ATR as % of price
@@ -77,6 +80,7 @@ class ATRExpansionState:
 # ============================================================================
 # INTERNAL STATE (PER TIMEFRAME)
 # ============================================================================
+
 
 class _TimeframeState:
     """Internal state for a single timeframe (O(1) updates)."""
@@ -105,6 +109,7 @@ class _TimeframeState:
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
+
 
 def _clip(x: float, lo: float, hi: float) -> float:
     """Clip value to [lo, hi]."""
@@ -146,9 +151,7 @@ def _update_rolling_sum(deque_obj: deque, new_value: float, rolling_sum: float) 
 
 
 def _classify_vol_state(
-    atr_exp: float,
-    atr_exp_slope: Optional[float],
-    config: ATRExpansionConfig
+    atr_exp: float, atr_exp_slope: Optional[float], config: ATRExpansionConfig
 ) -> str:
     """
     Classify volatility state based on ATR expansion.
@@ -156,9 +159,11 @@ def _classify_vol_state(
     Returns: SQUEEZE / NORMAL / EXPANSION / EXTREME / FADE_RISK
     """
     # Check for FADE_RISK first (high expansion but falling)
-    if (atr_exp >= config.expansion_thr and
-        atr_exp_slope is not None and
-        atr_exp_slope <= config.fade_slope_thr):
+    if (
+        atr_exp >= config.expansion_thr
+        and atr_exp_slope is not None
+        and atr_exp_slope <= config.fade_slope_thr
+    ):
         return "FADE_RISK"
 
     # Normal state classification
@@ -173,10 +178,7 @@ def _classify_vol_state(
 
 
 def _calculate_vol_score(
-    atr_exp: float,
-    vol_state: str,
-    tr_spike: Optional[float],
-    config: ATRExpansionConfig
+    atr_exp: float, vol_state: str, tr_spike: Optional[float], config: ATRExpansionConfig
 ) -> float:
     """
     Calculate volatility score (0-100) based on ATR expansion.
@@ -185,9 +187,7 @@ def _calculate_vol_score(
     """
     # Base score from ATR expansion (0 to 1 range)
     base = _clip(
-        (atr_exp - config.squeeze_thr) / (config.extreme_thr - config.squeeze_thr + EPS),
-        0.0,
-        1.0
+        (atr_exp - config.squeeze_thr) / (config.extreme_thr - config.squeeze_thr + EPS), 0.0, 1.0
     )
     score = 100 * base
 
@@ -215,6 +215,7 @@ def _calculate_vol_score(
 # ============================================================================
 # ATR EXPANSION ENGINE
 # ============================================================================
+
 
 class ATRExpansionEngine:
     """
@@ -259,10 +260,7 @@ class ATRExpansionEngine:
         return results
 
     def on_candle_close(
-        self,
-        tf: str,
-        candle: Candle,
-        external_atr_percent: Optional[float] = None
+        self, tf: str, candle: Candle, external_atr_percent: Optional[float] = None
     ) -> ATRExpansionState:
         """
         Process a candle close for a given timeframe.
@@ -292,10 +290,7 @@ class ATRExpansionEngine:
                 state.atr = sum(state.tr_seed_deque) / len(state.tr_seed_deque)
         else:
             # Wilder smoothing: ATR = (ATR_prev * (n-1) + TR) / n
-            state.atr = (
-                (state.atr * (self.config.atr_period - 1) + tr) /
-                self.config.atr_period
-            )
+            state.atr = (state.atr * (self.config.atr_period - 1) + tr) / self.config.atr_period
 
         # 3. Calculate ATR%
         atr_percent = None
@@ -364,7 +359,7 @@ class ATRExpansionEngine:
                 "tr_samples": len(state.tr_deque),
                 "atr_samples": len(state.atr_deque),
                 "prev_close": state.prev_close,
-            }
+            },
         )
 
         # 10. Update state for next iteration
@@ -429,7 +424,9 @@ class ATRExpansionEngine:
         return ATRExpansionState(
             tr=state.tr_deque[-1] if state.tr_deque else 0.0,
             atr=state.atr,
-            atr_percent=state.atr / (state.prev_close + EPS) if state.atr and state.prev_close else None,
+            atr_percent=(
+                state.atr / (state.prev_close + EPS) if state.atr and state.prev_close else None
+            ),
             sma_atr=sma_tr,
             atr_exp=atr_exp,
             sma_tr=sma_tr,
@@ -437,20 +434,18 @@ class ATRExpansionEngine:
             atr_exp_slope=None,
             vol_state=vol_state,
             vol_score_0_100=vol_score,
-            debug={}
+            debug={},
         )
 
     def _get_warmup_state(self) -> ATRExpansionState:
         """Return a warmup state."""
-        return ATRExpansionState(
-            tr=0.0,
-            vol_state="WARMUP"
-        )
+        return ATRExpansionState(tr=0.0, vol_state="WARMUP")
 
 
 # ============================================================================
 # DISPLAY HELPERS
 # ============================================================================
+
 
 def format_atr_state(tf: str, state: ATRExpansionState) -> str:
     """

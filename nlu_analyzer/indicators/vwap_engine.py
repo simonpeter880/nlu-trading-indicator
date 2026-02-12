@@ -15,23 +15,26 @@ Features:
 - Configurable state confirmation with hold bars
 """
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
-from collections import deque
-from enum import Enum
-from datetime import datetime, timezone, timedelta
-import pytz
 import math
+from collections import deque
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+from typing import Dict, List, Optional, Tuple
+
+import pytz
 
 
 class PriceSource(Enum):
     """Price source for VWAP calculation"""
+
     TYPICAL = "typical"  # (H+L+C)/3
-    CLOSE = "close"      # Close only
+    CLOSE = "close"  # Close only
 
 
 class VWAPKind(Enum):
     """Type of VWAP line"""
+
     SESSION = "SESSION"
     WEEKLY = "WEEKLY"
     ANCHORED = "ANCHORED"
@@ -39,6 +42,7 @@ class VWAPKind(Enum):
 
 class PricePosition(Enum):
     """Price position relative to VWAP"""
+
     ABOVE = "ABOVE"
     BELOW = "BELOW"
     AT = "AT"
@@ -46,23 +50,26 @@ class PricePosition(Enum):
 
 class InteractionState(Enum):
     """VWAP interaction state"""
-    ACCEPT = "ACCEPT"      # Staying on same side with confirmation
-    REJECT = "REJECT"      # Touched and moved away
-    RECLAIM = "RECLAIM"    # Crossed from below to above with hold
-    LOSS = "LOSS"          # Crossed from above to below with hold
-    NEUTRAL = "NEUTRAL"    # No clear interaction
+
+    ACCEPT = "ACCEPT"  # Staying on same side with confirmation
+    REJECT = "REJECT"  # Touched and moved away
+    RECLAIM = "RECLAIM"  # Crossed from below to above with hold
+    LOSS = "LOSS"  # Crossed from above to below with hold
+    NEUTRAL = "NEUTRAL"  # No clear interaction
 
 
 class BandMethod(Enum):
     """Method used for band calculation"""
-    STD = "STD"                    # Standard deviation bands
+
+    STD = "STD"  # Standard deviation bands
     ATR_FALLBACK = "ATR_FALLBACK"  # ATR-based fallback
-    NONE = "NONE"                  # No bands available
+    NONE = "NONE"  # No bands available
 
 
 @dataclass
 class Candle:
     """OHLCV candle structure"""
+
     timestamp: float  # UTC seconds or milliseconds
     open: float
     high: float
@@ -74,6 +81,7 @@ class Candle:
 @dataclass
 class VWAPBands:
     """VWAP bands structure"""
+
     vwap: float
     std: Optional[float]
     bands: Dict[float, Tuple[float, float]]  # multiplier -> (lower, upper)
@@ -104,19 +112,17 @@ class VWAPConfig:
     # State machine parameters
     hold_bars: int = 3
     reclaim_tolerance: float = 0.0002  # 0.02%
-    touch_tolerance: float = 0.0001    # 0.01%
+    touch_tolerance: float = 0.0001  # 0.01%
 
     # Anchor configuration
     max_anchors_per_tf: int = 3
-    default_anchor_types_enabled: List[str] = field(default_factory=lambda: [
-        "BOS", "CHOCH", "SWEEP", "SESSION_HIGH", "SESSION_LOW"
-    ])
+    default_anchor_types_enabled: List[str] = field(
+        default_factory=lambda: ["BOS", "CHOCH", "SWEEP", "SESSION_HIGH", "SESSION_LOW"]
+    )
     anchor_expire_mode: str = "AGE"  # or "RELEVANCE"
-    anchor_max_age_bars: Dict[str, int] = field(default_factory=lambda: {
-        "1m": 1440,
-        "5m": 1000,
-        "1h": 300
-    })
+    anchor_max_age_bars: Dict[str, int] = field(
+        default_factory=lambda: {"1m": 1440, "5m": 1000, "1h": 300}
+    )
 
     # ATR configuration (for fallback bands)
     atr_period: int = 14
@@ -133,8 +139,8 @@ class VWAPState:
     anchor_note: str = ""
 
     # VWAP accumulators
-    pv_sum: float = 0.0   # Σ(price * volume)
-    v_sum: float = 0.0    # Σ(volume)
+    pv_sum: float = 0.0  # Σ(price * volume)
+    v_sum: float = 0.0  # Σ(volume)
     p2v_sum: float = 0.0  # Σ(price^2 * volume) for std dev
     vwap: float = 0.0
 
@@ -161,6 +167,7 @@ class VWAPState:
 @dataclass
 class VWAPMultiTFState:
     """Multi-timeframe VWAP state"""
+
     session_by_tf: Dict[str, VWAPState] = field(default_factory=dict)
     weekly_by_tf: Dict[str, VWAPState] = field(default_factory=dict)
     anchors_by_tf: Dict[str, List[VWAPState]] = field(default_factory=dict)
@@ -258,8 +265,9 @@ class VWAPEngine:
 
         return (prev_year, prev_week) != (curr_year, curr_week)
 
-    def _update_vwap_accumulators(self, state: VWAPState, price: float,
-                                  volume: float, timestamp: float) -> None:
+    def _update_vwap_accumulators(
+        self, state: VWAPState, price: float, volume: float, timestamp: float
+    ) -> None:
         """
         Update VWAP accumulators incrementally.
 
@@ -287,8 +295,9 @@ class VWAPEngine:
         state.bar_count += 1
         state.last_update_time = timestamp
 
-    def _compute_std_bands(self, state: VWAPState, close: float,
-                          atr_percent: Optional[float]) -> VWAPBands:
+    def _compute_std_bands(
+        self, state: VWAPState, close: float, atr_percent: Optional[float]
+    ) -> VWAPBands:
         """
         Compute standard deviation bands or ATR fallback.
 
@@ -304,9 +313,11 @@ class VWAPEngine:
         bands_dict = {}
 
         # Try standard deviation bands first
-        if (self.config.enable_std_bands and
-            state.bar_count >= self.config.min_bars_for_std and
-            state.v_sum > eps):
+        if (
+            self.config.enable_std_bands
+            and state.bar_count >= self.config.min_bars_for_std
+            and state.v_sum > eps
+        ):
 
             # Volume-weighted variance
             mean = state.vwap
@@ -321,12 +332,7 @@ class VWAPEngine:
                     upper = state.vwap + k * std
                     bands_dict[k] = (lower, upper)
 
-                return VWAPBands(
-                    vwap=state.vwap,
-                    std=std,
-                    bands=bands_dict,
-                    method=BandMethod.STD
-                )
+                return VWAPBands(vwap=state.vwap, std=std, bands=bands_dict, method=BandMethod.STD)
 
         # Fallback to ATR-based bands
         if atr_percent is not None and atr_percent > 0:
@@ -337,19 +343,11 @@ class VWAPEngine:
                 bands_dict[k] = (lower, upper)
 
             return VWAPBands(
-                vwap=state.vwap,
-                std=None,
-                bands=bands_dict,
-                method=BandMethod.ATR_FALLBACK
+                vwap=state.vwap, std=None, bands=bands_dict, method=BandMethod.ATR_FALLBACK
             )
 
         # No bands available
-        return VWAPBands(
-            vwap=state.vwap,
-            std=None,
-            bands={},
-            method=BandMethod.NONE
-        )
+        return VWAPBands(vwap=state.vwap, std=None, bands={}, method=BandMethod.NONE)
 
     def _compute_price_position(self, close: float, vwap: float) -> PricePosition:
         """
@@ -408,15 +406,23 @@ class VWAPEngine:
 
         # Update state based on hold confirmation
         if state.hold_count >= self.config.hold_bars:
-            recent_positions = list(state.position_history)[-self.config.hold_bars:]
+            recent_positions = list(state.position_history)[-self.config.hold_bars :]
 
             # Check for RECLAIM (was BELOW, now consistently ABOVE)
             if len(state.position_history) >= self.config.hold_bars + 1:
                 # Look back before the recent hold window to see where we came from
-                prev_stable_positions = list(state.position_history)[-(self.config.hold_bars+3):-(self.config.hold_bars)]
-                came_from_below = any(p == PricePosition.BELOW for p in prev_stable_positions) if prev_stable_positions else False
+                prev_stable_positions = list(state.position_history)[
+                    -(self.config.hold_bars + 3) : -(self.config.hold_bars)
+                ]
+                came_from_below = (
+                    any(p == PricePosition.BELOW for p in prev_stable_positions)
+                    if prev_stable_positions
+                    else False
+                )
 
-                if came_from_below and all(p in [PricePosition.ABOVE, PricePosition.AT] for p in recent_positions):
+                if came_from_below and all(
+                    p in [PricePosition.ABOVE, PricePosition.AT] for p in recent_positions
+                ):
                     if any(p == PricePosition.ABOVE for p in recent_positions):
                         state.interaction_state = InteractionState.RECLAIM
                         state.prev_position = current_position
@@ -424,10 +430,18 @@ class VWAPEngine:
 
             # Check for LOSS (was ABOVE, now consistently BELOW)
             if len(state.position_history) >= self.config.hold_bars + 1:
-                prev_stable_positions = list(state.position_history)[-(self.config.hold_bars+3):-(self.config.hold_bars)]
-                came_from_above = any(p == PricePosition.ABOVE for p in prev_stable_positions) if prev_stable_positions else False
+                prev_stable_positions = list(state.position_history)[
+                    -(self.config.hold_bars + 3) : -(self.config.hold_bars)
+                ]
+                came_from_above = (
+                    any(p == PricePosition.ABOVE for p in prev_stable_positions)
+                    if prev_stable_positions
+                    else False
+                )
 
-                if came_from_above and all(p in [PricePosition.BELOW, PricePosition.AT] for p in recent_positions):
+                if came_from_above and all(
+                    p in [PricePosition.BELOW, PricePosition.AT] for p in recent_positions
+                ):
                     if any(p == PricePosition.BELOW for p in recent_positions):
                         state.interaction_state = InteractionState.LOSS
                         state.prev_position = current_position
@@ -464,14 +478,14 @@ class VWAPEngine:
 
         # Percentage distance
         dist_pct = (close - state.vwap) / (state.vwap + eps)
-        metrics['pct'] = dist_pct
+        metrics["pct"] = dist_pct
 
         # Sigma distance (if std available)
         if state.bands and state.bands.std is not None and state.bands.std > eps:
             dist_sigma = (close - state.vwap) / state.bands.std
-            metrics['sigma'] = dist_sigma
+            metrics["sigma"] = dist_sigma
         else:
-            metrics['sigma'] = None
+            metrics["sigma"] = None
 
         return metrics
 
@@ -497,23 +511,20 @@ class VWAPEngine:
     def _get_or_create_session_vwap(self, tf: str, timestamp: float) -> VWAPState:
         """Get or create session VWAP state for timeframe"""
         if tf not in self._session_vwap:
-            self._session_vwap[tf] = VWAPState(
-                kind=VWAPKind.SESSION,
-                last_reset_time=timestamp
-            )
+            self._session_vwap[tf] = VWAPState(kind=VWAPKind.SESSION, last_reset_time=timestamp)
         return self._session_vwap[tf]
 
     def _get_or_create_weekly_vwap(self, tf: str, timestamp: float) -> VWAPState:
         """Get or create weekly VWAP state for timeframe"""
         if tf not in self._weekly_vwap:
-            self._weekly_vwap[tf] = VWAPState(
-                kind=VWAPKind.WEEKLY,
-                last_reset_time=timestamp
-            )
+            self._weekly_vwap[tf] = VWAPState(kind=VWAPKind.WEEKLY, last_reset_time=timestamp)
         return self._weekly_vwap[tf]
 
-    def warmup(self, candles_by_tf: Dict[str, List[Candle]],
-               atr_percent_by_tf: Optional[Dict[str, float]] = None) -> None:
+    def warmup(
+        self,
+        candles_by_tf: Dict[str, List[Candle]],
+        atr_percent_by_tf: Optional[Dict[str, float]] = None,
+    ) -> None:
         """
         Warm up VWAP engine with historical candles.
 
@@ -527,8 +538,9 @@ class VWAPEngine:
             for candle in candles:
                 self.on_candle_close(tf, candle, atr_pct)
 
-    def on_candle_close(self, tf: str, candle: Candle,
-                       atr_percent: Optional[float] = None) -> VWAPMultiTFState:
+    def on_candle_close(
+        self, tf: str, candle: Candle, atr_percent: Optional[float] = None
+    ) -> VWAPMultiTFState:
         """
         Process a candle close and update all VWAP lines for the timeframe.
 
@@ -575,7 +587,9 @@ class VWAPEngine:
             # Only update if candle is after anchor time
             if timestamp >= anchor_state.anchor_time:
                 self._update_vwap_accumulators(anchor_state, price, candle.volume, timestamp)
-                anchor_state.bands = self._compute_std_bands(anchor_state, candle.close, atr_percent)
+                anchor_state.bands = self._compute_std_bands(
+                    anchor_state, candle.close, atr_percent
+                )
                 self._update_interaction_state(anchor_state, candle.close)
                 anchor_state.distance = self._compute_distance_metrics(anchor_state, candle.close)
 
@@ -587,16 +601,17 @@ class VWAPEngine:
 
         # Build summary
         result.summary_by_tf[tf] = {
-            'session_vwap': session_state.vwap,
-            'weekly_vwap': weekly_state.vwap,
-            'session_state': session_state.interaction_state.value,
-            'num_anchors': len(self._anchored_vwaps.get(tf, []))
+            "session_vwap": session_state.vwap,
+            "weekly_vwap": weekly_state.vwap,
+            "session_state": session_state.interaction_state.value,
+            "num_anchors": len(self._anchored_vwaps.get(tf, [])),
         }
 
         return result
 
-    def add_anchor(self, tf: str, anchor_time: float, anchor_id: str,
-                   note: str = "", kind: str = "EVENT") -> VWAPState:
+    def add_anchor(
+        self, tf: str, anchor_time: float, anchor_id: str, note: str = "", kind: str = "EVENT"
+    ) -> VWAPState:
         """
         Add an anchored VWAP starting at specified time.
 
@@ -624,7 +639,7 @@ class VWAPEngine:
             anchor_id=anchor_id,
             anchor_time=anchor_time,
             anchor_note=note,
-            last_reset_time=anchor_time
+            last_reset_time=anchor_time,
         )
 
         self._anchored_vwaps[tf].append(anchor_state)
@@ -649,9 +664,7 @@ class VWAPEngine:
             return False
 
         original_len = len(self._anchored_vwaps[tf])
-        self._anchored_vwaps[tf] = [
-            a for a in self._anchored_vwaps[tf] if a.anchor_id != anchor_id
-        ]
+        self._anchored_vwaps[tf] = [a for a in self._anchored_vwaps[tf] if a.anchor_id != anchor_id]
 
         return len(self._anchored_vwaps[tf]) < original_len
 
@@ -683,13 +696,16 @@ class VWAPEngine:
         if len(anchors) > self.config.max_anchors_per_tf:
             # Sort by anchor time, keep newest
             anchors.sort(key=lambda a: a.anchor_time, reverse=True)
-            anchors = anchors[:self.config.max_anchors_per_tf]
+            anchors = anchors[: self.config.max_anchors_per_tf]
 
         self._anchored_vwaps[tf] = anchors
         return original_count - len(anchors)
 
-    def update(self, candles_by_tf: Dict[str, List[Candle]],
-               atr_percent_by_tf: Optional[Dict[str, float]] = None) -> VWAPMultiTFState:
+    def update(
+        self,
+        candles_by_tf: Dict[str, List[Candle]],
+        atr_percent_by_tf: Optional[Dict[str, float]] = None,
+    ) -> VWAPMultiTFState:
         """
         Convenience method to update all timeframes.
 
@@ -741,36 +757,42 @@ def format_vwap_output(vwap_state: VWAPMultiTFState, compact: bool = True) -> st
         if compact:
             # Session VWAP
             if session:
-                dist_pct = session.distance.get('pct', 0) * 100
-                dist_sigma = session.distance.get('sigma')
+                dist_pct = session.distance.get("pct", 0) * 100
+                dist_sigma = session.distance.get("sigma")
                 sigma_str = f" ({dist_sigma:+.1f}σ)" if dist_sigma is not None else ""
                 band_method = session.bands.method.value if session.bands else "NONE"
 
-                line = (f"{tf} Session: {session.price_position.value:5s} | "
-                       f"{session.interaction_state.value:7s} | "
-                       f"dist={dist_pct:+.2f}%{sigma_str:10s} | "
-                       f"bands={band_method}")
+                line = (
+                    f"{tf} Session: {session.price_position.value:5s} | "
+                    f"{session.interaction_state.value:7s} | "
+                    f"dist={dist_pct:+.2f}%{sigma_str:10s} | "
+                    f"bands={band_method}"
+                )
                 lines.append(line)
 
             # Weekly VWAP
             if weekly:
-                dist_pct = weekly.distance.get('pct', 0) * 100
-                dist_sigma = weekly.distance.get('sigma')
+                dist_pct = weekly.distance.get("pct", 0) * 100
+                dist_sigma = weekly.distance.get("sigma")
                 sigma_str = f" ({dist_sigma:+.1f}σ)" if dist_sigma is not None else ""
 
-                line = (f"{tf} Weekly : {weekly.price_position.value:5s} | "
-                       f"{weekly.interaction_state.value:7s} | "
-                       f"dist={dist_pct:+.2f}%{sigma_str}")
+                line = (
+                    f"{tf} Weekly : {weekly.price_position.value:5s} | "
+                    f"{weekly.interaction_state.value:7s} | "
+                    f"dist={dist_pct:+.2f}%{sigma_str}"
+                )
                 lines.append(line)
 
             # Anchors
             if anchors:
                 lines.append(f"{tf} Anchors:")
                 for anchor in anchors:
-                    dist_pct = anchor.distance.get('pct', 0) * 100
+                    dist_pct = anchor.distance.get("pct", 0) * 100
                     note = anchor.anchor_note or anchor.anchor_id
-                    line = (f"  - {note}: {anchor.interaction_state.value} | "
-                           f"dist={dist_pct:+.2f}% | vwap={anchor.vwap:.2f}")
+                    line = (
+                        f"  - {note}: {anchor.interaction_state.value} | "
+                        f"dist={dist_pct:+.2f}% | vwap={anchor.vwap:.2f}"
+                    )
                     lines.append(line)
 
         else:

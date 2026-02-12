@@ -11,19 +11,17 @@ Verifies:
 - Warmup behavior
 """
 
-import pytest
 import math
 from collections import deque
-from bollinger_bandwidth import (
-    BollingerBandwidthEngine,
-    BollingerBandwidthConfig,
-    Candle,
-)
 
+import pytest
+
+from bollinger_bandwidth import BollingerBandwidthConfig, BollingerBandwidthEngine, Candle
 
 # ============================================================================
 # TEST 1: ROLLING MEAN/STD CORRECTNESS
 # ============================================================================
+
 
 def test_rolling_mean_std():
     """Rolling mean and std match batch calculations."""
@@ -82,6 +80,7 @@ def test_rolling_variance_formula():
 # TEST 2: BANDWIDTH FORMULA
 # ============================================================================
 
+
 def test_bandwidth_formula():
     """Bandwidth = (upper - lower) / mid = 2*k*std/mid."""
     config = BollingerBandwidthConfig(
@@ -139,6 +138,7 @@ def test_bollinger_bands_formula():
 # TEST 3: O(1) ROLLING UPDATE
 # ============================================================================
 
+
 def test_o1_update_no_scans():
     """Implementation uses deques and sums, no window scans."""
     config = BollingerBandwidthConfig(timeframes=["1m"], bb_period=20, bw_sma_period=50)
@@ -175,6 +175,7 @@ def test_o1_update_no_scans():
 # TEST 4: BW_SMA AND RATIO CORRECTNESS
 # ============================================================================
 
+
 def test_bw_sma_correctness():
     """bw_sma matches batch SMA of bandwidth_smooth."""
     config = BollingerBandwidthConfig(
@@ -200,7 +201,7 @@ def test_bw_sma_correctness():
 
     # Compute batch SMA of last 20 bw values
     if len(bw_values) >= config.bw_sma_period:
-        batch_sma = sum(bw_values[-config.bw_sma_period:]) / config.bw_sma_period
+        batch_sma = sum(bw_values[-config.bw_sma_period :]) / config.bw_sma_period
         assert abs(state.bw_sma - batch_sma) < 1e-9
 
 
@@ -230,6 +231,7 @@ def test_bw_ratio_formula():
 # ============================================================================
 # TEST 5: STATE CLASSIFICATION
 # ============================================================================
+
 
 def test_state_compressed():
     """Low bw_ratio triggers COMPRESSED state."""
@@ -372,6 +374,7 @@ def test_state_normal():
 # TEST 6: SLOPE AND SMOOTHING
 # ============================================================================
 
+
 def test_bandwidth_slope():
     """Bandwidth slope = bandwidth_smooth - prev_bandwidth_smooth."""
     config = BollingerBandwidthConfig(
@@ -445,6 +448,7 @@ def test_no_smoothing():
 # TEST 7: WARMUP BEHAVIOR
 # ============================================================================
 
+
 def test_warmup_state():
     """Returns WARMUP until enough data."""
     config = BollingerBandwidthConfig(
@@ -491,6 +495,7 @@ def test_warmup_state():
 # TEST 8: SCORE COMPUTATION
 # ============================================================================
 
+
 def test_score_caps():
     """Score capped by state."""
     config = BollingerBandwidthConfig(
@@ -523,6 +528,7 @@ def test_score_caps():
 # TEST 9: MULTI-TIMEFRAME
 # ============================================================================
 
+
 def test_multi_timeframe_independence():
     """Each timeframe maintains independent state."""
     config = BollingerBandwidthConfig(
@@ -550,6 +556,7 @@ def test_multi_timeframe_independence():
 # ============================================================================
 # TEST 10: WARMUP METHOD
 # ============================================================================
+
 
 def test_warmup_method():
     """Warmup method processes historical candles."""
@@ -581,6 +588,7 @@ def test_warmup_method():
 # TEST 11: RESET
 # ============================================================================
 
+
 def test_reset():
     """Reset clears state for timeframe."""
     config = BollingerBandwidthConfig(timeframes=["1m"], bb_period=10, bw_sma_period=20)
@@ -604,9 +612,14 @@ def test_reset():
 # TEST 12: HELPER FUNCTIONS
 # ============================================================================
 
+
 def test_print_helpers():
     """Print helpers do not crash."""
-    from bollinger_bandwidth import print_bollinger_bandwidth, format_bandwidth_state, interpret_bandwidth
+    from bollinger_bandwidth import (
+        format_bandwidth_state,
+        interpret_bandwidth,
+        print_bollinger_bandwidth,
+    )
 
     config = BollingerBandwidthConfig(timeframes=["1m"], bb_period=10, bw_sma_period=20)
     engine = BollingerBandwidthEngine(config)

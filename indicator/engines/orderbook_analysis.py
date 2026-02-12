@@ -16,48 +16,55 @@ What ACTUALLY MATTERS:
 ✓ Liquidity Ladders - Where price is forced to go
 """
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Tuple, Dict, TYPE_CHECKING
-from enum import Enum
 import time
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from .signals import Signal
+
 if TYPE_CHECKING:
     from .indicator_config import IndicatorConfig
 
 from .indicator_config import DEFAULT_CONFIG
 
+
 class AbsorptionSide(Enum):
     """Which side is absorbing."""
-    BID_ABSORPTION = "bid_absorption"    # Bids absorbing sells (bullish)
-    ASK_ABSORPTION = "ask_absorption"    # Asks absorbing buys (bearish)
+
+    BID_ABSORPTION = "bid_absorption"  # Bids absorbing sells (bullish)
+    ASK_ABSORPTION = "ask_absorption"  # Asks absorbing buys (bearish)
     NONE = "none"
 
 
 class ImbalanceDirection(Enum):
     """Direction of liquidity imbalance."""
-    BID_HEAVY = "bid_heavy"        # More bids → bullish pressure
-    ASK_HEAVY = "ask_heavy"        # More asks → bearish pressure
-    BALANCED = "balanced"          # No clear imbalance
+
+    BID_HEAVY = "bid_heavy"  # More bids → bullish pressure
+    ASK_HEAVY = "ask_heavy"  # More asks → bearish pressure
+    BALANCED = "balanced"  # No clear imbalance
 
 
 class SpoofType(Enum):
     """Type of spoof detected."""
-    BID_SPOOF = "bid_spoof"        # Fake bid wall pulled before hit
-    ASK_SPOOF = "ask_spoof"        # Fake ask wall pulled before hit
+
+    BID_SPOOF = "bid_spoof"  # Fake bid wall pulled before hit
+    ASK_SPOOF = "ask_spoof"  # Fake ask wall pulled before hit
     NONE = "none"
 
 
 class LiquidityZone(Enum):
     """Type of liquidity zone."""
-    THICK = "thick"                # Heavy liquidity - price repels
-    THIN = "thin"                  # Light liquidity - price attracts
+
+    THICK = "thick"  # Heavy liquidity - price repels
+    THIN = "thin"  # Light liquidity - price attracts
     NORMAL = "normal"
 
 
 @dataclass
 class OrderbookSnapshot:
     """A single orderbook snapshot with analysis."""
+
     timestamp: int
     bids: List[List[float]]  # [[price, qty], ...]
     asks: List[List[float]]
@@ -79,12 +86,13 @@ class OrderbookSnapshot:
 @dataclass
 class AbsorptionResult:
     """Result of absorption detection."""
+
     detected: bool
     side: AbsorptionSide
-    strength: float          # 0-100, how strong the absorption
-    volume_absorbed: float   # Estimated volume absorbed
-    price_impact: float      # How much price moved despite volume
-    efficiency: float        # volume / price_move (higher = more absorption)
+    strength: float  # 0-100, how strong the absorption
+    volume_absorbed: float  # Estimated volume absorbed
+    price_impact: float  # How much price moved despite volume
+    efficiency: float  # volume / price_move (higher = more absorption)
     description: str
     action: str
 
@@ -92,11 +100,12 @@ class AbsorptionResult:
 @dataclass
 class ImbalanceResult:
     """Result of liquidity imbalance analysis."""
+
     direction: ImbalanceDirection
-    ratio: float             # bid/ask ratio
-    is_actionable: bool      # Has volume confirmation?
-    is_bait: bool           # Imbalance alone (no volume)?
-    strength: float          # 0-100
+    ratio: float  # bid/ask ratio
+    is_actionable: bool  # Has volume confirmation?
+    is_bait: bool  # Imbalance alone (no volume)?
+    strength: float  # 0-100
     description: str
     action: str
 
@@ -104,13 +113,14 @@ class ImbalanceResult:
 @dataclass
 class SpoofResult:
     """Result of spoof detection."""
+
     detected: bool
     spoof_type: SpoofType
     confidence: float
     wall_size: float
     wall_price: float
-    times_pulled: int        # How many times this wall was pulled
-    trapped_traders: bool    # Did OI increase after pull?
+    times_pulled: int  # How many times this wall was pulled
+    trapped_traders: bool  # Did OI increase after pull?
     description: str
     action: str
 
@@ -118,6 +128,7 @@ class SpoofResult:
 @dataclass
 class LiquidityLadderResult:
     """Result of liquidity ladder analysis."""
+
     # Above current price
     thick_zones_above: List[Tuple[float, float]]  # (price, liquidity)
     thin_zones_above: List[Tuple[float, float]]
@@ -139,6 +150,7 @@ class LiquidityLadderResult:
 @dataclass
 class OrderbookAnalysisSummary:
     """Complete orderbook analysis summary."""
+
     snapshot: OrderbookSnapshot
     absorption: AbsorptionResult
     imbalance: ImbalanceResult
@@ -166,12 +178,20 @@ class AdvancedOrderbookAnalyzer:
         self,
         imbalance_threshold: Optional[float] = None,
         absorption_efficiency: Optional[float] = None,
-        config: Optional['IndicatorConfig'] = None
+        config: Optional["IndicatorConfig"] = None,
     ):
         self.config = config or DEFAULT_CONFIG
         cfg = self.config.orderbook
-        self.imbalance_threshold = imbalance_threshold if imbalance_threshold is not None else cfg.imbalance_ratio_threshold
-        self.absorption_efficiency = absorption_efficiency if absorption_efficiency is not None else cfg.absorption_efficiency_max
+        self.imbalance_threshold = (
+            imbalance_threshold
+            if imbalance_threshold is not None
+            else cfg.imbalance_ratio_threshold
+        )
+        self.absorption_efficiency = (
+            absorption_efficiency
+            if absorption_efficiency is not None
+            else cfg.absorption_efficiency_max
+        )
         self.strong_imbalance_ratio = cfg.strong_imbalance_ratio
 
         # Track previous path for hysteresis (prevent oscillation)
@@ -183,10 +203,7 @@ class AdvancedOrderbookAnalyzer:
         self.wall_history: Dict[str, List[Dict]] = {}  # price -> [appearances]
 
     def create_snapshot(
-        self,
-        bids: List[List[float]],
-        asks: List[List[float]],
-        timestamp: Optional[int] = None
+        self, bids: List[List[float]], asks: List[List[float]], timestamp: Optional[int] = None
     ) -> OrderbookSnapshot:
         """Create an analyzed orderbook snapshot."""
         if not bids or not asks:
@@ -222,7 +239,7 @@ class AdvancedOrderbookAnalyzer:
             bid_depth_20=bid_depth_20,
             ask_depth_20=ask_depth_20,
             bid_value_10=bid_value_10,
-            ask_value_10=ask_value_10
+            ask_value_10=ask_value_10,
         )
 
     def detect_absorption(
@@ -231,7 +248,7 @@ class AdvancedOrderbookAnalyzer:
         recent_volume: float,
         price_change_percent: float,
         oi_change_percent: Optional[float] = None,
-        avg_volume: Optional[float] = None
+        avg_volume: Optional[float] = None,
     ) -> AbsorptionResult:
         """
         Detect absorption - Large limit orders absorbing aggressive market orders.
@@ -265,15 +282,23 @@ class AdvancedOrderbookAnalyzer:
 
         # Check for absorption conditions
         high_volume = volume_ratio > cfg.absorption_volume_ratio  # Volume spike
-        low_price_impact = abs(price_change_percent) < cfg.absorption_price_impact_pct  # Price didn't move much
+        low_price_impact = (
+            abs(price_change_percent) < cfg.absorption_price_impact_pct
+        )  # Price didn't move much
 
         # OI confirmation (if available)
         oi_confirms = False
         if oi_change_percent is not None:
-            oi_confirms = oi_change_percent <= cfg.absorption_oi_confirm_max  # OI flat or down = closing positions
+            oi_confirms = (
+                oi_change_percent <= cfg.absorption_oi_confirm_max
+            )  # OI flat or down = closing positions
 
         # Determine absorption side based on imbalance and price direction
-        imbalance = current_snapshot.bid_depth_10 / current_snapshot.ask_depth_10 if current_snapshot.ask_depth_10 > 0 else 1
+        imbalance = (
+            current_snapshot.bid_depth_10 / current_snapshot.ask_depth_10
+            if current_snapshot.ask_depth_10 > 0
+            else 1
+        )
 
         is_absorption = high_volume and low_price_impact and efficiency < self.absorption_efficiency
 
@@ -287,7 +312,7 @@ class AdvancedOrderbookAnalyzer:
             elif imbalance < cfg.absorption_ask_imbalance_ratio and price_change_percent >= 0:
                 # Strong asks but price flat/up = asks absorbing buys
                 side = AbsorptionSide.ASK_ABSORPTION
-                strength = min(90, 50 + (1/imbalance - 1) * 20 + (1 - efficiency) * 30)
+                strength = min(90, 50 + (1 / imbalance - 1) * 20 + (1 - efficiency) * 30)
                 desc = "ASK ABSORPTION: Large asks absorbing buy pressure"
                 action = "Smart money defending - Look for short entries on rallies"
             else:
@@ -313,13 +338,11 @@ class AdvancedOrderbookAnalyzer:
             price_impact=abs(price_change_percent),
             efficiency=efficiency,
             description=desc,
-            action=action
+            action=action,
         )
 
     def analyze_imbalance(
-        self,
-        snapshot: OrderbookSnapshot,
-        has_volume_confirmation: bool = False
+        self, snapshot: OrderbookSnapshot, has_volume_confirmation: bool = False
     ) -> ImbalanceResult:
         """
         Analyze liquidity imbalance.
@@ -357,11 +380,11 @@ class AdvancedOrderbookAnalyzer:
             desc = f"Moderate bid imbalance ({combined_ratio:.1f}x) - Buyers present"
         elif combined_ratio <= 1 / self.strong_imbalance_ratio:
             direction = ImbalanceDirection.ASK_HEAVY
-            strength = min(85, 50 + (1/combined_ratio - 1) * 10)
+            strength = min(85, 50 + (1 / combined_ratio - 1) * 10)
             desc = f"STRONG ask imbalance ({1/combined_ratio:.1f}x) - Heavy selling pressure"
         elif combined_ratio <= 1 / self.imbalance_threshold:
             direction = ImbalanceDirection.ASK_HEAVY
-            strength = 60 + (1/combined_ratio - 2) * 10
+            strength = 60 + (1 / combined_ratio - 2) * 10
             desc = f"Moderate ask imbalance ({1/combined_ratio:.1f}x) - Sellers present"
         else:
             direction = ImbalanceDirection.BALANCED
@@ -390,7 +413,7 @@ class AdvancedOrderbookAnalyzer:
             is_bait=is_bait,
             strength=strength,
             description=desc,
-            action=action
+            action=action,
         )
 
     def detect_spoof(
@@ -398,7 +421,7 @@ class AdvancedOrderbookAnalyzer:
         current_snapshot: OrderbookSnapshot,
         previous_snapshots: Optional[List[OrderbookSnapshot]] = None,
         oi_increased: bool = False,
-        wall_size_threshold: Optional[float] = None
+        wall_size_threshold: Optional[float] = None,
     ) -> SpoofResult:
         """
         Detect spoofing - Behavioral patterns, not visual.
@@ -426,13 +449,19 @@ class AdvancedOrderbookAnalyzer:
                 times_pulled=0,
                 trapped_traders=False,
                 description="Insufficient history for spoof detection",
-                action="Need more snapshots to track wall behavior"
+                action="Need more snapshots to track wall behavior",
             )
 
         # Calculate average order size
-        all_sizes = [b[1] for b in current_snapshot.bids[:20]] + [a[1] for a in current_snapshot.asks[:20]]
+        all_sizes = [b[1] for b in current_snapshot.bids[:20]] + [
+            a[1] for a in current_snapshot.asks[:20]
+        ]
         avg_size = sum(all_sizes) / len(all_sizes) if all_sizes else 1
-        wall_multiplier = wall_size_threshold if wall_size_threshold is not None else cfg.spoof_wall_size_multiplier
+        wall_multiplier = (
+            wall_size_threshold
+            if wall_size_threshold is not None
+            else cfg.spoof_wall_size_multiplier
+        )
         wall_threshold = avg_size * wall_multiplier
 
         # Track walls over time
@@ -458,12 +487,18 @@ class AdvancedOrderbookAnalyzer:
 
                     if not still_exists:
                         # Wall was pulled - check if price approached
-                        price_approached = prev_snap.mid_price < prev_bid[0] * (1 + cfg.spoof_price_approach_pct / 100)
+                        price_approached = prev_snap.mid_price < prev_bid[0] * (
+                            1 + cfg.spoof_price_approach_pct / 100
+                        )
 
                         # CRITICAL: Check if price snapped in OPPOSITE direction after pull
                         # Bid wall pulled → price should move DOWN (opposite of fake support)
                         # Require minimum move in bps to filter out noise from 250ms snapshots
-                        price_move_bps = (prev_snap.mid_price - current_snapshot.mid_price) / prev_snap.mid_price * 10000
+                        price_move_bps = (
+                            (prev_snap.mid_price - current_snapshot.mid_price)
+                            / prev_snap.mid_price
+                            * 10000
+                        )
                         price_snapped_opposite = price_move_bps > cfg.spoof_price_snap_min_bps
 
                         if price_approached and price_snapped_opposite:
@@ -484,12 +519,18 @@ class AdvancedOrderbookAnalyzer:
 
                     if not still_exists:
                         # Wall was pulled - check if price approached
-                        price_approached = prev_snap.mid_price > prev_ask[0] * (1 - cfg.spoof_price_approach_pct / 100)
+                        price_approached = prev_snap.mid_price > prev_ask[0] * (
+                            1 - cfg.spoof_price_approach_pct / 100
+                        )
 
                         # CRITICAL: Check if price snapped in OPPOSITE direction after pull
                         # Ask wall pulled → price should move UP (opposite of fake resistance)
                         # Require minimum move in bps to filter out noise from 250ms snapshots
-                        price_move_bps = (current_snapshot.mid_price - prev_snap.mid_price) / prev_snap.mid_price * 10000
+                        price_move_bps = (
+                            (current_snapshot.mid_price - prev_snap.mid_price)
+                            / prev_snap.mid_price
+                            * 10000
+                        )
                         price_snapped_opposite = price_move_bps > cfg.spoof_price_snap_min_bps
 
                         if price_approached and price_snapped_opposite:
@@ -536,13 +577,13 @@ class AdvancedOrderbookAnalyzer:
             times_pulled=times_pulled,
             trapped_traders=oi_increased and spoof_detected,
             description=desc,
-            action=action
+            action=action,
         )
 
     def analyze_liquidity_ladder(
         self,
         snapshot: OrderbookSnapshot,
-        levels_to_analyze: int = 50  # Increased from 20 to match new orderbook depth
+        levels_to_analyze: int = 50,  # Increased from 20 to match new orderbook depth
     ) -> LiquidityLadderResult:
         """
         Analyze liquidity ladders - Where is price FORCED to go?
@@ -597,7 +638,7 @@ class AdvancedOrderbookAnalyzer:
                 nearest_thick_below=None,
                 nearest_thin_above=None,
                 nearest_thin_below=None,
-                description="Insufficient orderbook data"
+                description="Insufficient orderbook data",
             )
 
         median_liquidity = sorted(all_notionals)[len(all_notionals) // 2]
@@ -640,7 +681,9 @@ class AdvancedOrderbookAnalyzer:
         total_resistance_down = sum(bid_notionals[:levels_to_sum]) if bid_notionals else 1.0
 
         # Lower resistance = easier path
-        resistance_ratio = total_resistance_up / total_resistance_down if total_resistance_down > 0 else 1.0
+        resistance_ratio = (
+            total_resistance_up / total_resistance_down if total_resistance_down > 0 else 1.0
+        )
 
         # Apply hysteresis: use stricter threshold if flipping from previous direction
         # This prevents oscillation in choppy markets
@@ -684,7 +727,7 @@ class AdvancedOrderbookAnalyzer:
             nearest_thick_below=nearest_thick_below,
             nearest_thin_above=nearest_thin_above,
             nearest_thin_below=nearest_thin_below,
-            description=desc
+            description=desc,
         )
 
     def full_analysis(
@@ -696,7 +739,7 @@ class AdvancedOrderbookAnalyzer:
         oi_change_percent: Optional[float] = None,
         previous_snapshots: Optional[List[OrderbookSnapshot]] = None,
         timestamp: Optional[int] = None,
-        avg_volume: Optional[float] = None
+        avg_volume: Optional[float] = None,
     ) -> OrderbookAnalysisSummary:
         """
         Complete orderbook analysis answering: "Where is price FORCED to go?"
@@ -730,7 +773,9 @@ class AdvancedOrderbookAnalyzer:
 
         imbalance = self.analyze_imbalance(snapshot, has_volume)
 
-        oi_increased = oi_change_percent is not None and oi_change_percent > cfg.spoof_oi_increase_threshold
+        oi_increased = (
+            oi_change_percent is not None and oi_change_percent > cfg.spoof_oi_increase_threshold
+        )
         spoof = self.detect_spoof(snapshot, previous_snapshots, oi_increased)
 
         ladder = self.analyze_liquidity_ladder(snapshot)
@@ -772,10 +817,14 @@ class AdvancedOrderbookAnalyzer:
 
             if bullish_weight > bearish_weight * cfg.directional_signal_ratio:
                 overall_signal = Signal.BULLISH
-                confidence = min(85, bullish_weight / len([s for s in signals if s[0] == Signal.BULLISH]))
+                confidence = min(
+                    85, bullish_weight / len([s for s in signals if s[0] == Signal.BULLISH])
+                )
             elif bearish_weight > bullish_weight * cfg.directional_signal_ratio:
                 overall_signal = Signal.BEARISH
-                confidence = min(85, bearish_weight / len([s for s in signals if s[0] == Signal.BEARISH]))
+                confidence = min(
+                    85, bearish_weight / len([s for s in signals if s[0] == Signal.BEARISH])
+                )
             else:
                 overall_signal = Signal.NEUTRAL
                 confidence = 50
@@ -816,15 +865,13 @@ class AdvancedOrderbookAnalyzer:
             overall_signal=overall_signal,
             confidence=confidence,
             where_price_forced=where_forced,
-            summary=summary
+            summary=summary,
         )
 
 
 # Convenience functions
 def get_path_of_least_resistance(
-    bids: List[List[float]],
-    asks: List[List[float]],
-    config: Optional['IndicatorConfig'] = None
+    bids: List[List[float]], asks: List[List[float]], config: Optional["IndicatorConfig"] = None
 ) -> str:
     """Quick check: Where is price forced to go?"""
     analyzer = AdvancedOrderbookAnalyzer(config=config)
@@ -837,7 +884,7 @@ def is_imbalance_actionable(
     bids: List[List[float]],
     asks: List[List[float]],
     has_volume: bool,
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> Tuple[bool, str]:
     """Quick check: Is this imbalance actionable or bait?"""
     analyzer = AdvancedOrderbookAnalyzer(config=config)

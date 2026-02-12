@@ -6,6 +6,7 @@ from typing import Union
 
 class Signal(Enum):
     """Allowed signal values across indicator modules."""
+
     BULLISH = "bullish"
     BEARISH = "bearish"
     NEUTRAL = "neutral"

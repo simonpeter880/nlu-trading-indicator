@@ -13,30 +13,34 @@ Pro Rules:
 - Extreme funding = hunt reversals
 """
 
-from dataclasses import dataclass
-from typing import List, Optional, Tuple, TYPE_CHECKING
-from enum import Enum
 import math
+from dataclasses import dataclass
+from enum import Enum
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from .signals import Signal
+
 if TYPE_CHECKING:
     from .indicator_config import IndicatorConfig
 
 from .indicator_config import DEFAULT_CONFIG
 
+
 class FundingZone(Enum):
     """Funding rate zones based on percentiles."""
+
     EXTREME_POSITIVE = "extreme_positive"  # > 95th percentile
-    HIGH_POSITIVE = "high_positive"        # > 75th percentile
-    NORMAL_POSITIVE = "normal_positive"    # 25-75th percentile, positive
-    NEUTRAL = "neutral"                    # Near zero
-    NORMAL_NEGATIVE = "normal_negative"    # 25-75th percentile, negative
-    HIGH_NEGATIVE = "high_negative"        # < 25th percentile
+    HIGH_POSITIVE = "high_positive"  # > 75th percentile
+    NORMAL_POSITIVE = "normal_positive"  # 25-75th percentile, positive
+    NEUTRAL = "neutral"  # Near zero
+    NORMAL_NEGATIVE = "normal_negative"  # 25-75th percentile, negative
+    HIGH_NEGATIVE = "high_negative"  # < 25th percentile
     EXTREME_NEGATIVE = "extreme_negative"  # < 5th percentile
 
 
 class CrowdPosition(Enum):
     """Where the crowd is positioned."""
+
     HEAVILY_LONG = "heavily_long"
     MODERATELY_LONG = "moderately_long"
     BALANCED = "balanced"
@@ -46,27 +50,30 @@ class CrowdPosition(Enum):
 
 class FundingWarning(Enum):
     """Warning signals from funding."""
-    DONT_CHASE_LONGS = "dont_chase_longs"    # High positive funding
+
+    DONT_CHASE_LONGS = "dont_chase_longs"  # High positive funding
     DONT_CHASE_SHORTS = "dont_chase_shorts"  # High negative funding
-    SQUEEZE_RISK_UP = "squeeze_risk_up"      # Extreme negative = short squeeze
+    SQUEEZE_RISK_UP = "squeeze_risk_up"  # Extreme negative = short squeeze
     SQUEEZE_RISK_DOWN = "squeeze_risk_down"  # Extreme positive = long squeeze
-    EXHAUSTION = "exhaustion"                 # Extreme funding + flat OI
+    EXHAUSTION = "exhaustion"  # Extreme funding + flat OI
     NONE = "none"
 
 
 class FundingOICombo(Enum):
     """High-probability Funding + OI combinations."""
-    CROWDED_LONGS_RISING = "crowded_longs_rising"      # Very positive + OI rising = downside risk
-    CROWDED_SHORTS_RISING = "crowded_shorts_rising"    # Very negative + OI rising = upside risk
-    EXTREME_EXHAUSTION = "extreme_exhaustion"          # Extreme + flat OI = exhaustion
-    CAPITULATION = "capitulation"                       # Extreme + OI dropping = flush
-    HEALTHY_TREND = "healthy_trend"                     # Normal funding + OI rising
+
+    CROWDED_LONGS_RISING = "crowded_longs_rising"  # Very positive + OI rising = downside risk
+    CROWDED_SHORTS_RISING = "crowded_shorts_rising"  # Very negative + OI rising = upside risk
+    EXTREME_EXHAUSTION = "extreme_exhaustion"  # Extreme + flat OI = exhaustion
+    CAPITULATION = "capitulation"  # Extreme + OI dropping = flush
+    HEALTHY_TREND = "healthy_trend"  # Normal funding + OI rising
     NO_EDGE = "no_edge"
 
 
 @dataclass
 class FundingPercentileResult:
     """Result of funding percentile analysis."""
+
     current_rate: float
     current_rate_percent: float
     annualized_rate: float
@@ -78,6 +85,7 @@ class FundingPercentileResult:
 @dataclass
 class CrowdAnalysisResult:
     """Analysis of crowd positioning."""
+
     position: CrowdPosition
     lean_strength: float  # 0-100, how strong the lean is
     crowd_description: str
@@ -87,6 +95,7 @@ class CrowdAnalysisResult:
 @dataclass
 class FundingWarningResult:
     """Warning signals from funding analysis."""
+
     warning: FundingWarning
     severity: str  # 'low', 'medium', 'high', 'extreme'
     action: str
@@ -96,10 +105,11 @@ class FundingWarningResult:
 @dataclass
 class FundingOIComboResult:
     """Combined Funding + OI analysis."""
+
     combo: FundingOICombo
     funding_direction: str  # 'positive', 'negative', 'neutral'
-    oi_direction: str       # 'rising', 'falling', 'flat'
-    probability: float      # Probability of expected outcome
+    oi_direction: str  # 'rising', 'falling', 'flat'
+    probability: float  # Probability of expected outcome
     expected_outcome: str
     trade_action: str
 
@@ -107,6 +117,7 @@ class FundingOIComboResult:
 @dataclass
 class FundingAnalysisSummary:
     """Complete funding analysis summary."""
+
     percentile: FundingPercentileResult
     crowd: CrowdAnalysisResult
     warning: FundingWarningResult
@@ -133,18 +144,18 @@ class AdvancedFundingAnalyzer:
         self,
         extreme_percentile: Optional[float] = None,
         high_percentile: Optional[float] = None,
-        config: Optional['IndicatorConfig'] = None
+        config: Optional["IndicatorConfig"] = None,
     ):
         self.config = config or DEFAULT_CONFIG
         cfg = self.config.funding
-        self.extreme_percentile = extreme_percentile if extreme_percentile is not None else cfg.extreme_percentile
-        self.high_percentile = high_percentile if high_percentile is not None else cfg.high_percentile
+        self.extreme_percentile = (
+            extreme_percentile if extreme_percentile is not None else cfg.extreme_percentile
+        )
+        self.high_percentile = (
+            high_percentile if high_percentile is not None else cfg.high_percentile
+        )
 
-    def _calculate_percentile(
-        self,
-        current_value: float,
-        historical_values: List[float]
-    ) -> float:
+    def _calculate_percentile(self, current_value: float, historical_values: List[float]) -> float:
         """Calculate what percentile the current value is at."""
         if not historical_values:
             return 50.0
@@ -154,9 +165,7 @@ class AdvancedFundingAnalyzer:
         return (count_below / len(sorted_values)) * 100
 
     def analyze_percentile(
-        self,
-        current_rate: float,
-        historical_rates: Optional[List[float]] = None
+        self, current_rate: float, historical_rates: Optional[List[float]] = None
     ) -> FundingPercentileResult:
         """
         Analyze funding rate using percentiles, not raw values.
@@ -207,7 +216,8 @@ class AdvancedFundingAnalyzer:
             else:
                 percentile = max(
                     1,
-                    (100 - self.extreme_percentile) - (cfg.extreme_negative_pct - rate_percent) * extreme_span
+                    (100 - self.extreme_percentile)
+                    - (cfg.extreme_negative_pct - rate_percent) * extreme_span,
                 )
 
         # Determine zone
@@ -216,7 +226,9 @@ class AdvancedFundingAnalyzer:
 
         if percentile >= self.extreme_percentile:
             zone = FundingZone.EXTREME_POSITIVE
-            desc = f"EXTREME positive funding ({percentile:.0f}th percentile) - Longs paying heavily"
+            desc = (
+                f"EXTREME positive funding ({percentile:.0f}th percentile) - Longs paying heavily"
+            )
         elif percentile >= self.high_percentile:
             zone = FundingZone.HIGH_POSITIVE
             desc = f"High positive funding ({percentile:.0f}th percentile) - Longs paying shorts"
@@ -225,7 +237,9 @@ class AdvancedFundingAnalyzer:
             desc = f"Normal positive funding ({percentile:.0f}th percentile)"
         elif percentile <= low_extreme:
             zone = FundingZone.EXTREME_NEGATIVE
-            desc = f"EXTREME negative funding ({percentile:.0f}th percentile) - Shorts paying heavily"
+            desc = (
+                f"EXTREME negative funding ({percentile:.0f}th percentile) - Shorts paying heavily"
+            )
         elif percentile <= low_high:
             zone = FundingZone.HIGH_NEGATIVE
             desc = f"High negative funding ({percentile:.0f}th percentile) - Shorts paying longs"
@@ -242,14 +256,10 @@ class AdvancedFundingAnalyzer:
             annualized_rate=annualized,
             zone=zone,
             percentile=percentile,
-            description=desc
+            description=desc,
         )
 
-    def analyze_crowd(
-        self,
-        funding_zone: FundingZone,
-        percentile: float
-    ) -> CrowdAnalysisResult:
+    def analyze_crowd(self, funding_zone: FundingZone, percentile: float) -> CrowdAnalysisResult:
         """
         Determine where the crowd is leaning.
 
@@ -290,14 +300,10 @@ class AdvancedFundingAnalyzer:
             position=position,
             lean_strength=lean_strength,
             crowd_description=crowd_desc,
-            contrarian_bias=contrarian
+            contrarian_bias=contrarian,
         )
 
-    def get_warning(
-        self,
-        funding_zone: FundingZone,
-        percentile: float
-    ) -> FundingWarningResult:
+    def get_warning(self, funding_zone: FundingZone, percentile: float) -> FundingWarningResult:
         """
         Generate warning signals.
 
@@ -310,7 +316,7 @@ class AdvancedFundingAnalyzer:
                 warning=FundingWarning.SQUEEZE_RISK_DOWN,
                 severity="extreme",
                 action="HUNT REVERSAL - Look for short entries",
-                description="Extreme crowding on long side. High probability of long squeeze."
+                description="Extreme crowding on long side. High probability of long squeeze.",
             )
 
         elif funding_zone == FundingZone.HIGH_POSITIVE:
@@ -318,7 +324,7 @@ class AdvancedFundingAnalyzer:
                 warning=FundingWarning.DONT_CHASE_LONGS,
                 severity="high",
                 action="DON'T CHASE - Wait for pullback to enter longs",
-                description="High funding means longs are expensive. Don't add here."
+                description="High funding means longs are expensive. Don't add here.",
             )
 
         elif funding_zone == FundingZone.EXTREME_NEGATIVE:
@@ -326,7 +332,7 @@ class AdvancedFundingAnalyzer:
                 warning=FundingWarning.SQUEEZE_RISK_UP,
                 severity="extreme",
                 action="HUNT REVERSAL - Look for long entries",
-                description="Extreme crowding on short side. High probability of short squeeze."
+                description="Extreme crowding on short side. High probability of short squeeze.",
             )
 
         elif funding_zone == FundingZone.HIGH_NEGATIVE:
@@ -334,7 +340,7 @@ class AdvancedFundingAnalyzer:
                 warning=FundingWarning.DONT_CHASE_SHORTS,
                 severity="high",
                 action="DON'T CHASE - Wait for bounce to enter shorts",
-                description="High negative funding means shorts are crowded. Don't pile on."
+                description="High negative funding means shorts are crowded. Don't pile on.",
             )
 
         else:
@@ -342,14 +348,14 @@ class AdvancedFundingAnalyzer:
                 warning=FundingWarning.NONE,
                 severity="low",
                 action="No warning - Normal funding levels",
-                description="Funding is neutral. No positioning extremes detected."
+                description="Funding is neutral. No positioning extremes detected.",
             )
 
     def analyze_funding_oi_combo(
         self,
         funding_zone: FundingZone,
         oi_change_percent: float,
-        oi_direction: Optional[str] = None
+        oi_direction: Optional[str] = None,
     ) -> FundingOIComboResult:
         """
         Combine Funding + OI for high-probability scenarios.
@@ -388,24 +394,30 @@ class AdvancedFundingAnalyzer:
         is_extreme = funding_zone in [FundingZone.EXTREME_POSITIVE, FundingZone.EXTREME_NEGATIVE]
 
         # Determine combo
-        if funding_zone in [FundingZone.EXTREME_POSITIVE, FundingZone.HIGH_POSITIVE] and oi_dir == "rising":
+        if (
+            funding_zone in [FundingZone.EXTREME_POSITIVE, FundingZone.HIGH_POSITIVE]
+            and oi_dir == "rising"
+        ):
             return FundingOIComboResult(
                 combo=FundingOICombo.CROWDED_LONGS_RISING,
                 funding_direction=funding_dir,
                 oi_direction=oi_dir,
                 probability=75 if is_extreme else 65,
                 expected_outcome="DOWNSIDE RISK - New longs entering crowded market",
-                trade_action="Avoid longs. Look for short setups on failed breakouts."
+                trade_action="Avoid longs. Look for short setups on failed breakouts.",
             )
 
-        elif funding_zone in [FundingZone.EXTREME_NEGATIVE, FundingZone.HIGH_NEGATIVE] and oi_dir == "rising":
+        elif (
+            funding_zone in [FundingZone.EXTREME_NEGATIVE, FundingZone.HIGH_NEGATIVE]
+            and oi_dir == "rising"
+        ):
             return FundingOIComboResult(
                 combo=FundingOICombo.CROWDED_SHORTS_RISING,
                 funding_direction=funding_dir,
                 oi_direction=oi_dir,
                 probability=75 if is_extreme else 65,
                 expected_outcome="UPSIDE RISK - New shorts entering crowded market",
-                trade_action="Avoid shorts. Look for long setups on failed breakdowns."
+                trade_action="Avoid shorts. Look for long setups on failed breakdowns.",
             )
 
         elif is_extreme and oi_dir == "flat":
@@ -415,7 +427,7 @@ class AdvancedFundingAnalyzer:
                 oi_direction=oi_dir,
                 probability=70,
                 expected_outcome="EXHAUSTION - Extreme positioning but no new money",
-                trade_action="Reversal imminent. Position for mean reversion."
+                trade_action="Reversal imminent. Position for mean reversion.",
             )
 
         elif is_extreme and oi_dir == "falling":
@@ -426,7 +438,7 @@ class AdvancedFundingAnalyzer:
                 oi_direction=oi_dir,
                 probability=80,
                 expected_outcome=f"CAPITULATION - Positions being flushed {direction}",
-                trade_action=f"Wait for flush to complete, then fade the move."
+                trade_action=f"Wait for flush to complete, then fade the move.",
             )
 
         elif funding_dir == "neutral" and oi_dir == "rising":
@@ -436,7 +448,7 @@ class AdvancedFundingAnalyzer:
                 oi_direction=oi_dir,
                 probability=60,
                 expected_outcome="HEALTHY TREND - New positions without crowding",
-                trade_action="Trade with the trend. Funding allows for continuation."
+                trade_action="Trade with the trend. Funding allows for continuation.",
             )
 
         else:
@@ -446,14 +458,14 @@ class AdvancedFundingAnalyzer:
                 oi_direction=oi_dir,
                 probability=50,
                 expected_outcome="No clear edge from Funding + OI combo",
-                trade_action="Use other indicators for direction."
+                trade_action="Use other indicators for direction.",
             )
 
     def full_analysis(
         self,
         current_rate: float,
         historical_rates: Optional[List[float]] = None,
-        oi_change_percent: Optional[float] = None
+        oi_change_percent: Optional[float] = None,
     ) -> FundingAnalysisSummary:
         """
         Complete funding analysis answering: "Where is the crowd leaning?"
@@ -472,22 +484,16 @@ class AdvancedFundingAnalyzer:
         # Funding + OI combo (if OI data available)
         funding_oi = None
         if oi_change_percent is not None:
-            funding_oi = self.analyze_funding_oi_combo(
-                percentile.zone,
-                oi_change_percent
-            )
+            funding_oi = self.analyze_funding_oi_combo(percentile.zone, oi_change_percent)
 
         # Determine if extreme
-        is_extreme = percentile.zone in [
-            FundingZone.EXTREME_POSITIVE,
-            FundingZone.EXTREME_NEGATIVE
-        ]
+        is_extreme = percentile.zone in [FundingZone.EXTREME_POSITIVE, FundingZone.EXTREME_NEGATIVE]
 
         # Should you chase?
         should_chase = percentile.zone in [
             FundingZone.NEUTRAL,
             FundingZone.NORMAL_POSITIVE,
-            FundingZone.NORMAL_NEGATIVE
+            FundingZone.NORMAL_NEGATIVE,
         ]
 
         # Overall signal
@@ -535,12 +541,14 @@ class AdvancedFundingAnalyzer:
             should_chase=should_chase,
             overall_signal=overall_signal,
             confidence=confidence,
-            summary=summary
+            summary=summary,
         )
 
 
 # Convenience functions
-def should_i_chase(current_rate: float, config: Optional['IndicatorConfig'] = None) -> Tuple[bool, str]:
+def should_i_chase(
+    current_rate: float, config: Optional["IndicatorConfig"] = None
+) -> Tuple[bool, str]:
     """
     Quick check: Should I chase this trade?
 
@@ -552,7 +560,9 @@ def should_i_chase(current_rate: float, config: Optional['IndicatorConfig'] = No
     return result.should_chase, result.warning.action
 
 
-def get_crowd_lean(current_rate: float, config: Optional['IndicatorConfig'] = None) -> Tuple[CrowdPosition, str]:
+def get_crowd_lean(
+    current_rate: float, config: Optional["IndicatorConfig"] = None
+) -> Tuple[CrowdPosition, str]:
     """
     Quick check: Where is the crowd?
 

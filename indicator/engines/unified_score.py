@@ -13,21 +13,22 @@ Weight distribution:
 - Funding:      10% (contrarian crowding gauge)
 """
 
-from dataclasses import dataclass
-from typing import Optional, Tuple, List, TYPE_CHECKING
 import math
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from .indicator_config import IndicatorConfig
 
-from .indicator_config import DEFAULT_CONFIG, safe_divide
 from .funding_analysis import AdvancedFundingAnalyzer, FundingAnalysisSummary
+from .indicator_config import DEFAULT_CONFIG, safe_divide
 from .signals import Signal
 
 
 @dataclass
 class UnifiedScore:
     """Complete unified market score."""
+
     # Component scores [-1, +1]
     volume_score: float
     orderbook_score: float
@@ -35,13 +36,13 @@ class UnifiedScore:
     funding_score: float
 
     # Combined
-    total_score: float          # Weighted combination [-1, +1]
-    confidence: float           # 0-100
+    total_score: float  # Weighted combination [-1, +1]
+    confidence: float  # 0-100
 
     # Action signals
-    bias: str                   # 'long', 'short', 'neutral'
-    strength: str               # 'strong', 'moderate', 'weak'
-    action: str                 # Human-readable action
+    bias: str  # 'long', 'short', 'neutral'
+    strength: str  # 'strong', 'moderate', 'weak'
+    action: str  # Human-readable action
 
     # Breakdown
     volume_weight: float
@@ -60,9 +61,7 @@ def clip(value: float, min_val: float, max_val: float) -> float:
 
 
 def calculate_volume_score(
-    delta_ratio: float,
-    relative_volume: float,
-    config: Optional['IndicatorConfig'] = None
+    delta_ratio: float, relative_volume: float, config: Optional["IndicatorConfig"] = None
 ) -> Tuple[float, str]:
     """
     Calculate volume score from delta and RV.
@@ -82,7 +81,9 @@ def calculate_volume_score(
     cfg = (config or DEFAULT_CONFIG).unified_score
 
     # Delta component (normalized by delta_normalization = 25% is "strong")
-    delta_component = clip(safe_divide(delta_ratio, cfg.delta_normalization, default=0.0), -1.0, 1.0)
+    delta_component = clip(
+        safe_divide(delta_ratio, cfg.delta_normalization, default=0.0), -1.0, 1.0
+    )
 
     # Volume amplification (RV > 1 amplifies, RV < 1 dampens)
     rv_multiplier = clip((relative_volume - 1.0) / cfg.rv_amplification, 0.0, 1.0)
@@ -114,7 +115,7 @@ def calculate_oi_score(
     price_change_pct: float,
     oi_change_pct: float,
     oi_threshold: Optional[float] = None,
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> Tuple[float, str]:
     """
     Calculate OI score from price and OI change.
@@ -152,7 +153,9 @@ def calculate_oi_score(
     if abs(price_change_pct) < 0.1:
         desc = "Price stagnant - OI signal weak"
     elif price_change_pct > 0 and oi_change_pct > 1.0:
-        desc = f"BULLISH - Price up {price_change_pct:+.1f}%, OI up {oi_change_pct:+.1f}% (new longs)"
+        desc = (
+            f"BULLISH - Price up {price_change_pct:+.1f}%, OI up {oi_change_pct:+.1f}% (new longs)"
+        )
     elif price_change_pct > 0 and oi_change_pct < -1.0:
         desc = f"TRAP - Price up {price_change_pct:+.1f}% but OI down {oi_change_pct:.1f}% (short covering only)"
     elif price_change_pct < 0 and oi_change_pct > 1.0:
@@ -169,7 +172,7 @@ def calculate_funding_score(
     current_funding: float,
     historical_funding: Optional[List[float]] = None,
     oi_change_pct: Optional[float] = None,
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> Tuple[float, str]:
     """
     Calculate funding score using AdvancedFundingAnalyzer (CONTRARIAN).
@@ -194,7 +197,7 @@ def calculate_funding_score(
     funding_result = analyzer.full_analysis(
         current_rate=current_funding,
         historical_rates=historical_funding,
-        oi_change_percent=oi_change_pct
+        oi_change_percent=oi_change_pct,
     )
 
     # Convert Signal to score [-1, +1]
@@ -202,9 +205,9 @@ def calculate_funding_score(
     # - BEARISH = crowd is long, fade → negative score
     # - BULLISH = crowd is short, fade → positive score
     signal_to_score = {
-        Signal.BULLISH: 0.7,      # Contrarian bullish (crowd short)
-        Signal.BEARISH: -0.7,     # Contrarian bearish (crowd long)
-        Signal.WARNING: 0.0,      # Extreme conditions, uncertain
+        Signal.BULLISH: 0.7,  # Contrarian bullish (crowd short)
+        Signal.BEARISH: -0.7,  # Contrarian bearish (crowd long)
+        Signal.WARNING: 0.0,  # Extreme conditions, uncertain
         Signal.NEUTRAL: 0.0,
         Signal.CAUTION: 0.0,
         Signal.TRAP: 0.0,
@@ -241,7 +244,7 @@ def calculate_orderbook_score(
     imbalance_threshold: Optional[float] = None,
     is_bait: bool = False,
     spoof_detected: bool = False,
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> Tuple[float, str]:
     """
     Calculate orderbook score from depth imbalance and absorption.
@@ -269,7 +272,11 @@ def calculate_orderbook_score(
         (score, description)
     """
     cfg = (config or DEFAULT_CONFIG).unified_score
-    threshold = imbalance_threshold if imbalance_threshold is not None else cfg.orderbook_imbalance_threshold
+    threshold = (
+        imbalance_threshold
+        if imbalance_threshold is not None
+        else cfg.orderbook_imbalance_threshold
+    )
 
     # Base imbalance score (threshold imbalance = 1.0)
     base_score = clip(safe_divide(depth_imbalance, threshold, default=0.0), -1.0, 1.0)
@@ -322,30 +329,25 @@ def calculate_unified_score(
     # Volume inputs
     delta_ratio: float,
     relative_volume: float,
-
     # OI inputs
     price_change_pct: float,
     oi_change_pct: Optional[float] = None,
-
     # Funding inputs
     current_funding: Optional[float] = None,
     historical_funding: Optional[List[float]] = None,
-
     # Orderbook inputs
     depth_imbalance: Optional[float] = None,
     absorption_bullish: bool = False,
     absorption_bearish: bool = False,
     is_bait: bool = False,
     spoof_detected: bool = False,
-
     # Weights (must sum to 1.0)
     volume_weight: float = 0.35,
     orderbook_weight: float = 0.30,
     oi_weight: float = 0.25,
     funding_weight: float = 0.10,
-
     # Config
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> UnifiedScore:
     """
     Calculate unified market score combining all indicators.
@@ -394,7 +396,7 @@ def calculate_unified_score(
             current_funding=current_funding,
             historical_funding=historical_funding,
             oi_change_pct=oi_change_pct,
-            config=config
+            config=config,
         )
     else:
         fund_score = 0.0
@@ -403,8 +405,12 @@ def calculate_unified_score(
     # Orderbook score (if available)
     if depth_imbalance is not None:
         book_score, book_desc = calculate_orderbook_score(
-            depth_imbalance, absorption_bullish, absorption_bearish,
-            is_bait=is_bait, spoof_detected=spoof_detected, config=config
+            depth_imbalance,
+            absorption_bullish,
+            absorption_bearish,
+            is_bait=is_bait,
+            spoof_detected=spoof_detected,
+            config=config,
         )
     else:
         book_score = 0.0
@@ -418,7 +424,8 @@ def calculate_unified_score(
         # Linear ramp: RV=0 → floor, RV=1.0 → 1.0 (no scaling)
         vol_factor = clip(
             cfg.volume_weight_floor + (1.0 - cfg.volume_weight_floor) * relative_volume,
-            cfg.volume_weight_floor, 1.0
+            cfg.volume_weight_floor,
+            1.0,
         )
         orderbook_weight *= vol_factor
         oi_weight *= vol_factor
@@ -435,10 +442,10 @@ def calculate_unified_score(
 
     # Weighted combination
     total_score = (
-        volume_weight * vol_score +
-        orderbook_weight * book_score +
-        oi_weight * oi_score +
-        funding_weight * fund_score
+        volume_weight * vol_score
+        + orderbook_weight * book_score
+        + oi_weight * oi_score
+        + funding_weight * fund_score
     )
 
     # Hard gate: truly dead volume → force neutral
@@ -489,7 +496,10 @@ def calculate_unified_score(
     warning = None
 
     # Warning: Volume disagrees with OI
-    if abs(vol_score) > cfg.divergence_warning_threshold and abs(oi_score) > cfg.divergence_warning_threshold:
+    if (
+        abs(vol_score) > cfg.divergence_warning_threshold
+        and abs(oi_score) > cfg.divergence_warning_threshold
+    ):
         if (vol_score > 0 and oi_score < 0) or (vol_score < 0 and oi_score > 0):
             warning = "Volume and OI diverging - potential trap"
 
@@ -499,7 +509,9 @@ def calculate_unified_score(
 
     # Warning: Extreme funding opposite to signal
     if abs(fund_score) > cfg.funding_extreme_threshold:
-        if (fund_score > 0 and total_score < -cfg.divergence_warning_threshold) or (fund_score < 0 and total_score > cfg.divergence_warning_threshold):
+        if (fund_score > 0 and total_score < -cfg.divergence_warning_threshold) or (
+            fund_score < 0 and total_score > cfg.divergence_warning_threshold
+        ):
             warning = "Funding extreme opposite to signal - high squeeze risk"
 
     return UnifiedScore(
@@ -517,7 +529,7 @@ def calculate_unified_score(
         oi_weight=oi_weight,
         funding_weight=funding_weight,
         description=description,
-        warning=warning
+        warning=warning,
     )
 
 
@@ -528,7 +540,7 @@ def get_market_action(
     price_change_pct: float,
     oi_change_pct: Optional[float] = None,
     depth_imbalance: Optional[float] = None,
-    config: Optional['IndicatorConfig'] = None
+    config: Optional["IndicatorConfig"] = None,
 ) -> Tuple[str, float, float]:
     """
     Quick check: What should I do?
@@ -542,6 +554,6 @@ def get_market_action(
         price_change_pct=price_change_pct,
         oi_change_pct=oi_change_pct,
         depth_imbalance=depth_imbalance,
-        config=config
+        config=config,
     )
     return result.action, result.total_score, result.confidence

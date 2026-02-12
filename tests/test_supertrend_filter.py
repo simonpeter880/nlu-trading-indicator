@@ -4,28 +4,22 @@ Tests for Supertrend Filter Module
 Tests ATR calculation, band locking, direction flips, and regime classification.
 """
 
-import pytest
 from typing import List
+
+import pytest
 from supertrend_filter import (
-    SupertrendEngine,
-    SupertrendConfig,
     Candle,
     Direction,
     Regime,
-    format_supertrend_output
+    SupertrendConfig,
+    SupertrendEngine,
+    format_supertrend_output,
 )
 
 
 def create_candle(timestamp: float, high: float, low: float, close: float) -> Candle:
     """Helper to create a candle"""
-    return Candle(
-        timestamp=timestamp,
-        open=close,
-        high=high,
-        low=low,
-        close=close,
-        volume=1000.0
-    )
+    return Candle(timestamp=timestamp, open=close, high=high, low=low, close=close, volume=1000.0)
 
 
 def create_simple_candle(timestamp: float, price: float) -> Candle:
@@ -83,7 +77,7 @@ class TestATRCalculation:
         state1 = engine.on_candle_close("1m", c1)
 
         # TR should be 10.0
-        assert abs(state1.debug['tr'] - 10.0) < 1e-9
+        assert abs(state1.debug["tr"] - 10.0) < 1e-9
 
         # Second candle with gap
         c2 = create_candle(2.0, 115.0, 108.0, 110.0)
@@ -91,7 +85,7 @@ class TestATRCalculation:
 
         # TR = max(115-108, abs(115-100), abs(108-100))
         # TR = max(7, 15, 8) = 15
-        assert abs(state2.debug['tr'] - 15.0) < 1e-9
+        assert abs(state2.debug["tr"] - 15.0) < 1e-9
 
     def test_atr_seed_with_sma(self):
         """Test ATR seeds with SMA of TR values"""
@@ -111,7 +105,7 @@ class TestATRCalculation:
 
         # ATR should be ready after 5 candles
         assert results[4].atr > 0
-        assert results[4].debug['is_ready']
+        assert results[4].debug["is_ready"]
 
     def test_atr_wilder_smoothing(self):
         """Test ATR Wilder smoothing formula"""
@@ -259,10 +253,7 @@ class TestRegimeClassification:
     def test_trend_regime_detection(self):
         """Test TREND regime detection in strong trend"""
         config = SupertrendConfig(
-            atr_period=10,
-            flip_window=20,
-            flip_rate_trend=0.05,
-            min_hold_bars=3
+            atr_period=10, flip_window=20, flip_rate_trend=0.05, min_hold_bars=3
         )
         engine = SupertrendEngine(config)
 
@@ -285,7 +276,7 @@ class TestRegimeClassification:
             atr_period=10,
             flip_window=20,
             flip_rate_chop=0.10,
-            multiplier=1.5  # Tighter bands to trigger more flips
+            multiplier=1.5,  # Tighter bands to trigger more flips
         )
         engine = SupertrendEngine(config)
 
@@ -307,10 +298,7 @@ class TestRegimeClassification:
 
     def test_low_atr_triggers_chop(self):
         """Test low ATR% triggers CHOP regime"""
-        config = SupertrendConfig(
-            atr_period=10,
-            atrp_min_chop=0.005  # 0.5%
-        )
+        config = SupertrendConfig(atr_period=10, atrp_min_chop=0.005)  # 0.5%
         engine = SupertrendEngine(config)
 
         # Very tight range (low ATR)
@@ -395,10 +383,7 @@ class TestMultiTimeframe:
         candles_1m = generate_trending_candles(100.0, 30, 0.01)
         candles_5m = generate_trending_candles(100.0, 30, -0.005)
 
-        engine.warmup({
-            "1m": candles_1m,
-            "5m": candles_5m
-        })
+        engine.warmup({"1m": candles_1m, "5m": candles_5m})
 
         result_1m = engine.on_candle_close("1m", candles_1m[-1])
         result_5m = engine.on_candle_close("5m", candles_5m[-1])
@@ -417,16 +402,10 @@ class TestMultiTimeframe:
         candles_5m = generate_trending_candles(100.0, 30, 0.005)
 
         # Warmup
-        engine.warmup({
-            "1m": candles_1m[:20],
-            "5m": candles_5m[:20]
-        })
+        engine.warmup({"1m": candles_1m[:20], "5m": candles_5m[:20]})
 
         # Update
-        results = engine.update({
-            "1m": candles_1m[20:],
-            "5m": candles_5m[20:]
-        })
+        results = engine.update({"1m": candles_1m[20:], "5m": candles_5m[20:]})
 
         assert "1m" in results
         assert "5m" in results
@@ -437,24 +416,14 @@ class TestPerTimeframeOverrides:
 
     def test_per_tf_atr_period(self):
         """Test per-timeframe ATR period override"""
-        config = SupertrendConfig(
-            atr_period=10,
-            per_tf_overrides={
-                "1m": {"atr_period": 5}
-            }
-        )
+        config = SupertrendConfig(atr_period=10, per_tf_overrides={"1m": {"atr_period": 5}})
 
         assert config.get_atr_period("1m") == 5
         assert config.get_atr_period("5m") == 10
 
     def test_per_tf_multiplier(self):
         """Test per-timeframe multiplier override"""
-        config = SupertrendConfig(
-            multiplier=3.0,
-            per_tf_overrides={
-                "1h": {"multiplier": 2.5}
-            }
-        )
+        config = SupertrendConfig(multiplier=3.0, per_tf_overrides={"1h": {"multiplier": 2.5}})
 
         assert config.get_multiplier("1h") == 2.5
         assert config.get_multiplier("1m") == 3.0
@@ -507,7 +476,7 @@ class TestEdgeCases:
         result = engine.on_candle_close("1m", candle)
 
         # Should not crash, ATR not ready yet
-        assert result.debug['is_ready'] is False
+        assert result.debug["is_ready"] is False
 
     def test_zero_true_range(self):
         """Test handling of zero true range"""
