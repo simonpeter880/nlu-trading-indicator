@@ -2,7 +2,7 @@
 
 [![CI/CD Pipeline](https://github.com/simonpeter880/nlu-trading-indicator/actions/workflows/ci.yml/badge.svg)](https://github.com/simonpeter880/nlu-trading-indicator/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/simonpeter880/nlu-trading-indicator/branch/main/graph/badge.svg)](https://codecov.io/gh/simonpeter880/nlu-trading-indicator)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 A comprehensive Python-based cryptocurrency trading indicator analysis system designed for institutional-grade technical analysis of Binance trading pairs.
@@ -20,7 +20,7 @@ A comprehensive Python-based cryptocurrency trading indicator analysis system de
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - pip package manager
 
 ### Quick Start
