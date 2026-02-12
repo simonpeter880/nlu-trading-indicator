@@ -101,7 +101,7 @@ class _FailureSwingDetector:
         self.config = config
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset detector state."""
         # Bear failure swing tracking
         self.bear_stage = 0  # 0=none, 1=above_high, 2=pullback, 3=lower_high

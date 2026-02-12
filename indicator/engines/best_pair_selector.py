@@ -89,12 +89,12 @@ class BinanceDataCache:
 
         return self._cache[key]
 
-    def set(self, key: str, value: any):
+    def set(self, key: str, value: any) -> None:
         """Set cached value with current timestamp"""
         self._cache[key] = value
         self._timestamps[key] = time.time()
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all cached data"""
         self._cache.clear()
         self._timestamps.clear()
@@ -623,7 +623,7 @@ class BestPairSelector:
         }
 
 
-def print_results(result: dict):
+def print_results(result: dict) -> None:
     """Pretty print selection results"""
     print("\n" + "=" * 100)
     print("BINANCE FUTURES - BEST PAIR SELECTOR")
@@ -707,7 +707,7 @@ def print_results(result: dict):
     print("=" * 100 + "\n")
 
 
-def main():
+def main() -> None:
     """CLI entry point"""
     try:
         selector = BestPairSelector()

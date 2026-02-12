@@ -709,7 +709,7 @@ def create_candle(
     return Candle(timestamp=timestamp, open=o, high=h, low=l, close=c, volume=v)
 
 
-def print_ema_state(tf: str, state: EMAState, compact: bool = True):
+def print_ema_state(tf: str, state: EMAState, compact: bool = True) -> None:
     """Print EMA state in readable format."""
     from indicator.display.colors import Colors
 
@@ -772,7 +772,7 @@ def print_ema_state(tf: str, state: EMAState, compact: bool = True):
         print(f"  Pullback Zone: {'HIT' if state.pullback_zone_hit else 'no'}")
 
 
-def print_ema_block(engine: EMAFilterEngine, ltf: str = "1m", htf: str = "1h"):
+def print_ema_block(engine: EMAFilterEngine, ltf: str = "1m", htf: str = "1h") -> None:
     """Print compact EMA filter block."""
     from indicator.display.colors import Colors
 
