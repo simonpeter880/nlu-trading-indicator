@@ -168,12 +168,14 @@ This project follows strict code quality standards:
 
 - **Formatting**: Black (PEP 8 compliant)
 - **Import Sorting**: isort
-- **Linting**: flake8 with PEP 257 docstrings
+- **Linting**: flake8 with PEP 257 docstrings (legacy issues being addressed)
 - **Type Checking**: mypy for static type analysis
 - **Security**: bandit for security vulnerability scanning
 - **Pre-commit Hooks**: Automated checks before every commit
 
 All checks run automatically in CI/CD on every push and pull request.
+
+**Note**: This project is actively being modernized. Some flake8 warnings (E501 line length, D401 docstrings) exist in legacy code and will be addressed incrementally without affecting functionality.
 
 ## Contributing
 
