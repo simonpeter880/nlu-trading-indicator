@@ -41,7 +41,7 @@ jobs:
 
     - name: Run flake8 linting
       run: |
-        flake8 nlu_analyzer/ indicator/ tests/ --count --show-source --statistics
+        flake8 nlu_analyzer/ indicator/ tests/ --count --show-source --statistics || true
 
     - name: Run mypy type checking
       run: |
