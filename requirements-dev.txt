@@ -29,8 +29,8 @@ safety==3.0.1
 # Pre-commit hooks (3.5.0 is last version supporting Python 3.8)
 pre-commit==3.5.0
 
-# Documentation (optional)
-sphinx==7.2.6
+# Documentation (optional) - 7.1.2 is last version supporting Python 3.8
+sphinx==7.1.2
 sphinx-rtd-theme==2.0.0
 
 # Development utilities (8.18.1 is last version supporting Python 3.9)
