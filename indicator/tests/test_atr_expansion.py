@@ -12,7 +12,7 @@ Verifies:
 
 import pytest
 
-from atr_expansion import (
+from indicator.engines.atr_expansion import (
     ATRExpansionConfig,
     ATRExpansionEngine,
     Candle,
