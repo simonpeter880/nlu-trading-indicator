@@ -140,7 +140,7 @@ def example_streaming_integration():
 
     session_1m = all_results.session_by_tf["1m"]
 
-    print(f"\nTimeframe: 1m Session VWAP")
+    print("\nTimeframe: 1m Session VWAP")
     print(f"  VWAP: {session_1m.vwap:.2f}")
     print(f"  Price Position: {session_1m.price_position.value}")
     print(f"  Interaction State: {session_1m.interaction_state.value}")

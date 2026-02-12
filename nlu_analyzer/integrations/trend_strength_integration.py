@@ -161,11 +161,11 @@ def example_basic_integration():
     print("=" * 80)
 
     state = result
-    print(f"\nTimeframe: 1m")
+    print("\nTimeframe: 1m")
     print(f"  Strength (final): {state.strength_smooth:.1f}/100")
     print(f"  Strength (raw): {state.strength_raw:.1f}/100")
     print(f"  Bucket: {state.bucket.value}")
-    print(f"  Components normalized:")
+    print("  Components normalized:")
     for comp, val in state.components_norm.items():
         if val is not None:
             print(f"    {comp}: {val:.3f}")
@@ -265,7 +265,7 @@ def example_directional_signing():
     print(f"  Strength (unsigned): {result_bull.strength_smooth:.1f}")
     print(f"  Direction bias: {result_bull.direction_bias:+d}")
     print(f"  Signed strength: {result_bull.strength_signed:+.1f}")
-    print(f"  → Positive signed strength = bullish momentum")
+    print("  → Positive signed strength = bullish momentum")
 
     # Example 2: BEAR bias
     print("\n2. BEAR BIAS (downtrend):")
@@ -280,7 +280,7 @@ def example_directional_signing():
     print(f"  Strength (unsigned): {result_bear.strength_smooth:.1f}")
     print(f"  Direction bias: {result_bear.direction_bias:+d}")
     print(f"  Signed strength: {result_bear.strength_signed:+.1f}")
-    print(f"  → Negative signed strength = bearish momentum")
+    print("  → Negative signed strength = bearish momentum")
 
     # Example 3: NEUTRAL bias
     print("\n3. NEUTRAL BIAS (no directional conviction):")
@@ -295,7 +295,7 @@ def example_directional_signing():
     print(f"  Strength (unsigned): {result_neutral.strength_smooth:.1f}")
     print(f"  Direction bias: {result_neutral.direction_bias:+d}")
     print(f"  Signed strength: {result_neutral.strength_signed:+.1f}")
-    print(f"  → Zero signed strength = no directional conviction")
+    print("  → Zero signed strength = no directional conviction")
 
     # Example 4: Using direction_bias int directly (takes precedence)
     print("\n4. USING direction_bias INT (overrides bias string):")
@@ -308,10 +308,10 @@ def example_directional_signing():
         bias="BULL",  # This will be ignored
         direction_bias=-1,  # This takes precedence
     )
-    print(f"  bias='BULL' but direction_bias=-1")
+    print("  bias='BULL' but direction_bias=-1")
     print(f"  Direction bias used: {result_int.direction_bias:+d}")
     print(f"  Signed strength: {result_int.strength_signed:+.1f}")
-    print(f"  → direction_bias parameter takes precedence")
+    print("  → direction_bias parameter takes precedence")
 
     print("\nUSAGE NOTES:")
     print("  - Get bias from EMA system: ema_state.ema_bias ('BULL'/'BEAR'/'NEUTRAL')")

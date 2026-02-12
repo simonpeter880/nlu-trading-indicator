@@ -114,7 +114,7 @@ def example_streaming_integration():
 
     state = ribbon_state_1m
 
-    print(f"\nTimeframe: 1m")
+    print("\nTimeframe: 1m")
     print(f"  Direction: {state.ribbon_direction.value}")
     print(f"  State: {state.ribbon_state.value}")
     print(f"  Strength: {state.ribbon_strength_0_100:.1f}")
@@ -125,11 +125,11 @@ def example_streaming_integration():
     print(f"  Center Slope: {state.ribbon_center_slope:+.4%}")
     print(f"  Pullback: {state.pullback_into_ribbon}")
 
-    print(f"\n  EMA Values:")
+    print("\n  EMA Values:")
     for period, ema_value in sorted(state.emas.items()):
         print(f"    EMA{period}: {ema_value:.2f}")
 
-    print(f"\n  Debug Info:")
+    print("\n  Debug Info:")
     for key, value in state.debug.items():
         print(f"    {key}: {value}")
 

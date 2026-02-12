@@ -113,7 +113,7 @@ def example_streaming_integration():
 
     state = result_1m
 
-    print(f"\nTimeframe: 1m")
+    print("\nTimeframe: 1m")
     print(f"  Direction: {state.st_direction.value}")
     print(f"  Regime: {state.regime.value}")
     print(f"  Strength: {state.regime_strength_0_100:.1f}/100")

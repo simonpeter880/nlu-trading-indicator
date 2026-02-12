@@ -738,7 +738,7 @@ def format_trend_strength_output(
             lines.append(f"\n{tf}:")
             lines.append(f"  Strength: {state.strength_smooth:.1f} ({state.bucket.value})")
             lines.append(f"  Raw: {state.strength_raw:.1f}")
-            lines.append(f"  Components (normalized):")
+            lines.append("  Components (normalized):")
             for key, val in state.components_norm.items():
                 lines.append(f"    {key}: {val:.2f}")
 

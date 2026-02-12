@@ -519,7 +519,7 @@ def format_vwap_interaction_output(state: VWAPInteractionState, compact: bool = 
         if state.last_touch_age is not None:
             lines.append(f"  Last Touch: {state.last_touch_age} bars ago")
         else:
-            lines.append(f"  Last Touch: Never")
+            lines.append("  Last Touch: Never")
 
         if state.debug:
             lines.append("  Debug:")
