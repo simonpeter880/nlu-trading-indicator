@@ -4,8 +4,6 @@ ROC Momentum - Minimal Compact Print Block
 Copy-paste ready display functions for integrating ROC momentum into your output.
 """
 
-from typing import Optional
-
 
 def print_roc_status_line(roc_state, tf: str = "1m") -> str:
     """

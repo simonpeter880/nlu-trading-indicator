@@ -162,8 +162,7 @@ class TestBandLocking:
         candles = generate_trending_candles(100.0, 15, 0.01)
         engine.warmup({"1m": candles[:10]})
 
-        result1 = engine.on_candle_close("1m", candles[10])
-        upper1 = result1.final_upper
+        engine.on_candle_close("1m", candles[10])
 
         # Price stays above, upper should lock or update
         result2 = engine.on_candle_close("1m", candles[11])

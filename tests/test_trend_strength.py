@@ -4,8 +4,6 @@ Tests for Trend Strength Module
 Tests component normalization, weighting, smoothing, and bucketing.
 """
 
-from typing import List
-
 import pytest
 
 from nlu_analyzer.indicators.trend_strength import (

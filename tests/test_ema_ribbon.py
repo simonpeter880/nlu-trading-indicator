@@ -391,7 +391,6 @@ class TestPullbackDetection:
         # Get ribbon center and threshold
         result = engine.on_candle_close("1m", candles[-1], atr_percent=0.01)
         center = result.ribbon_center
-        pullback_band = result.debug["thresholds"]["pullback_band"]  # 0.003 (0.3%)
 
         # Create candle close to center (within pullback band)
         # pullback_band is 0.003 = 0.3% of close, so we need to be within that

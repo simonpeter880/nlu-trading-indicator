@@ -170,8 +170,7 @@ class TestSessionReset:
         # Day 1: 2024-01-01 23:59:00 UTC
         day1_time = datetime(2024, 1, 1, 23, 59, 0, tzinfo=timezone.utc).timestamp()
         candle1 = create_simple_candle(day1_time, 100.0, 100.0)
-        result1 = engine.on_candle_close("1m", candle1)
-        vwap1 = result1.session_by_tf["1m"].vwap
+        engine.on_candle_close("1m", candle1)
 
         # Day 2: 2024-01-02 00:01:00 UTC (crossed boundary)
         day2_time = datetime(2024, 1, 2, 0, 1, 0, tzinfo=timezone.utc).timestamp()
@@ -216,7 +215,7 @@ class TestWeeklyReset:
         # Week 1: Friday 2024-01-05 (week 1)
         week1_time = datetime(2024, 1, 5, 23, 0, 0, tzinfo=timezone.utc).timestamp()
         candle1 = create_simple_candle(week1_time, 100.0, 100.0)
-        result1 = engine.on_candle_close("1m", candle1)
+        engine.on_candle_close("1m", candle1)
 
         # Week 2: Monday 2024-01-08 (week 2, crossed boundary)
         week2_time = datetime(2024, 1, 8, 1, 0, 0, tzinfo=timezone.utc).timestamp()

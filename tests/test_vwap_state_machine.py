@@ -476,7 +476,7 @@ class TestStability:
         hold_before = result.hold_count
 
         # Touch (AT)
-        result_touch = sm.on_update("1m", 4, 100.005, vwap)
+        sm.on_update("1m", 4, 100.005, vwap)
 
         # Return above
         result_after = sm.on_update("1m", 5, 100.6, vwap)

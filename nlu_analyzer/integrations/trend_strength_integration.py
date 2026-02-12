@@ -5,8 +5,6 @@ Demonstrates how to integrate the Trend Strength composite module
 with EMA Ribbon, Supertrend, and other systems for lag-free trend measurement.
 """
 
-from typing import Dict
-
 from nlu_analyzer.indicators.trend_strength import (
     Candle,
     TrendStrengthConfig,

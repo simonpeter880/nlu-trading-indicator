@@ -5,7 +5,7 @@ Demonstrates how to integrate the Supertrend Engine for regime labeling
 and directional bias filtering in a streaming trading system.
 """
 
-from typing import Dict, Optional
+from typing import Dict
 
 from nlu_analyzer.indicators.supertrend_filter import (
     Candle,

@@ -13,7 +13,7 @@ import math
 
 import pytest
 
-from nlu_analyzer.indicators.roc_momentum import Candle, ROCConfig, ROCMomentumEngine, ROCState
+from nlu_analyzer.indicators.roc_momentum import Candle, ROCConfig, ROCMomentumEngine
 
 # =============================================================================
 # FIXTURES
