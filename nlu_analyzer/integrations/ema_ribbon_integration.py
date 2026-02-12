@@ -23,7 +23,7 @@ def example_streaming_integration():
     1. Initialize engine with config
     2. Warmup with historical data
     3. Process new candles incrementally on close
-    4. Display compact output
+    4. Display compact output.
     """
 
     # ========== CONFIGURATION ==========
@@ -139,7 +139,7 @@ def example_streaming_integration():
     print("=" * 80)
 
     def analyze_ribbon_health(ribbon_state):
-        """Example: Use ribbon state for trading decisions"""
+        """Example: Use ribbon state for trading decisions."""
 
         # This module is focused on TREND HEALTH, not entry signals
         # Use it to filter/qualify entries from your EMA system
@@ -176,7 +176,7 @@ def example_streaming_integration():
 
 
 def generate_test_candles(start_price: float, count: int, trend: str = "up"):
-    """Generate synthetic test candles"""
+    """Generate synthetic test candles."""
     candles = []
     price = start_price
     trend_strength = 0.002
@@ -221,7 +221,7 @@ class ProductionRibbonIntegration:
         self.warmed_up_tfs = set()
 
     def on_startup(self):
-        """Called once on system startup"""
+        """Called once on system startup."""
         # Fetch historical candles for all timeframes
         historical_data = self.fetch_historical_candles()
         atr_data = self.fetch_current_atr_percent()
@@ -264,17 +264,17 @@ class ProductionRibbonIntegration:
             print(format_ribbon_output({tf: ribbon_state}, compact=True))
 
     def fetch_historical_candles(self) -> Dict[str, list]:
-        """Fetch historical candles from your data source"""
+        """Fetch historical candles from your data source."""
         # TODO: Replace with actual data fetching
         return {"1m": [], "5m": [], "1h": []}
 
     def fetch_current_atr_percent(self) -> Dict[str, float]:
-        """Fetch current ATR% values"""
+        """Fetch current ATR% values."""
         # TODO: Replace with actual ATR calculation
         return {"1m": 0.008, "5m": 0.012, "1h": 0.020}
 
     def get_current_atr_percent(self, tf: str) -> Optional[float]:
-        """Get current ATR% for a timeframe"""
+        """Get current ATR% for a timeframe."""
         # TODO: Replace with actual ATR lookup
         return None
 
@@ -289,7 +289,7 @@ class ProductionRibbonIntegration:
         pass
 
     def should_display(self, tf: str) -> bool:
-        """Determine if output should be displayed"""
+        """Determine if output should be displayed."""
         # TODO: Add your display logic
         return False
 

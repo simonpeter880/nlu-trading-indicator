@@ -5,7 +5,7 @@ Robust state machine for classifying VWAP interaction patterns:
 - Position: ABOVE / BELOW / AT
 - State: NEUTRAL / ACCEPT / REJECT / RECLAIM / LOSS
 - Anti-flip hysteresis with regime-aware tuning
-- O(1) per update with deterministic priority rules
+- O(1) per update with deterministic priority rules.
 """
 
 from collections import deque
@@ -15,7 +15,7 @@ from typing import Deque, Dict, Optional
 
 
 class Position(Enum):
-    """Price position relative to VWAP"""
+    """Price position relative to VWAP."""
 
     ABOVE = "ABOVE"
     BELOW = "BELOW"
@@ -23,7 +23,7 @@ class Position(Enum):
 
 
 class InteractionState(Enum):
-    """VWAP interaction state"""
+    """VWAP interaction state."""
 
     NEUTRAL = "NEUTRAL"
     ACCEPT = "ACCEPT"
@@ -33,7 +33,7 @@ class InteractionState(Enum):
 
 
 class Regime(Enum):
-    """Market regime"""
+    """Market regime."""
 
     TREND = "TREND"
     RANGE = "RANGE"
@@ -41,7 +41,7 @@ class Regime(Enum):
 
 @dataclass
 class VWAPStateConfig:
-    """Configuration for VWAP State Machine"""
+    """Configuration for VWAP State Machine."""
 
     # Crossings detection window
     window_crossings: int = 20
@@ -80,7 +80,7 @@ class VWAPStateConfig:
 
 @dataclass
 class VWAPInteractionState:
-    """Output state from VWAP interaction analysis"""
+    """Output state from VWAP interaction analysis."""
 
     # Core classification
     position: str  # "ABOVE", "BELOW", "AT"
@@ -99,7 +99,7 @@ class VWAPInteractionState:
 
 
 class _TimeframeState:
-    """Internal state for a single timeframe"""
+    """Internal state for a single timeframe."""
 
     def __init__(self, config: VWAPStateConfig, tf: str):
         self.config = config
@@ -132,14 +132,14 @@ class _TimeframeState:
 
 
 class VWAPStateMachine:
-    """VWAP Interaction State Machine"""
+    """VWAP Interaction State Machine."""
 
     def __init__(self, config: VWAPStateConfig):
         """
         Initialize VWAP State Machine.
 
         Args:
-            config: Configuration parameters
+            config: Configuration parameters.
         """
         self.config = config
         self._states: Dict[str, _TimeframeState] = {}
@@ -150,13 +150,13 @@ class VWAPStateMachine:
         Reset state for a timeframe.
 
         Args:
-            tf: Timeframe string
+            tf: Timeframe string.
         """
         if tf in self._states:
             del self._states[tf]
 
     def _get_or_create_state(self, tf: str) -> _TimeframeState:
-        """Get or create timeframe state"""
+        """Get or create timeframe state."""
         if tf not in self._states:
             self._states[tf] = _TimeframeState(self.config, tf)
         return self._states[tf]
@@ -190,7 +190,7 @@ class VWAPStateMachine:
             regime: Market regime "TREND" or "RANGE" (optional, inferred if None)
 
         Returns:
-            VWAPInteractionState with classification and metrics
+            VWAPInteractionState with classification and metrics.
         """
         state = self._get_or_create_state(tf)
 
@@ -487,7 +487,7 @@ def format_vwap_interaction_output(state: VWAPInteractionState, compact: bool = 
         compact: If True, use compact format
 
     Returns:
-        Formatted string
+        Formatted string.
     """
     if compact:
         sigma_str = f"σ={state.dist_sigma:.2f}" if state.dist_sigma is not None else "σ=N/A"

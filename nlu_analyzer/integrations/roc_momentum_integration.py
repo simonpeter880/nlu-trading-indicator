@@ -7,7 +7,7 @@ Integration points:
 1. Add ROC momentum engine to continuous analyzer
 2. Use ROC state for trade filtering
 3. Combine with market structure for confluence
-4. Display ROC momentum in analysis output
+4. Display ROC momentum in analysis output.
 """
 
 from dataclasses import dataclass
@@ -116,7 +116,7 @@ class ROCTradeFilter:
     2. PULLBACK: Allow counter-trend entries (careful!)
     3. FADE: Reject new entries, consider exits
     4. NOISE: Reject trades (no clear direction)
-    5. Divergence: Warning flag, reduce position size
+    5. Divergence: Warning flag, reduce position size.
     """
 
     min_score_for_entry: float = 50.0
@@ -199,7 +199,7 @@ class ROCTradeFilter:
         Get position size multiplier based on ROC state.
 
         Returns:
-            Multiplier (0.0 - 1.0) for position sizing
+            Multiplier (0.0 - 1.0) for position sizing.
         """
         if roc_state is None:
             return 0.5  # Reduced size if no data
@@ -293,7 +293,7 @@ def print_roc_compact(engine: ROCMomentumEngine, primary_tf: str = "1m") -> None
     Compact single-line ROC display for continuous runner status line.
 
     Example output:
-        ROC: IMPULSE(↑76) 5m=+0.8% div=NONE
+        ROC: IMPULSE(↑76) 5m=+0.8% div=NONE.
     """
     state = engine.get_state(primary_tf)
     if state is None:

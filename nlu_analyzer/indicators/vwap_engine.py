@@ -12,7 +12,7 @@ Features:
 - Incremental O(1) updates per candle
 - Volume-weighted standard deviation for bands
 - Multi-timeframe support
-- Configurable state confirmation with hold bars
+- Configurable state confirmation with hold bars.
 """
 
 import math
@@ -26,14 +26,14 @@ import pytz
 
 
 class PriceSource(Enum):
-    """Price source for VWAP calculation"""
+    """Price source for VWAP calculation."""
 
     TYPICAL = "typical"  # (H+L+C)/3
     CLOSE = "close"  # Close only
 
 
 class VWAPKind(Enum):
-    """Type of VWAP line"""
+    """Type of VWAP line."""
 
     SESSION = "SESSION"
     WEEKLY = "WEEKLY"
@@ -41,7 +41,7 @@ class VWAPKind(Enum):
 
 
 class PricePosition(Enum):
-    """Price position relative to VWAP"""
+    """Price position relative to VWAP."""
 
     ABOVE = "ABOVE"
     BELOW = "BELOW"
@@ -49,7 +49,7 @@ class PricePosition(Enum):
 
 
 class InteractionState(Enum):
-    """VWAP interaction state"""
+    """VWAP interaction state."""
 
     ACCEPT = "ACCEPT"  # Staying on same side with confirmation
     REJECT = "REJECT"  # Touched and moved away
@@ -59,7 +59,7 @@ class InteractionState(Enum):
 
 
 class BandMethod(Enum):
-    """Method used for band calculation"""
+    """Method used for band calculation."""
 
     STD = "STD"  # Standard deviation bands
     ATR_FALLBACK = "ATR_FALLBACK"  # ATR-based fallback
@@ -68,7 +68,7 @@ class BandMethod(Enum):
 
 @dataclass
 class Candle:
-    """OHLCV candle structure"""
+    """OHLCV candle structure."""
 
     timestamp: float  # UTC seconds or milliseconds
     open: float
@@ -80,7 +80,7 @@ class Candle:
 
 @dataclass
 class VWAPBands:
-    """VWAP bands structure"""
+    """VWAP bands structure."""
 
     vwap: float
     std: Optional[float]
@@ -90,7 +90,7 @@ class VWAPBands:
 
 @dataclass
 class VWAPConfig:
-    """Configuration for VWAP Engine"""
+    """Configuration for VWAP Engine."""
 
     # Price source
     price_source: PriceSource = PriceSource.TYPICAL
@@ -130,7 +130,7 @@ class VWAPConfig:
 
 @dataclass
 class VWAPState:
-    """State for a single VWAP line"""
+    """State for a single VWAP line."""
 
     # Identity
     kind: VWAPKind
@@ -166,7 +166,7 @@ class VWAPState:
 
 @dataclass
 class VWAPMultiTFState:
-    """Multi-timeframe VWAP state"""
+    """Multi-timeframe VWAP state."""
 
     session_by_tf: Dict[str, VWAPState] = field(default_factory=dict)
     weekly_by_tf: Dict[str, VWAPState] = field(default_factory=dict)
@@ -226,7 +226,7 @@ class VWAPEngine:
             curr_time: Current timestamp
 
         Returns:
-            True if session boundary crossed
+            True if session boundary crossed.
         """
         if prev_time <= 0:
             return False
@@ -249,7 +249,7 @@ class VWAPEngine:
             curr_time: Current timestamp
 
         Returns:
-            True if weekly boundary crossed
+            True if weekly boundary crossed.
         """
         if prev_time <= 0:
             return False
@@ -275,7 +275,7 @@ class VWAPEngine:
             state: VWAP state to update
             price: Price value (TP or close)
             volume: Volume
-            timestamp: Current timestamp
+            timestamp: Current timestamp.
         """
         eps = 1e-10
 
@@ -307,7 +307,7 @@ class VWAPEngine:
             atr_percent: Optional ATR as percentage
 
         Returns:
-            VWAPBands object
+            VWAPBands object.
         """
         eps = 1e-10
         bands_dict = {}
@@ -358,7 +358,7 @@ class VWAPEngine:
             vwap: VWAP value
 
         Returns:
-            PricePosition
+            PricePosition.
         """
         eps = 1e-10
         dist_pct = (close - vwap) / (vwap + eps)
@@ -376,7 +376,7 @@ class VWAPEngine:
 
         Args:
             state: VWAP state to update
-            close: Current close price
+            close: Current close price.
         """
         current_position = self._compute_price_position(close, state.vwap)
 
@@ -471,7 +471,7 @@ class VWAPEngine:
             close: Current close price
 
         Returns:
-            Dictionary with distance metrics
+            Dictionary with distance metrics.
         """
         eps = 1e-10
         metrics = {}
@@ -495,7 +495,7 @@ class VWAPEngine:
 
         Args:
             state: VWAP state to reset
-            timestamp: Reset timestamp
+            timestamp: Reset timestamp.
         """
         state.pv_sum = 0.0
         state.v_sum = 0.0
@@ -509,13 +509,13 @@ class VWAPEngine:
         state.prev_position = None
 
     def _get_or_create_session_vwap(self, tf: str, timestamp: float) -> VWAPState:
-        """Get or create session VWAP state for timeframe"""
+        """Get or create session VWAP state for timeframe."""
         if tf not in self._session_vwap:
             self._session_vwap[tf] = VWAPState(kind=VWAPKind.SESSION, last_reset_time=timestamp)
         return self._session_vwap[tf]
 
     def _get_or_create_weekly_vwap(self, tf: str, timestamp: float) -> VWAPState:
-        """Get or create weekly VWAP state for timeframe"""
+        """Get or create weekly VWAP state for timeframe."""
         if tf not in self._weekly_vwap:
             self._weekly_vwap[tf] = VWAPState(kind=VWAPKind.WEEKLY, last_reset_time=timestamp)
         return self._weekly_vwap[tf]
@@ -530,7 +530,7 @@ class VWAPEngine:
 
         Args:
             candles_by_tf: Dictionary of candle lists by timeframe
-            atr_percent_by_tf: Optional ATR% values by timeframe
+            atr_percent_by_tf: Optional ATR% values by timeframe.
         """
         for tf, candles in candles_by_tf.items():
             atr_pct = atr_percent_by_tf.get(tf) if atr_percent_by_tf else None
@@ -550,7 +550,7 @@ class VWAPEngine:
             atr_percent: Optional ATR as percentage of close
 
         Returns:
-            VWAPMultiTFState with all updated states
+            VWAPMultiTFState with all updated states.
         """
         price = self._get_price(candle)
         timestamp = candle.timestamp
@@ -623,7 +623,7 @@ class VWAPEngine:
             kind: Type of anchor event
 
         Returns:
-            Created VWAPState
+            Created VWAPState.
         """
         if tf not in self._anchored_vwaps:
             self._anchored_vwaps[tf] = []
@@ -658,7 +658,7 @@ class VWAPEngine:
             anchor_id: Anchor identifier
 
         Returns:
-            True if removed, False if not found
+            True if removed, False if not found.
         """
         if tf not in self._anchored_vwaps:
             return False
@@ -677,7 +677,7 @@ class VWAPEngine:
             now_time: Current timestamp
 
         Returns:
-            Number of anchors pruned
+            Number of anchors pruned.
         """
         if tf not in self._anchored_vwaps:
             return 0
@@ -714,7 +714,7 @@ class VWAPEngine:
             atr_percent_by_tf: Optional ATR% values by timeframe
 
         Returns:
-            VWAPMultiTFState with all timeframes
+            VWAPMultiTFState with all timeframes.
         """
         result = VWAPMultiTFState()
 
@@ -745,7 +745,7 @@ def format_vwap_output(vwap_state: VWAPMultiTFState, compact: bool = True) -> st
         compact: If True, use compact format
 
     Returns:
-        Formatted string
+        Formatted string.
     """
     lines = ["VWAP CONTEXT"]
 

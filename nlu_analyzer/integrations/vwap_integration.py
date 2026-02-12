@@ -26,7 +26,7 @@ def example_streaming_integration():
     2. Warmup with historical data
     3. Process new candles incrementally
     4. Add anchored VWAPs on events
-    5. Display compact output
+    5. Display compact output.
     """
 
     # ========== CONFIGURATION ==========
@@ -165,7 +165,7 @@ def example_streaming_integration():
     print("=" * 80)
 
     def analyze_vwap_context(session_state, weekly_state, anchors):
-        """Example: Use VWAP context for trading decisions"""
+        """Example: Use VWAP context for trading decisions."""
 
         signals = []
 
@@ -227,7 +227,7 @@ def example_streaming_integration():
 
 
 def generate_test_candles(start_price: float, count: int, trend: float):
-    """Generate synthetic test candles"""
+    """Generate synthetic test candles."""
     candles = []
     price = start_price
     base_time = datetime(2024, 1, 10, 0, 0, 0, tzinfo=timezone.utc).timestamp()
@@ -277,7 +277,7 @@ class ProductionVWAPIntegration:
         self.warmed_up_tfs = set()
 
     def on_startup(self):
-        """Called once on system startup"""
+        """Called once on system startup."""
         # Fetch historical candles
         historical_data = self.fetch_historical_candles()
         atr_data = self.fetch_current_atr_percent()
@@ -331,27 +331,27 @@ class ProductionVWAPIntegration:
         print(f"Added anchor: {note} on {tf}")
 
     def fetch_historical_candles(self) -> Dict[str, list]:
-        """Fetch historical candles from your data source"""
+        """Fetch historical candles from your data source."""
         # TODO: Replace with actual data fetching
         return {"1m": [], "5m": [], "1h": []}
 
     def fetch_current_atr_percent(self) -> Dict[str, float]:
-        """Fetch current ATR% values"""
+        """Fetch current ATR% values."""
         # TODO: Replace with actual ATR calculation
         return {"1m": 0.008, "5m": 0.012, "1h": 0.020}
 
     def get_current_atr_percent(self, tf: str) -> Optional[float]:
-        """Get current ATR% for a timeframe"""
+        """Get current ATR% for a timeframe."""
         # TODO: Replace with actual ATR lookup
         return None
 
     def process_vwap_context(self, tf: str, vwap_result):
-        """Process VWAP context for trading decisions"""
+        """Process VWAP context for trading decisions."""
         # TODO: Add your logic here
         pass
 
     def should_display(self, tf: str) -> bool:
-        """Determine if output should be displayed"""
+        """Determine if output should be displayed."""
         # TODO: Add your display logic
         return False
 

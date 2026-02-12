@@ -12,7 +12,7 @@ Features:
 - Wilder ATR smoothing
 - Band locking (non-repainting)
 - Flip-rate based regime detection
-- Hysteresis for stability
+- Hysteresis for stability.
 """
 
 from collections import deque
@@ -22,14 +22,14 @@ from typing import Deque, Dict, List, Optional
 
 
 class Direction(Enum):
-    """Supertrend direction"""
+    """Supertrend direction."""
 
     UP = "UP"
     DOWN = "DOWN"
 
 
 class Regime(Enum):
-    """Market regime classification"""
+    """Market regime classification."""
 
     TREND = "TREND"
     CHOP = "CHOP"
@@ -38,7 +38,7 @@ class Regime(Enum):
 
 @dataclass
 class Candle:
-    """OHLCV candle structure"""
+    """OHLCV candle structure."""
 
     timestamp: float
     open: float
@@ -50,7 +50,7 @@ class Candle:
 
 @dataclass
 class SupertrendConfig:
-    """Configuration for Supertrend Engine"""
+    """Configuration for Supertrend Engine."""
 
     # Core Supertrend parameters
     atr_period: int = 10
@@ -88,7 +88,7 @@ class SupertrendConfig:
 
 @dataclass
 class SupertrendState:
-    """State output for Supertrend per timeframe"""
+    """State output for Supertrend per timeframe."""
 
     # Core Supertrend values
     st_direction: Direction
@@ -120,7 +120,7 @@ class SupertrendState:
 
 
 class _TimeframeState:
-    """Internal state for a single timeframe"""
+    """Internal state for a single timeframe."""
 
     def __init__(self, config: SupertrendConfig, tf: str):
         self.config = config
@@ -171,7 +171,7 @@ class _TimeframeState:
         Update ATR using Wilder smoothing.
 
         First: ATR = SMA(TR, atr_period)
-        Then: ATR = (ATR_prev * (n-1) + TR) / n
+        Then: ATR = (ATR_prev * (n-1) + TR) / n.
         """
         atr_period = self.config.get_atr_period(self.tf)
 
@@ -207,7 +207,7 @@ class SupertrendEngine:
         self._states: Dict[str, _TimeframeState] = {}
 
     def _get_or_create_state(self, tf: str) -> _TimeframeState:
-        """Get or create state for a timeframe"""
+        """Get or create state for a timeframe."""
         if tf not in self._states:
             self._states[tf] = _TimeframeState(self.config, tf)
         return self._states[tf]
@@ -221,7 +221,7 @@ class SupertrendEngine:
             basic_lower = HL2 - multiplier * ATR
 
         Final bands (with locking):
-            See formulas in docstring
+            See formulas in docstring.
         """
         if state.atr is None or not state.is_ready:
             return
@@ -257,7 +257,7 @@ class SupertrendEngine:
         Update direction and detect flips.
 
         Returns:
-            True if direction flipped
+            True if direction flipped.
         """
         if not state.is_ready:
             return False
@@ -369,7 +369,7 @@ class SupertrendEngine:
             candles_by_tf: Dictionary of candle lists by timeframe
 
         Returns:
-            Dictionary of SupertrendState by timeframe
+            Dictionary of SupertrendState by timeframe.
         """
         results = {}
 
@@ -394,7 +394,7 @@ class SupertrendEngine:
             candle: Closed candle
 
         Returns:
-            SupertrendState with all metrics
+            SupertrendState with all metrics.
         """
         state = self._get_or_create_state(tf)
 
@@ -472,7 +472,7 @@ class SupertrendEngine:
             candles_by_tf: Dictionary of candle lists by timeframe (latest candle last)
 
         Returns:
-            Dictionary of SupertrendState by timeframe
+            Dictionary of SupertrendState by timeframe.
         """
         results = {}
 
@@ -493,7 +493,7 @@ class SupertrendEngine:
             tf: Timeframe string
 
         Returns:
-            SupertrendState if available, None otherwise
+            SupertrendState if available, None otherwise.
         """
         if tf not in self._states:
             return None
@@ -516,7 +516,7 @@ def format_supertrend_output(states: Dict[str, SupertrendState], compact: bool =
         compact: If True, use compact single-line format per TF
 
     Returns:
-        Formatted string
+        Formatted string.
     """
     lines = ["SUPERTREND"]
 

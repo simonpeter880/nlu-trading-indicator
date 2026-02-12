@@ -20,7 +20,7 @@ from nlu_analyzer.indicators.ema_ribbon import (
 
 
 def create_candle(timestamp: float, price: float, volume: float = 1000.0) -> Candle:
-    """Helper to create a candle with same OHLC"""
+    """Helper to create a candle with same OHLC."""
     return Candle(
         timestamp=timestamp, open=price, high=price, low=price, close=price, volume=volume
     )
@@ -39,7 +39,7 @@ def generate_candles(
         trend_strength: Price change per candle (fraction)
 
     Returns:
-        List of candles
+        List of candles.
     """
     candles = []
     price = start_price
@@ -57,7 +57,7 @@ def generate_candles(
 
 
 def compute_sma(prices: List[float], period: int) -> float:
-    """Compute simple moving average"""
+    """Compute simple moving average."""
     if len(prices) < period:
         return sum(prices) / len(prices) if prices else 0.0
     return sum(prices[-period:]) / period
@@ -88,38 +88,38 @@ def compute_ema_batch(prices: List[float], period: int) -> List[float]:
 
 
 class TestEMARibbonConfig:
-    """Tests for configuration validation"""
+    """Tests for configuration validation."""
 
     def test_default_config(self):
-        """Test default configuration"""
+        """Test default configuration."""
         config = EMARibbonConfig()
         assert config.ribbon_periods == [9, 12, 15, 18, 21, 25, 30, 35, 40, 50]
         assert config.atr_period == 14
         assert config.width_smooth_period == 5
 
     def test_light_ribbon_preset(self):
-        """Test lighter ribbon configuration"""
+        """Test lighter ribbon configuration."""
         config = EMARibbonConfig(ribbon_periods=[9, 12, 15, 21, 30, 40, 50])
         assert len(config.ribbon_periods) == 7
 
     def test_invalid_ribbon_periods_unsorted(self):
-        """Test that unsorted periods raise error"""
+        """Test that unsorted periods raise error."""
         with pytest.raises(ValueError, match="sorted ascending"):
             EMARibbonConfig(ribbon_periods=[9, 15, 12, 21])
 
     def test_invalid_ribbon_periods_duplicates(self):
-        """Test that duplicate periods raise error"""
+        """Test that duplicate periods raise error."""
         with pytest.raises(ValueError, match="sorted ascending and unique"):
             EMARibbonConfig(ribbon_periods=[9, 12, 12, 21])
 
     def test_invalid_ribbon_periods_negative(self):
-        """Test that negative periods raise error"""
+        """Test that negative periods raise error."""
         with pytest.raises(ValueError, match="sorted ascending and unique"):
             # Negative period causes unsorted list: [-5, 9, 12, 21] when sorted
             EMARibbonConfig(ribbon_periods=[9, 12, -5, 21])
 
     def test_weights_sum_to_one(self):
-        """Test that strength weights sum to 1.0"""
+        """Test that strength weights sum to 1.0."""
         config = EMARibbonConfig()
         weight_sum = (
             config.strength_weight_stack
@@ -131,10 +131,10 @@ class TestEMARibbonConfig:
 
 
 class TestIncrementalEMA:
-    """Tests for incremental EMA calculations"""
+    """Tests for incremental EMA calculations."""
 
     def test_incremental_vs_batch_single_period(self):
-        """Test incremental EMA matches batch calculation for single period"""
+        """Test incremental EMA matches batch calculation for single period."""
         config = EMARibbonConfig(ribbon_periods=[9])
         engine = EMARibbonEngine(config)
 
@@ -159,7 +159,7 @@ class TestIncrementalEMA:
         ), f"Incremental EMA {incremental_ema} differs from batch {expected_ema}"
 
     def test_incremental_vs_batch_multiple_periods(self):
-        """Test incremental EMA matches batch for multiple periods"""
+        """Test incremental EMA matches batch for multiple periods."""
         config = EMARibbonConfig(ribbon_periods=[9, 21, 50])
         engine = EMARibbonEngine(config)
 
@@ -183,7 +183,7 @@ class TestIncrementalEMA:
             ), f"Period {period}: incremental {incremental_ema} != batch {expected_ema}"
 
     def test_warmup_state_ready(self):
-        """Test that state becomes ready after warmup"""
+        """Test that state becomes ready after warmup."""
         config = EMARibbonConfig(ribbon_periods=[9, 21, 50])
         engine = EMARibbonEngine(config)
 
@@ -201,7 +201,7 @@ class TestIncrementalEMA:
 
 
 class TestStackScore:
-    """Tests for stack score calculation"""
+    """Tests for stack score calculation."""
 
     def test_perfect_bullish_stack(self):
         """Test perfect bullish stack (all EMAs ordered correctly)"""
@@ -222,7 +222,7 @@ class TestStackScore:
         assert result.ribbon_direction == RibbonDirection.BULL
 
     def test_perfect_bearish_stack(self):
-        """Test perfect bearish stack"""
+        """Test perfect bearish stack."""
         config = EMARibbonConfig(ribbon_periods=[9, 12, 15, 21, 30])
         engine = EMARibbonEngine(config)
 
@@ -238,7 +238,7 @@ class TestStackScore:
         assert result.ribbon_direction == RibbonDirection.BEAR
 
     def test_neutral_stack_sideways(self):
-        """Test neutral/low stack score for sideways market"""
+        """Test neutral/low stack score for sideways market."""
         config = EMARibbonConfig(ribbon_periods=[9, 12, 15, 21, 30])
         engine = EMARibbonEngine(config)
 
@@ -256,10 +256,10 @@ class TestStackScore:
 
 
 class TestRibbonWidth:
-    """Tests for ribbon width calculations"""
+    """Tests for ribbon width calculations."""
 
     def test_width_increases_in_trend(self):
-        """Test that ribbon width increases during strong trend"""
+        """Test that ribbon width increases during strong trend."""
         config = EMARibbonConfig(ribbon_periods=[9, 21, 50])
         engine = EMARibbonEngine(config)
 
@@ -282,7 +282,7 @@ class TestRibbonWidth:
         assert width_late > width_early, "Width should expand during strong trend"
 
     def test_width_compression_detected(self):
-        """Test that width compression is detected"""
+        """Test that width compression is detected."""
         config = EMARibbonConfig(ribbon_periods=[9, 21, 50])
         engine = EMARibbonEngine(config)
 
@@ -308,10 +308,10 @@ class TestRibbonWidth:
 
 
 class TestRibbonState:
-    """Tests for ribbon state classification"""
+    """Tests for ribbon state classification."""
 
     def test_healthy_state_strong_trend(self):
-        """Test HEALTHY state in strong trend"""
+        """Test HEALTHY state in strong trend."""
         config = EMARibbonConfig(ribbon_periods=[9, 12, 15, 21, 30, 50])
         engine = EMARibbonEngine(config)
 
@@ -330,7 +330,7 @@ class TestRibbonState:
         assert result.ribbon_strength_0_100 > 60, f"Strength {result.ribbon_strength_0_100} too low"
 
     def test_chop_state_sideways(self):
-        """Test CHOP state in sideways market"""
+        """Test CHOP state in sideways market."""
         config = EMARibbonConfig(ribbon_periods=[9, 12, 15, 21, 30])
         engine = EMARibbonEngine(config)
 
@@ -345,7 +345,7 @@ class TestRibbonState:
         assert result.ribbon_strength_0_100 <= 35, "CHOP strength should be capped at 35"
 
     def test_exhausting_state(self):
-        """Test that weakening momentum is detected"""
+        """Test that weakening momentum is detected."""
         config = EMARibbonConfig(ribbon_periods=[9, 12, 15, 21, 30], compress_rate_thr=-0.15)
         engine = EMARibbonEngine(config)
 
@@ -377,10 +377,10 @@ class TestRibbonState:
 
 
 class TestPullbackDetection:
-    """Tests for pullback into ribbon detection"""
+    """Tests for pullback into ribbon detection."""
 
     def test_pullback_detected(self):
-        """Test pullback detection when price approaches ribbon center"""
+        """Test pullback detection when price approaches ribbon center."""
         config = EMARibbonConfig(ribbon_periods=[9, 21, 50])
         engine = EMARibbonEngine(config)
 
@@ -403,7 +403,7 @@ class TestPullbackDetection:
         assert result.pullback_into_ribbon, "Failed to detect pullback into ribbon"
 
     def test_no_pullback_when_far(self):
-        """Test no pullback when price is far from ribbon"""
+        """Test no pullback when price is far from ribbon."""
         config = EMARibbonConfig(ribbon_periods=[9, 21, 50])
         engine = EMARibbonEngine(config)
 
@@ -424,10 +424,10 @@ class TestPullbackDetection:
 
 
 class TestMultiTimeframe:
-    """Tests for multi-timeframe support"""
+    """Tests for multi-timeframe support."""
 
     def test_multiple_timeframes(self):
-        """Test engine handles multiple timeframes independently"""
+        """Test engine handles multiple timeframes independently."""
         config = EMARibbonConfig(ribbon_periods=[9, 21, 50])
         engine = EMARibbonEngine(config)
 
@@ -451,7 +451,7 @@ class TestMultiTimeframe:
         assert result_1h.ribbon_direction == RibbonDirection.NEUTRAL or result_1h.stack_score < 0.70
 
     def test_update_convenience_method(self):
-        """Test convenience update method"""
+        """Test convenience update method."""
         config = EMARibbonConfig(ribbon_periods=[9, 21])
         engine = EMARibbonEngine(config)
 
@@ -477,10 +477,10 @@ class TestMultiTimeframe:
 
 
 class TestATRAdaptiveThresholds:
-    """Tests for ATR-adaptive threshold calculation"""
+    """Tests for ATR-adaptive threshold calculation."""
 
     def test_atr_adaptive_thresholds(self):
-        """Test thresholds adapt to ATR%"""
+        """Test thresholds adapt to ATR%."""
         config = EMARibbonConfig(width_thr_factor=0.10, slope_thr_factor=0.15)
         engine = EMARibbonEngine(config)
 
@@ -497,7 +497,7 @@ class TestATRAdaptiveThresholds:
         assert thresholds_high["slope_thr"] > thresholds_low["slope_thr"]
 
     def test_static_fallback_when_no_atr(self):
-        """Test static fallback thresholds when ATR not provided"""
+        """Test static fallback thresholds when ATR not provided."""
         config = EMARibbonConfig()
         engine = EMARibbonEngine(config)
 
@@ -509,10 +509,10 @@ class TestATRAdaptiveThresholds:
 
 
 class TestFormatting:
-    """Tests for output formatting"""
+    """Tests for output formatting."""
 
     def test_format_compact(self):
-        """Test compact formatting"""
+        """Test compact formatting."""
         config = EMARibbonConfig(ribbon_periods=[9, 21, 50])
         engine = EMARibbonEngine(config)
 
@@ -530,7 +530,7 @@ class TestFormatting:
         assert "strength=" in output
 
     def test_format_verbose(self):
-        """Test verbose formatting"""
+        """Test verbose formatting."""
         config = EMARibbonConfig(ribbon_periods=[9, 21])
         engine = EMARibbonEngine(config)
 
@@ -549,10 +549,10 @@ class TestFormatting:
 
 
 class TestEdgeCases:
-    """Tests for edge cases"""
+    """Tests for edge cases."""
 
     def test_single_period_ribbon(self):
-        """Test ribbon with only one period"""
+        """Test ribbon with only one period."""
         config = EMARibbonConfig(ribbon_periods=[21])
         engine = EMARibbonEngine(config)
 
@@ -580,7 +580,7 @@ class TestEdgeCases:
         assert result is not None
 
     def test_warmup_insufficient_data(self):
-        """Test behavior during warmup period"""
+        """Test behavior during warmup period."""
         config = EMARibbonConfig(ribbon_periods=[9, 21, 50])
         engine = EMARibbonEngine(config)
 

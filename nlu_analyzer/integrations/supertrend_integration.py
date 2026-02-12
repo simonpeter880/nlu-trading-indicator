@@ -25,7 +25,7 @@ def example_streaming_integration():
     1. Initialize engine with config
     2. Warmup with historical data
     3. Process new candles incrementally
-    4. Use regime label and direction for filtering
+    4. Use regime label and direction for filtering.
     """
 
     # ========== CONFIGURATION ==========
@@ -183,7 +183,7 @@ def example_streaming_integration():
     print("=" * 80)
 
     def check_mtf_alignment(results):
-        """Check multi-timeframe alignment"""
+        """Check multi-timeframe alignment."""
 
         # Get HTF regime and direction
         htf_trend = results["1h"].regime == Regime.TREND
@@ -231,7 +231,7 @@ def example_streaming_integration():
 
 
 def generate_test_candles(start_price: float, count: int, trend: float):
-    """Generate synthetic test candles"""
+    """Generate synthetic test candles."""
     candles = []
     price = start_price
 
@@ -269,7 +269,7 @@ class ProductionSupertrendIntegration:
         self.warmed_up_tfs = set()
 
     def on_startup(self):
-        """Called once on system startup"""
+        """Called once on system startup."""
         # Fetch historical candles
         historical_data = self.fetch_historical_candles()
 
@@ -324,37 +324,37 @@ class ProductionSupertrendIntegration:
                 self.block_long_entries(tf)
 
     def fetch_historical_candles(self) -> Dict[str, list]:
-        """Fetch historical candles from your data source"""
+        """Fetch historical candles from your data source."""
         # TODO: Replace with actual data fetching
         return {"1m": [], "5m": [], "1h": []}
 
     def disable_trend_strategies(self, tf: str):
-        """Disable trend-following on this timeframe"""
+        """Disable trend-following on this timeframe."""
         # TODO: Implement
         pass
 
     def allow_long_entries(self, tf: str):
-        """Allow long entries on this timeframe"""
+        """Allow long entries on this timeframe."""
         # TODO: Implement
         pass
 
     def block_long_entries(self, tf: str):
-        """Block long entries on this timeframe"""
+        """Block long entries on this timeframe."""
         # TODO: Implement
         pass
 
     def allow_short_entries(self, tf: str):
-        """Allow short entries on this timeframe"""
+        """Allow short entries on this timeframe."""
         # TODO: Implement
         pass
 
     def block_short_entries(self, tf: str):
-        """Block short entries on this timeframe"""
+        """Block short entries on this timeframe."""
         # TODO: Implement
         pass
 
     def should_display(self, tf: str) -> bool:
-        """Determine if output should be displayed"""
+        """Determine if output should be displayed."""
         # TODO: Add your display logic
         return False
 

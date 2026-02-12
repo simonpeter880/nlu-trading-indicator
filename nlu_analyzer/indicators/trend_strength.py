@@ -12,7 +12,7 @@ Features:
 - ATR% normalization for cross-instrument comparability
 - Component weighting with missing-value handling
 - Light EMA smoothing to reduce noise without lag
-- Bucketing: WEAK / EMERGING / STRONG
+- Bucketing: WEAK / EMERGING / STRONG.
 """
 
 from collections import deque
@@ -22,7 +22,7 @@ from typing import Deque, Dict, List, Optional
 
 
 class Bucket(Enum):
-    """Trend strength bucket classification"""
+    """Trend strength bucket classification."""
 
     WEAK = "WEAK"
     EMERGING = "EMERGING"
@@ -31,7 +31,7 @@ class Bucket(Enum):
 
 @dataclass
 class Candle:
-    """OHLCV candle structure"""
+    """OHLCV candle structure."""
 
     timestamp: float
     open: float
@@ -43,7 +43,7 @@ class Candle:
 
 @dataclass
 class TrendStrengthConfig:
-    """Configuration for Trend Strength Engine"""
+    """Configuration for Trend Strength Engine."""
 
     # Timeframes
     timeframes: List[str] = field(default_factory=lambda: ["1m", "5m", "1h"])
@@ -88,7 +88,7 @@ class TrendStrengthConfig:
     bucket_emerging_max: float = 60.0
 
     def __post_init__(self):
-        """Validate weights"""
+        """Validate weights."""
         total_weight = self.w_ema_slope + self.w_ribbon + self.w_rv + self.w_oi
         if abs(total_weight - 1.0) > 1e-6:
             raise ValueError(f"Weights must sum to 1.0, got {total_weight}")
@@ -96,7 +96,7 @@ class TrendStrengthConfig:
 
 @dataclass
 class TrendStrengthState:
-    """State output for Trend Strength per timeframe"""
+    """State output for Trend Strength per timeframe."""
 
     # Strength scores
     strength_raw: float
@@ -126,7 +126,7 @@ def parse_bias(bias_str: Optional[str]) -> int:
         bias_str: "BULL", "BEAR", or other
 
     Returns:
-        +1 for BULL, -1 for BEAR, 0 otherwise
+        +1 for BULL, -1 for BEAR, 0 otherwise.
     """
     if bias_str is None:
         return 0
@@ -140,7 +140,7 @@ def parse_bias(bias_str: Optional[str]) -> int:
 
 
 class _TimeframeState:
-    """Internal state for a single timeframe"""
+    """Internal state for a single timeframe."""
 
     def __init__(self, config: TrendStrengthConfig, tf: str):
         self.config = config
@@ -164,7 +164,7 @@ class _TimeframeState:
         self.is_ready: bool = False
 
     def compute_true_range(self, candle: Candle) -> float:
-        """Compute True Range"""
+        """Compute True Range."""
         if self.prev_close is None:
             return candle.high - candle.low
 
@@ -175,7 +175,7 @@ class _TimeframeState:
         return max(tr1, tr2, tr3)
 
     def update_atr(self, tr: float) -> None:
-        """Update ATR using Wilder smoothing"""
+        """Update ATR using Wilder smoothing."""
         atr_period = self.config.atr_period
 
         if self.atr is None:
@@ -191,7 +191,7 @@ class _TimeframeState:
             self.atr = (self.atr * (atr_period - 1) + tr) / atr_period
 
     def update_rv_tracking(self, volume: float) -> None:
-        """Update volume tracking for RV calculation"""
+        """Update volume tracking for RV calculation."""
         # Remove old value from sum if deque is full
         if len(self.vol_deque) == self.config.rv_period:
             self.vol_sum -= self.vol_deque[0]
@@ -221,13 +221,13 @@ class TrendStrengthEngine:
         self._eps = 1e-12
 
     def _get_or_create_state(self, tf: str) -> _TimeframeState:
-        """Get or create state for a timeframe"""
+        """Get or create state for a timeframe."""
         if tf not in self._states:
             self._states[tf] = _TimeframeState(self.config, tf)
         return self._states[tf]
 
     def _clip(self, value: float, lo: float, hi: float) -> float:
-        """Clip value to range [lo, hi]"""
+        """Clip value to range [lo, hi]."""
         return max(lo, min(hi, value))
 
     def _compute_atr_percent(
@@ -273,7 +273,7 @@ class TrendStrengthEngine:
             tf: Timeframe
 
         Returns:
-            Normalized slope (0..1) or None if unavailable
+            Normalized slope (0..1) or None if unavailable.
         """
         # Use provided slope if available
         if slope is not None:
@@ -298,7 +298,7 @@ class TrendStrengthEngine:
             ribbon_width_rate: Width rate from ribbon engine
 
         Returns:
-            Normalized ribbon (0..1) or None
+            Normalized ribbon (0..1) or None.
         """
         if ribbon_width_rate is None:
             return None
@@ -319,7 +319,7 @@ class TrendStrengthEngine:
             volume: Current volume
 
         Returns:
-            RV value or None if not enough history
+            RV value or None if not enough history.
         """
         if len(state.vol_deque) < self.config.rv_period:
             return None
@@ -341,7 +341,7 @@ class TrendStrengthEngine:
             volume: Current volume
 
         Returns:
-            Normalized RV (0..1) or None
+            Normalized RV (0..1) or None.
         """
         # Use provided RV or compute
         if rv_provided is not None:
@@ -370,7 +370,7 @@ class TrendStrengthEngine:
             tf: Timeframe
 
         Returns:
-            Normalized OI (0..1) or None
+            Normalized OI (0..1) or None.
         """
         if oi_now is None or oi_prev is None:
             return None
@@ -431,7 +431,7 @@ class TrendStrengthEngine:
             strength_raw: Raw strength value
 
         Returns:
-            Smoothed strength
+            Smoothed strength.
         """
         if state.strength_smooth is None:
             state.strength_smooth = strength_raw
@@ -454,7 +454,7 @@ class TrendStrengthEngine:
             rv: Current RV value
 
         Returns:
-            Capped strength
+            Capped strength.
         """
         if flags is None:
             flags = {}
@@ -481,7 +481,7 @@ class TrendStrengthEngine:
             strength: Strength value (0-100)
 
         Returns:
-            Bucket classification
+            Bucket classification.
         """
         if strength <= self.config.bucket_weak_max:
             return Bucket.WEAK
@@ -507,7 +507,7 @@ class TrendStrengthEngine:
             oi_series_by_tf: Optional OI series (not used in warmup)
 
         Returns:
-            Dictionary of TrendStrengthState by timeframe
+            Dictionary of TrendStrengthState by timeframe.
         """
         results = {}
 
@@ -561,7 +561,7 @@ class TrendStrengthEngine:
             flags: Optional safety flags
 
         Returns:
-            TrendStrengthState with all metrics
+            TrendStrengthState with all metrics.
         """
         state = self._get_or_create_state(tf)
 
@@ -666,7 +666,7 @@ class TrendStrengthEngine:
             tf: Timeframe string
 
         Returns:
-            TrendStrengthState if available, None otherwise
+            TrendStrengthState if available, None otherwise.
         """
         if tf not in self._states:
             return None
@@ -690,7 +690,7 @@ def format_trend_strength_output(
         compact: If True, use compact format
 
     Returns:
-        Formatted string
+        Formatted string.
     """
     lines = ["TREND STRENGTH"]
 

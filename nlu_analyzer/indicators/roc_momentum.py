@@ -13,7 +13,7 @@ Features:
 - Divergence detection hooks
 - O(1) incremental updates
 
-Author: Generated for NLU trading system
+Author: Generated for NLU trading system.
 """
 
 import math
@@ -237,7 +237,7 @@ class ROCMomentumEngine:
 
         Args:
             candles_by_tf: {"tf": [candles]} sorted oldest to newest
-            atr_percent_by_tf: Optional {"tf": [atr_percent]} parallel to candles
+            atr_percent_by_tf: Optional {"tf": [atr_percent]} parallel to candles.
         """
         for tf, candles in candles_by_tf.items():
             if tf not in self.states:
@@ -266,7 +266,7 @@ class ROCMomentumEngine:
             bias: Optional directional bias (+1 bull, -1 bear) for PULLBACK detection
 
         Returns:
-            ROCState if warmed up, else None
+            ROCState if warmed up, else None.
         """
         if tf not in self.states:
             return None
@@ -473,7 +473,7 @@ class ROCMomentumEngine:
         - Follow-through: abs(rm) / impulse_threshold
         - Acceleration: abs(af) / abs(roc_fast_raw) (relative acceleration)
 
-        Weighted: 50% mag + 30% follow + 20% accel
+        Weighted: 50% mag + 30% follow + 20% accel.
         """
         impulse_thresh = self.config.impulse_norm_threshold
         eps = self.config.eps
@@ -548,7 +548,7 @@ def print_roc_momentum(engine: ROCMomentumEngine, timeframes: Optional[List[str]
           ROC: 5=+0.0008 20=+0.0022 60=+0.0060
           ACC(5)=+0.0003  norm(5)=+1.10 (clipped)
           flags: blowoff=NO divergence=NONE
-        5m: state=PULLBACK score=44 norm(3)=-0.35 norm(12)=+0.60
+        5m: state=PULLBACK score=44 norm(3)=-0.35 norm(12)=+0.60.
     """
     if timeframes is None:
         timeframes = engine.config.timeframes

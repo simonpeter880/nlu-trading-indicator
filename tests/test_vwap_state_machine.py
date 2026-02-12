@@ -15,7 +15,7 @@ class TestPositionClassification:
     """Tests for position classification (ABOVE/BELOW/AT)"""
 
     def test_position_above(self):
-        """Test position classified as ABOVE"""
+        """Test position classified as ABOVE."""
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 
@@ -26,7 +26,7 @@ class TestPositionClassification:
         assert result.dist_pct > 0
 
     def test_position_below(self):
-        """Test position classified as BELOW"""
+        """Test position classified as BELOW."""
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 
@@ -37,7 +37,7 @@ class TestPositionClassification:
         assert result.dist_pct < 0
 
     def test_position_at_within_touch_pct(self):
-        """Test position AT when within touch percentage"""
+        """Test position AT when within touch percentage."""
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 
@@ -48,7 +48,7 @@ class TestPositionClassification:
         assert result.side == 0
 
     def test_position_at_within_touch_sigma(self):
-        """Test position AT when within sigma tolerance"""
+        """Test position AT when within sigma tolerance."""
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 
@@ -61,7 +61,7 @@ class TestPositionClassification:
         assert result.side == 0
 
     def test_position_at_within_touch_atr(self):
-        """Test position AT when within ATR tolerance"""
+        """Test position AT when within ATR tolerance."""
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 
@@ -73,10 +73,10 @@ class TestPositionClassification:
 
 
 class TestCrossingsDetection:
-    """Tests for crossings counting"""
+    """Tests for crossings counting."""
 
     def test_crossings_count_simple(self):
-        """Test crossings count with simple sequence"""
+        """Test crossings count with simple sequence."""
         config = VWAPStateConfig(window_crossings=10)
         sm = VWAPStateMachine(config)
 
@@ -92,7 +92,7 @@ class TestCrossingsDetection:
         assert result.crossings_20 == 2
 
     def test_crossings_high_chop(self):
-        """Test high crossings in choppy market"""
+        """Test high crossings in choppy market."""
         config = VWAPStateConfig(window_crossings=20)
         sm = VWAPStateMachine(config)
 
@@ -111,10 +111,10 @@ class TestCrossingsDetection:
 
 
 class TestReclaimState:
-    """Tests for RECLAIM state"""
+    """Tests for RECLAIM state."""
 
     def test_reclaim_from_below_trend(self):
-        """Test RECLAIM when price crosses from below in TREND"""
+        """Test RECLAIM when price crosses from below in TREND."""
         config = VWAPStateConfig(N_reclaim_trend=2, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
@@ -132,7 +132,7 @@ class TestReclaimState:
         assert result.state == InteractionState.RECLAIM.value
 
     def test_reclaim_requires_confirmation_in_range(self):
-        """Test RECLAIM requires confirmation in RANGE regime"""
+        """Test RECLAIM requires confirmation in RANGE regime."""
         config = VWAPStateConfig(N_reclaim_range=2, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
@@ -157,7 +157,7 @@ class TestReclaimState:
         assert result.state == InteractionState.RECLAIM.value
 
     def test_reclaim_reset_on_drop_below_buffer(self):
-        """Test RECLAIM hold resets if price drops back below buffer"""
+        """Test RECLAIM hold resets if price drops back below buffer."""
         config = VWAPStateConfig(N_reclaim_trend=3, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
@@ -185,7 +185,7 @@ class TestLossState:
     """Tests for LOSS state (mirror of RECLAIM)"""
 
     def test_loss_from_above_trend(self):
-        """Test LOSS when price crosses from above in TREND"""
+        """Test LOSS when price crosses from above in TREND."""
         config = VWAPStateConfig(N_loss_trend=2, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
@@ -203,7 +203,7 @@ class TestLossState:
         assert result.state == InteractionState.LOSS.value
 
     def test_loss_requires_confirmation_in_range(self):
-        """Test LOSS requires confirmation in RANGE"""
+        """Test LOSS requires confirmation in RANGE."""
         config = VWAPStateConfig(N_loss_range=2, reclaim_buffer_pct_by_tf={"1m": 0.001})
         sm = VWAPStateMachine(config)
 
@@ -229,10 +229,10 @@ class TestLossState:
 
 
 class TestRejectState:
-    """Tests for REJECT state"""
+    """Tests for REJECT state."""
 
     def test_reject_after_touch_and_move_away(self):
-        """Test REJECT after touching VWAP and moving away"""
+        """Test REJECT after touching VWAP and moving away."""
         config = VWAPStateConfig(N_reject_trend=3, touch_pct_by_tf={"1m": 0.0001})
         sm = VWAPStateMachine(config)
 
@@ -270,7 +270,7 @@ class TestRejectState:
         assert result.state != InteractionState.REJECT.value
 
     def test_reject_reset_on_touch(self):
-        """Test REJECT hold resets on new touch"""
+        """Test REJECT hold resets on new touch."""
         config = VWAPStateConfig(N_reject_trend=3, touch_pct_by_tf={"1m": 0.0001})
         sm = VWAPStateMachine(config)
 
@@ -295,10 +295,10 @@ class TestRejectState:
 
 
 class TestAcceptState:
-    """Tests for ACCEPT state"""
+    """Tests for ACCEPT state."""
 
     def test_accept_after_holding_above(self):
-        """Test ACCEPT after持续 holding above"""
+        """Test ACCEPT after持续 holding above."""
         config = VWAPStateConfig(N_accept_trend=3)
         sm = VWAPStateMachine(config)
 
@@ -312,7 +312,7 @@ class TestAcceptState:
         assert result.state == InteractionState.ACCEPT.value
 
     def test_accept_after_holding_below(self):
-        """Test ACCEPT after持续 holding below"""
+        """Test ACCEPT after持续 holding below."""
         config = VWAPStateConfig(N_accept_trend=3)
         sm = VWAPStateMachine(config)
 
@@ -348,10 +348,10 @@ class TestAcceptState:
 
 
 class TestChopSuppression:
-    """Tests for chop detection and suppression"""
+    """Tests for chop detection and suppression."""
 
     def test_high_crossings_infers_range_regime(self):
-        """Test high crossings automatically infers RANGE regime"""
+        """Test high crossings automatically infers RANGE regime."""
         config = VWAPStateConfig(crossings_chop_threshold=4, window_crossings=10)
         sm = VWAPStateMachine(config)
 
@@ -366,7 +366,7 @@ class TestChopSuppression:
         assert result.debug["regime_used"] == Regime.RANGE.value
 
     def test_chop_suppression_overridden_by_strong_confirmation(self):
-        """Test chop suppression can be overridden with strong confirmation"""
+        """Test chop suppression can be overridden with strong confirmation."""
         config = VWAPStateConfig(N_accept_trend=3, crossings_chop_threshold=4, window_crossings=10)
         sm = VWAPStateMachine(config)
 
@@ -390,10 +390,10 @@ class TestChopSuppression:
 
 
 class TestRegimeAwareBehavior:
-    """Tests for regime-aware parameter selection"""
+    """Tests for regime-aware parameter selection."""
 
     def test_trend_regime_uses_trend_params(self):
-        """Test TREND regime uses trend hold parameters"""
+        """Test TREND regime uses trend hold parameters."""
         config = VWAPStateConfig(N_reclaim_trend=2, N_reclaim_range=4)
         sm = VWAPStateMachine(config)
 
@@ -411,7 +411,7 @@ class TestRegimeAwareBehavior:
         assert result.debug["N_reclaim"] == 2
 
     def test_range_regime_uses_range_params(self):
-        """Test RANGE regime uses range hold parameters"""
+        """Test RANGE regime uses range hold parameters."""
         config = VWAPStateConfig(N_reclaim_trend=2, N_reclaim_range=4)
         sm = VWAPStateMachine(config)
 
@@ -436,10 +436,10 @@ class TestRegimeAwareBehavior:
 
 
 class TestStability:
-    """Tests for anti-flip stability"""
+    """Tests for anti-flip stability."""
 
     def test_single_touch_does_not_flip_state(self):
-        """Test single touch bar doesn't flip state unnecessarily"""
+        """Test single touch bar doesn't flip state unnecessarily."""
         config = VWAPStateConfig(N_accept_trend=3)
         sm = VWAPStateMachine(config)
 
@@ -463,7 +463,7 @@ class TestStability:
         assert result_after.position == Position.ABOVE.value
 
     def test_hold_count_persists_through_at(self):
-        """Test hold_count doesn't reset on AT position"""
+        """Test hold_count doesn't reset on AT position."""
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 
@@ -486,10 +486,10 @@ class TestStability:
 
 
 class TestStatePriority:
-    """Tests for deterministic state priority"""
+    """Tests for deterministic state priority."""
 
     def test_reclaim_has_priority_over_accept(self):
-        """Test RECLAIM takes priority over ACCEPT"""
+        """Test RECLAIM takes priority over ACCEPT."""
         config = VWAPStateConfig(
             N_reclaim_trend=2, N_accept_trend=2, reclaim_buffer_pct_by_tf={"1m": 0.001}
         )
@@ -508,7 +508,7 @@ class TestStatePriority:
         assert result.state == InteractionState.RECLAIM.value
 
     def test_loss_has_priority_over_reject(self):
-        """Test LOSS takes priority over REJECT"""
+        """Test LOSS takes priority over REJECT."""
         config = VWAPStateConfig(
             N_loss_trend=2, N_reject_trend=2, reclaim_buffer_pct_by_tf={"1m": 0.001}
         )
@@ -529,10 +529,10 @@ class TestStatePriority:
 
 
 class TestHoldCount:
-    """Tests for hold_count tracking"""
+    """Tests for hold_count tracking."""
 
     def test_hold_count_increments(self):
-        """Test hold_count increments correctly"""
+        """Test hold_count increments correctly."""
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 
@@ -548,7 +548,7 @@ class TestHoldCount:
         assert result3.hold_count == 3
 
     def test_hold_count_resets_on_side_flip(self):
-        """Test hold_count resets when side flips"""
+        """Test hold_count resets when side flips."""
         config = VWAPStateConfig()
         sm = VWAPStateMachine(config)
 

@@ -9,7 +9,7 @@ Features:
 - ATR-adaptive thresholds with static fallbacks
 - Multi-timeframe support
 - Trend health classification (HEALTHY/WEAKENING/EXHAUSTING/CHOP)
-- Stack scoring, ribbon width analysis, center slope tracking
+- Stack scoring, ribbon width analysis, center slope tracking.
 """
 
 import statistics
@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional
 
 
 class RibbonDirection(Enum):
-    """Ribbon direction based on EMA stack alignment"""
+    """Ribbon direction based on EMA stack alignment."""
 
     BULL = "BULL"
     BEAR = "BEAR"
@@ -28,7 +28,7 @@ class RibbonDirection(Enum):
 
 
 class RibbonState(Enum):
-    """Ribbon health state classification"""
+    """Ribbon health state classification."""
 
     HEALTHY = "HEALTHY"
     WEAKENING = "WEAKENING"
@@ -38,7 +38,7 @@ class RibbonState(Enum):
 
 @dataclass
 class Candle:
-    """OHLCV candle structure"""
+    """OHLCV candle structure."""
 
     timestamp: float
     open: float
@@ -50,7 +50,7 @@ class Candle:
 
 @dataclass
 class EMARibbonConfig:
-    """Configuration for EMA Ribbon Engine"""
+    """Configuration for EMA Ribbon Engine."""
 
     # Ribbon periods (must be sorted ascending, unique)
     ribbon_periods: List[int] = field(
@@ -99,7 +99,7 @@ class EMARibbonConfig:
     strength_weight_expansion: float = 0.20
 
     def __post_init__(self):
-        """Validate configuration"""
+        """Validate configuration."""
         # Validate ribbon periods
         if not self.ribbon_periods:
             raise ValueError("ribbon_periods cannot be empty")
@@ -124,7 +124,7 @@ class EMARibbonConfig:
 
 @dataclass
 class RibbonStateOutput:
-    """Output structure for ribbon state per timeframe"""
+    """Output structure for ribbon state per timeframe."""
 
     # Core outputs
     ribbon_periods_used: List[int]
@@ -145,7 +145,7 @@ class RibbonStateOutput:
 
 
 class _TimeframeState:
-    """Internal state for a single timeframe"""
+    """Internal state for a single timeframe."""
 
     def __init__(self, config: EMARibbonConfig, tf: str):
         self.config = config
@@ -172,7 +172,7 @@ class _TimeframeState:
         self.is_ready: bool = False
 
     def update_emas(self, close: float) -> None:
-        """Incrementally update all EMA values"""
+        """Incrementally update all EMA values."""
         for period in self.config.ribbon_periods:
             alpha = 2.0 / (period + 1)
 
@@ -208,7 +208,7 @@ class EMARibbonEngine:
         self._states: Dict[str, _TimeframeState] = {}
 
     def _get_or_create_state(self, tf: str) -> _TimeframeState:
-        """Get or create state for a timeframe"""
+        """Get or create state for a timeframe."""
         if tf not in self._states:
             self._states[tf] = _TimeframeState(self.config, tf)
         return self._states[tf]
@@ -222,7 +222,7 @@ class EMARibbonEngine:
             atr_percent: ATR as percentage of close (decimal, e.g., 0.01 = 1%)
 
         Returns:
-            Dictionary with width_thr, slope_thr, pullback_band
+            Dictionary with width_thr, slope_thr, pullback_band.
         """
         if atr_percent is not None and atr_percent > 0:
             return {
@@ -245,7 +245,7 @@ class EMARibbonEngine:
             emas: Dictionary of EMA values by period
 
         Returns:
-            (stack_score, direction) where stack_score is 0..1
+            (stack_score, direction) where stack_score is 0..1.
         """
         periods = sorted(self.config.ribbon_periods)
 
@@ -387,7 +387,7 @@ class EMARibbonEngine:
             pullback_band: Pullback threshold band (as fraction of close price)
 
         Returns:
-            True if pullback detected
+            True if pullback detected.
         """
         # pullback_band is a percentage (e.g., 0.003 = 0.3%)
         # Convert to absolute distance: band * close
@@ -417,7 +417,7 @@ class EMARibbonEngine:
             state: Timeframe state
 
         Returns:
-            RibbonState classification
+            RibbonState classification.
         """
         width_thr = thresholds["width_thr"]
         slope_thr = thresholds["slope_thr"]
@@ -491,7 +491,7 @@ class EMARibbonEngine:
             ribbon_state: Classified ribbon state
 
         Returns:
-            Strength score 0-100
+            Strength score 0-100.
         """
         eps = 1e-10
 
@@ -535,7 +535,7 @@ class EMARibbonEngine:
 
         Args:
             candles_by_tf: Dictionary of candle lists by timeframe
-            atr_percent_by_tf: Optional ATR% values by timeframe
+            atr_percent_by_tf: Optional ATR% values by timeframe.
         """
         for tf, candles in candles_by_tf.items():
             state = self._get_or_create_state(tf)
@@ -560,7 +560,7 @@ class EMARibbonEngine:
             ema_system_state: Optional state from EMA system (unused currently)
 
         Returns:
-            RibbonStateOutput with all metrics
+            RibbonStateOutput with all metrics.
         """
         state = self._get_or_create_state(tf)
 
@@ -645,7 +645,7 @@ class EMARibbonEngine:
             ema_system_state_by_tf: Optional EMA system states by timeframe
 
         Returns:
-            Dictionary of RibbonStateOutput by timeframe
+            Dictionary of RibbonStateOutput by timeframe.
         """
         results = {}
 
@@ -671,7 +671,7 @@ def format_ribbon_output(ribbon_states: Dict[str, RibbonStateOutput], compact: b
         compact: If True, use compact single-line format per TF
 
     Returns:
-        Formatted string
+        Formatted string.
     """
     lines = ["EMA RIBBON"]
 

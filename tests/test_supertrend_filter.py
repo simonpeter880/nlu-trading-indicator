@@ -19,17 +19,17 @@ from nlu_analyzer.indicators.supertrend_filter import (
 
 
 def create_candle(timestamp: float, high: float, low: float, close: float) -> Candle:
-    """Helper to create a candle"""
+    """Helper to create a candle."""
     return Candle(timestamp=timestamp, open=close, high=high, low=low, close=close, volume=1000.0)
 
 
 def create_simple_candle(timestamp: float, price: float) -> Candle:
-    """Helper to create candle with same OHLC"""
+    """Helper to create candle with same OHLC."""
     return create_candle(timestamp, price, price, price)
 
 
 def generate_trending_candles(start_price: float, count: int, trend_pct: float) -> List[Candle]:
-    """Generate candles with consistent trend"""
+    """Generate candles with consistent trend."""
     candles = []
     price = start_price
 
@@ -45,7 +45,7 @@ def generate_trending_candles(start_price: float, count: int, trend_pct: float) 
 
 
 def generate_choppy_candles(start_price: float, count: int, range_pct: float) -> List[Candle]:
-    """Generate sideways/choppy candles"""
+    """Generate sideways/choppy candles."""
     candles = []
     price = start_price
 
@@ -66,10 +66,10 @@ def generate_choppy_candles(start_price: float, count: int, range_pct: float) ->
 
 
 class TestATRCalculation:
-    """Tests for ATR calculation"""
+    """Tests for ATR calculation."""
 
     def test_true_range_basic(self):
-        """Test True Range calculation"""
+        """Test True Range calculation."""
         config = SupertrendConfig(atr_period=5)
         engine = SupertrendEngine(config)
 
@@ -89,7 +89,7 @@ class TestATRCalculation:
         assert abs(state2.debug["tr"] - 15.0) < 1e-9
 
     def test_atr_seed_with_sma(self):
-        """Test ATR seeds with SMA of TR values"""
+        """Test ATR seeds with SMA of TR values."""
         config = SupertrendConfig(atr_period=5)
         engine = SupertrendEngine(config)
 
@@ -109,7 +109,7 @@ class TestATRCalculation:
         assert results[4].debug["is_ready"]
 
     def test_atr_wilder_smoothing(self):
-        """Test ATR Wilder smoothing formula"""
+        """Test ATR Wilder smoothing formula."""
         config = SupertrendConfig(atr_period=5)
         engine = SupertrendEngine(config)
 
@@ -130,10 +130,10 @@ class TestATRCalculation:
 
 
 class TestBandLocking:
-    """Tests for Supertrend band locking logic"""
+    """Tests for Supertrend band locking logic."""
 
     def test_basic_bands_calculation(self):
-        """Test basic bands calculation"""
+        """Test basic bands calculation."""
         config = SupertrendConfig(atr_period=5, multiplier=3.0)
         engine = SupertrendEngine(config)
 
@@ -154,7 +154,7 @@ class TestBandLocking:
         assert abs(result.basic_lower - expected_lower) < 0.01
 
     def test_band_locking_upper(self):
-        """Test upper band locks when price above it"""
+        """Test upper band locks when price above it."""
         config = SupertrendConfig(atr_period=5, multiplier=2.0)
         engine = SupertrendEngine(config)
 
@@ -172,7 +172,7 @@ class TestBandLocking:
         assert result2.final_upper > 0
 
     def test_direction_persistence(self):
-        """Test direction persists when price between bands"""
+        """Test direction persists when price between bands."""
         config = SupertrendConfig(atr_period=5, multiplier=3.0)
         engine = SupertrendEngine(config)
 
@@ -188,10 +188,10 @@ class TestBandLocking:
 
 
 class TestDirectionFlips:
-    """Tests for direction flips"""
+    """Tests for direction flips."""
 
     def test_direction_flip_detection(self):
-        """Test direction flip event detection"""
+        """Test direction flip event detection."""
         config = SupertrendConfig(atr_period=5, multiplier=2.0)
         engine = SupertrendEngine(config)
 
@@ -214,7 +214,7 @@ class TestDirectionFlips:
         assert result.flips_last_n >= 0
 
     def test_flip_counter_increments(self):
-        """Test flip counter increments correctly"""
+        """Test flip counter increments correctly."""
         config = SupertrendConfig(atr_period=5, flip_window=10, multiplier=1.5)
         engine = SupertrendEngine(config)
 
@@ -232,7 +232,7 @@ class TestDirectionFlips:
         assert final_flips >= 0  # Changed to >= to allow for wide bands
 
     def test_hold_count_resets_on_flip(self):
-        """Test hold count resets when direction flips"""
+        """Test hold count resets when direction flips."""
         config = SupertrendConfig(atr_period=5)
         engine = SupertrendEngine(config)
 
@@ -248,10 +248,10 @@ class TestDirectionFlips:
 
 
 class TestRegimeClassification:
-    """Tests for regime classification"""
+    """Tests for regime classification."""
 
     def test_trend_regime_detection(self):
-        """Test TREND regime detection in strong trend"""
+        """Test TREND regime detection in strong trend."""
         config = SupertrendConfig(
             atr_period=10, flip_window=20, flip_rate_trend=0.05, min_hold_bars=3
         )
@@ -271,7 +271,7 @@ class TestRegimeClassification:
         assert result.regime_strength_0_100 > 50
 
     def test_chop_regime_detection(self):
-        """Test CHOP regime detection in sideways market"""
+        """Test CHOP regime detection in sideways market."""
         config = SupertrendConfig(
             atr_period=10,
             flip_window=20,
@@ -297,7 +297,7 @@ class TestRegimeClassification:
             assert result.regime_strength_0_100 <= 40
 
     def test_low_atr_triggers_chop(self):
-        """Test low ATR% triggers CHOP regime"""
+        """Test low ATR% triggers CHOP regime."""
         config = SupertrendConfig(atr_period=10, atrp_min_chop=0.005)  # 0.5%
         engine = SupertrendEngine(config)
 
@@ -319,10 +319,10 @@ class TestRegimeClassification:
 
 
 class TestRegimeStrength:
-    """Tests for regime strength calculation"""
+    """Tests for regime strength calculation."""
 
     def test_strength_components(self):
-        """Test strength has valid range"""
+        """Test strength has valid range."""
         config = SupertrendConfig(atr_period=10)
         engine = SupertrendEngine(config)
 
@@ -334,7 +334,7 @@ class TestRegimeStrength:
         assert 0 <= result.regime_strength_0_100 <= 100
 
     def test_chop_strength_capped(self):
-        """Test CHOP regime strength is capped at 40"""
+        """Test CHOP regime strength is capped at 40."""
         config = SupertrendConfig(atr_period=10)
         engine = SupertrendEngine(config)
 
@@ -348,10 +348,10 @@ class TestRegimeStrength:
 
 
 class TestIncrementalVsBatch:
-    """Tests incremental updates match batch processing"""
+    """Tests incremental updates match batch processing."""
 
     def test_incremental_equals_batch(self):
-        """Test incremental updates match warmup batch"""
+        """Test incremental updates match warmup batch."""
         config = SupertrendConfig(atr_period=10)
 
         # Batch warmup
@@ -372,10 +372,10 @@ class TestIncrementalVsBatch:
 
 
 class TestMultiTimeframe:
-    """Tests for multi-timeframe support"""
+    """Tests for multi-timeframe support."""
 
     def test_independent_timeframes(self):
-        """Test timeframes maintain independent state"""
+        """Test timeframes maintain independent state."""
         config = SupertrendConfig(atr_period=10)
         engine = SupertrendEngine(config)
 
@@ -394,7 +394,7 @@ class TestMultiTimeframe:
         assert result_5m.atr > 0
 
     def test_update_convenience_method(self):
-        """Test convenience update method"""
+        """Test convenience update method."""
         config = SupertrendConfig(atr_period=10)
         engine = SupertrendEngine(config)
 
@@ -412,17 +412,17 @@ class TestMultiTimeframe:
 
 
 class TestPerTimeframeOverrides:
-    """Tests for per-timeframe configuration overrides"""
+    """Tests for per-timeframe configuration overrides."""
 
     def test_per_tf_atr_period(self):
-        """Test per-timeframe ATR period override"""
+        """Test per-timeframe ATR period override."""
         config = SupertrendConfig(atr_period=10, per_tf_overrides={"1m": {"atr_period": 5}})
 
         assert config.get_atr_period("1m") == 5
         assert config.get_atr_period("5m") == 10
 
     def test_per_tf_multiplier(self):
-        """Test per-timeframe multiplier override"""
+        """Test per-timeframe multiplier override."""
         config = SupertrendConfig(multiplier=3.0, per_tf_overrides={"1h": {"multiplier": 2.5}})
 
         assert config.get_multiplier("1h") == 2.5
@@ -430,10 +430,10 @@ class TestPerTimeframeOverrides:
 
 
 class TestFormatting:
-    """Tests for output formatting"""
+    """Tests for output formatting."""
 
     def test_format_compact(self):
-        """Test compact formatting"""
+        """Test compact formatting."""
         config = SupertrendConfig(atr_period=10)
         engine = SupertrendEngine(config)
 
@@ -449,7 +449,7 @@ class TestFormatting:
         assert "regime=" in output
 
     def test_format_verbose(self):
-        """Test verbose formatting"""
+        """Test verbose formatting."""
         config = SupertrendConfig(atr_period=10)
         engine = SupertrendEngine(config)
 
@@ -465,10 +465,10 @@ class TestFormatting:
 
 
 class TestEdgeCases:
-    """Tests for edge cases"""
+    """Tests for edge cases."""
 
     def test_first_candle(self):
-        """Test handling of first candle"""
+        """Test handling of first candle."""
         config = SupertrendConfig(atr_period=5)
         engine = SupertrendEngine(config)
 
@@ -479,7 +479,7 @@ class TestEdgeCases:
         assert result.debug["is_ready"] is False
 
     def test_zero_true_range(self):
-        """Test handling of zero true range"""
+        """Test handling of zero true range."""
         config = SupertrendConfig(atr_period=5)
         engine = SupertrendEngine(config)
 

@@ -6,7 +6,7 @@ Validates:
 - Incremental vs batch computation
 - ATR normalization
 - State machine logic
-- Divergence detection
+- Divergence detection.
 """
 
 import math

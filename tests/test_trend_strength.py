@@ -16,20 +16,20 @@ from nlu_analyzer.indicators.trend_strength import (
 
 
 def create_candle(timestamp: float, high: float, low: float, close: float, volume: float) -> Candle:
-    """Helper to create a candle"""
+    """Helper to create a candle."""
     return Candle(timestamp=timestamp, open=close, high=high, low=low, close=close, volume=volume)
 
 
 def create_simple_candle(timestamp: float, price: float, volume: float = 1000.0) -> Candle:
-    """Helper to create candle with same OHLC"""
+    """Helper to create candle with same OHLC."""
     return create_candle(timestamp, price, price, price, volume)
 
 
 class TestComponentNormalization:
-    """Tests for individual component normalization"""
+    """Tests for individual component normalization."""
 
     def test_ema_slope_normalization(self):
-        """Test EMA slope hits ~1.0 when slope == factor × ATR%"""
+        """Test EMA slope hits ~1.0 when slope == factor × ATR%."""
         config = TrendStrengthConfig(atr_period=5, ema_slope_strong_factor=0.20)
         engine = TrendStrengthEngine(config)
 
@@ -55,7 +55,7 @@ class TestComponentNormalization:
         assert 0.8 < result.components_norm["ema_slope"] <= 1.0
 
     def test_ribbon_normalization_range(self):
-        """Test ribbon WR maps correctly to 0..1"""
+        """Test ribbon WR maps correctly to 0..1."""
         config = TrendStrengthConfig(ribbon_wr_low=-0.10, ribbon_wr_high=0.20)
         engine = TrendStrengthEngine(config)
 
@@ -84,7 +84,7 @@ class TestComponentNormalization:
         assert 0.4 < result_mid.components_norm["ribbon"] < 0.6
 
     def test_rv_normalization_saturation(self):
-        """Test RV normalization with saturation"""
+        """Test RV normalization with saturation."""
         config = TrendStrengthConfig(rv_period=10, rv_low=0.8, rv_high=2.0)
         engine = TrendStrengthEngine(config)
 
@@ -109,7 +109,7 @@ class TestComponentNormalization:
         assert result_saturated.components_norm["rv"] == 1.0
 
     def test_oi_normalization(self):
-        """Test OI expansion normalization"""
+        """Test OI expansion normalization."""
         config = TrendStrengthConfig(oi_ref_by_tf={"1m": 0.003})
         engine = TrendStrengthEngine(config)
 
@@ -130,10 +130,10 @@ class TestComponentNormalization:
 
 
 class TestWeightingAndComposite:
-    """Tests for weight normalization and composite calculation"""
+    """Tests for weight normalization and composite calculation."""
 
     def test_all_components_present(self):
-        """Test composite with all components present"""
+        """Test composite with all components present."""
         config = TrendStrengthConfig(w_ema_slope=0.35, w_ribbon=0.25, w_rv=0.20, w_oi=0.20)
         engine = TrendStrengthEngine(config)
 
@@ -158,7 +158,7 @@ class TestWeightingAndComposite:
         assert abs(sum(result.weights.values()) - 1.0) < 1e-6
 
     def test_missing_oi_renormalizes_weights(self):
-        """Test weight renormalization when OI missing"""
+        """Test weight renormalization when OI missing."""
         config = TrendStrengthConfig(w_ema_slope=0.35, w_ribbon=0.25, w_rv=0.20, w_oi=0.20)
         engine = TrendStrengthEngine(config)
 
@@ -191,10 +191,10 @@ class TestWeightingAndComposite:
 
 
 class TestSmoothing:
-    """Tests for EMA smoothing of strength"""
+    """Tests for EMA smoothing of strength."""
 
     def test_smoothing_reduces_volatility(self):
-        """Test that smoothing reduces score volatility"""
+        """Test that smoothing reduces score volatility."""
         config = TrendStrengthConfig(smooth_period=5)
         engine = TrendStrengthEngine(config)
 
@@ -231,10 +231,10 @@ class TestSmoothing:
 
 
 class TestBucketing:
-    """Tests for bucket classification"""
+    """Tests for bucket classification."""
 
     def test_weak_bucket(self):
-        """Test WEAK bucket classification"""
+        """Test WEAK bucket classification."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -256,7 +256,7 @@ class TestBucketing:
         assert result.strength_smooth <= 30.0
 
     def test_strong_bucket(self):
-        """Test STRONG bucket classification"""
+        """Test STRONG bucket classification."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -280,7 +280,7 @@ class TestBucketing:
         assert result.strength_smooth > 60.0
 
     def test_emerging_bucket(self):
-        """Test EMERGING bucket classification"""
+        """Test EMERGING bucket classification."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -303,10 +303,10 @@ class TestBucketing:
 
 
 class TestSafetyCaps:
-    """Tests for safety cap application"""
+    """Tests for safety cap application."""
 
     def test_structure_range_cap(self):
-        """Test structure range cap limits strength"""
+        """Test structure range cap limits strength."""
         config = TrendStrengthConfig(cap_when_structure_range=50)
         engine = TrendStrengthEngine(config)
 
@@ -328,7 +328,7 @@ class TestSafetyCaps:
         assert result.strength_smooth <= 50.0
 
     def test_supertrend_chop_cap(self):
-        """Test supertrend chop cap limits strength"""
+        """Test supertrend chop cap limits strength."""
         config = TrendStrengthConfig(cap_when_supertrend_chop=50)
         engine = TrendStrengthEngine(config)
 
@@ -350,7 +350,7 @@ class TestSafetyCaps:
         assert result.strength_smooth <= 50.0
 
     def test_rv_dead_cap(self):
-        """Test RV dead cap limits strength"""
+        """Test RV dead cap limits strength."""
         config = TrendStrengthConfig(cap_when_rv_dead=25)
         engine = TrendStrengthEngine(config)
 
@@ -372,10 +372,10 @@ class TestSafetyCaps:
 
 
 class TestEndToEnd:
-    """End-to-end integration tests"""
+    """End-to-end integration tests."""
 
     def test_strong_trend_scenario(self):
-        """Test strong trend produces STRONG bucket"""
+        """Test strong trend produces STRONG bucket."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -406,7 +406,7 @@ class TestEndToEnd:
         assert result.strength_smooth > 60.0
 
     def test_chop_scenario(self):
-        """Test choppy market produces WEAK bucket"""
+        """Test choppy market produces WEAK bucket."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -437,10 +437,10 @@ class TestEndToEnd:
 
 
 class TestDirectionalSigning:
-    """Tests for directional bias and signed strength"""
+    """Tests for directional bias and signed strength."""
 
     def test_bull_bias_positive_strength(self):
-        """Test BULL bias produces positive signed strength"""
+        """Test BULL bias produces positive signed strength."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -468,7 +468,7 @@ class TestDirectionalSigning:
         assert abs(result.strength_signed - result.strength_smooth) < 0.01
 
     def test_bear_bias_negative_strength(self):
-        """Test BEAR bias produces negative signed strength"""
+        """Test BEAR bias produces negative signed strength."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -496,7 +496,7 @@ class TestDirectionalSigning:
         assert abs(result.strength_signed + result.strength_smooth) < 0.01
 
     def test_neutral_bias_zero_strength(self):
-        """Test NEUTRAL bias produces zero signed strength"""
+        """Test NEUTRAL bias produces zero signed strength."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -521,7 +521,7 @@ class TestDirectionalSigning:
         assert result.strength_signed == 0.0
 
     def test_direction_bias_param_overrides_bias_string(self):
-        """Test direction_bias parameter takes precedence over bias string"""
+        """Test direction_bias parameter takes precedence over bias string."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -568,7 +568,7 @@ class TestDirectionalSigning:
         assert result.strength_signed == 0.0
 
     def test_invalid_bias_string_defaults_to_neutral(self):
-        """Test invalid bias string defaults to neutral"""
+        """Test invalid bias string defaults to neutral."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -591,7 +591,7 @@ class TestDirectionalSigning:
         assert result.strength_signed == 0.0
 
     def test_direction_bias_int_validation(self):
-        """Test direction_bias validates to -1, 0, or +1"""
+        """Test direction_bias validates to -1, 0, or +1."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -615,10 +615,10 @@ class TestDirectionalSigning:
 
 
 class TestFormatting:
-    """Tests for output formatting"""
+    """Tests for output formatting."""
 
     def test_format_compact(self):
-        """Test compact formatting"""
+        """Test compact formatting."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -645,10 +645,10 @@ class TestFormatting:
 
 
 class TestEdgeCases:
-    """Tests for edge cases"""
+    """Tests for edge cases."""
 
     def test_no_components_available(self):
-        """Test handling when no components available"""
+        """Test handling when no components available."""
         config = TrendStrengthConfig()
         engine = TrendStrengthEngine(config)
 
@@ -660,7 +660,7 @@ class TestEdgeCases:
         assert result.strength_smooth == 0.0
 
     def test_weight_validation(self):
-        """Test config validates weights sum to 1.0"""
+        """Test config validates weights sum to 1.0."""
         with pytest.raises(ValueError, match="must sum to 1.0"):
             TrendStrengthConfig(w_ema_slope=0.3, w_ribbon=0.3, w_rv=0.3, w_oi=0.3)  # Sums to 1.2
 

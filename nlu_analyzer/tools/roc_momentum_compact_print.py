@@ -55,7 +55,7 @@ def print_roc_compact_block(roc_state, tf: str = "1m", width: int = 50) -> None:
         State: IMPULSE ↑  Score: 76/100
         ROC:  5=+0.08%  20=+0.22%  60=+0.60%
         Norm: 5=+1.10   ACC: 5=+0.0003
-        Flags: blowoff=NO  divergence=NONE
+        Flags: blowoff=NO  divergence=NONE.
     """
     if roc_state is None:
         print(f"┌{'─' * width}┐")
@@ -116,7 +116,7 @@ def print_roc_mini(roc_state) -> str:
     """
     Minimal ROC info for cramped displays.
 
-    Returns: "ROC:76↑ div:N"
+    Returns: "ROC:76↑ div:N".
     """
     if roc_state is None:
         return "ROC:--"

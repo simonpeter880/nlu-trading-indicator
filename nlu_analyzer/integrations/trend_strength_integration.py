@@ -177,7 +177,7 @@ def example_basic_integration():
     print("=" * 80)
 
     def analyze_trend_strength(ts_state):
-        """Example: Use Trend Strength for position sizing and risk management"""
+        """Example: Use Trend Strength for position sizing and risk management."""
 
         signals = []
 
@@ -321,7 +321,7 @@ def example_directional_signing():
 
 
 def generate_test_candles(start_price: float, count: int, trend: float):
-    """Generate synthetic test candles"""
+    """Generate synthetic test candles."""
     candles = []
     price = start_price
 

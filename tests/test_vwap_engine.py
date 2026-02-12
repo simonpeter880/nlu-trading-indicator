@@ -24,20 +24,20 @@ from nlu_analyzer.indicators.vwap_engine import (
 
 
 def create_candle(timestamp: float, high: float, low: float, close: float, volume: float) -> Candle:
-    """Helper to create a candle"""
+    """Helper to create a candle."""
     return Candle(timestamp=timestamp, open=close, high=high, low=low, close=close, volume=volume)
 
 
 def create_simple_candle(timestamp: float, price: float, volume: float) -> Candle:
-    """Helper to create candle with same OHLC"""
+    """Helper to create candle with same OHLC."""
     return create_candle(timestamp, price, price, price, volume)
 
 
 class TestVWAPFormula:
-    """Tests for VWAP formula correctness"""
+    """Tests for VWAP formula correctness."""
 
     def test_vwap_basic_calculation(self):
-        """Test basic VWAP calculation on known data"""
+        """Test basic VWAP calculation on known data."""
         config = VWAPConfig(price_source=PriceSource.CLOSE)
         engine = VWAPEngine(config)
 
@@ -64,7 +64,7 @@ class TestVWAPFormula:
         ), f"VWAP {actual_vwap} != expected {expected_vwap}"
 
     def test_vwap_typical_price(self):
-        """Test VWAP with typical price (H+L+C)/3"""
+        """Test VWAP with typical price (H+L+C)/3."""
         config = VWAPConfig(price_source=PriceSource.TYPICAL)
         engine = VWAPEngine(config)
 
@@ -81,7 +81,7 @@ class TestVWAPFormula:
         assert abs(actual_vwap - expected_vwap) < 1e-9
 
     def test_vwap_zero_volume_handling(self):
-        """Test that zero volume candles are handled gracefully"""
+        """Test that zero volume candles are handled gracefully."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -103,10 +103,10 @@ class TestVWAPFormula:
 
 
 class TestIncrementalVWAP:
-    """Tests for incremental VWAP calculation"""
+    """Tests for incremental VWAP calculation."""
 
     def test_incremental_equals_batch(self):
-        """Test incremental VWAP matches batch calculation"""
+        """Test incremental VWAP matches batch calculation."""
         config = VWAPConfig(price_source=PriceSource.CLOSE)
         engine = VWAPEngine(config)
 
@@ -133,7 +133,7 @@ class TestIncrementalVWAP:
         ), f"Incremental {incremental_vwap} != Batch {batch_vwap}"
 
     def test_incremental_typical_price(self):
-        """Test incremental with typical price"""
+        """Test incremental with typical price."""
         config = VWAPConfig(price_source=PriceSource.TYPICAL)
         engine = VWAPEngine(config)
 
@@ -160,10 +160,10 @@ class TestIncrementalVWAP:
 
 
 class TestSessionReset:
-    """Tests for session boundary detection and reset"""
+    """Tests for session boundary detection and reset."""
 
     def test_utc_day_reset(self):
-        """Test session reset at UTC day boundary"""
+        """Test session reset at UTC day boundary."""
         config = VWAPConfig(session_reset="UTC_DAY", timezone="UTC")
         engine = VWAPEngine(config)
 
@@ -183,7 +183,7 @@ class TestSessionReset:
         assert result2.session_by_tf["1m"].bar_count == 1, "Bar count should reset"
 
     def test_no_reset_within_day(self):
-        """Test no reset within same day"""
+        """Test no reset within same day."""
         config = VWAPConfig(session_reset="UTC_DAY")
         engine = VWAPEngine(config)
 
@@ -205,10 +205,10 @@ class TestSessionReset:
 
 
 class TestWeeklyReset:
-    """Tests for weekly boundary detection and reset"""
+    """Tests for weekly boundary detection and reset."""
 
     def test_weekly_reset(self):
-        """Test weekly reset at ISO week boundary"""
+        """Test weekly reset at ISO week boundary."""
         config = VWAPConfig(weekly_reset_day="MON", timezone="UTC")
         engine = VWAPEngine(config)
 
@@ -228,10 +228,10 @@ class TestWeeklyReset:
 
 
 class TestAnchoredVWAP:
-    """Tests for anchored VWAP functionality"""
+    """Tests for anchored VWAP functionality."""
 
     def test_anchored_vwap_creation(self):
-        """Test creating an anchored VWAP"""
+        """Test creating an anchored VWAP."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -244,7 +244,7 @@ class TestAnchoredVWAP:
         assert anchor.anchor_time == anchor_time
 
     def test_anchored_vwap_calculation(self):
-        """Test anchored VWAP calculation starts from anchor point"""
+        """Test anchored VWAP calculation starts from anchor point."""
         config = VWAPConfig(price_source=PriceSource.CLOSE)
         engine = VWAPEngine(config)
 
@@ -278,7 +278,7 @@ class TestAnchoredVWAP:
         assert abs(anchor_vwap - expected) < 1e-6
 
     def test_multiple_anchors(self):
-        """Test multiple anchored VWAPs"""
+        """Test multiple anchored VWAPs."""
         config = VWAPConfig(max_anchors_per_tf=3)
         engine = VWAPEngine(config)
 
@@ -290,7 +290,7 @@ class TestAnchoredVWAP:
         assert len(engine._anchored_vwaps["1m"]) == 3
 
     def test_anchor_pruning(self):
-        """Test anchor pruning when exceeding max"""
+        """Test anchor pruning when exceeding max."""
         config = VWAPConfig(max_anchors_per_tf=2)
         engine = VWAPEngine(config)
 
@@ -308,7 +308,7 @@ class TestAnchoredVWAP:
         assert "ANCHOR_2" in anchor_ids
 
     def test_remove_anchor(self):
-        """Test removing an anchor"""
+        """Test removing an anchor."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -328,10 +328,10 @@ class TestAnchoredVWAP:
 
 
 class TestStandardDeviationBands:
-    """Tests for standard deviation band calculation"""
+    """Tests for standard deviation band calculation."""
 
     def test_std_bands_calculation(self):
-        """Test standard deviation bands calculation"""
+        """Test standard deviation bands calculation."""
         config = VWAPConfig(
             enable_std_bands=True, min_bars_for_std=10, std_band_multipliers=[1.0, 2.0]
         )
@@ -361,7 +361,7 @@ class TestStandardDeviationBands:
             assert upper > session.vwap > lower
 
     def test_std_variance_formula(self):
-        """Test standard deviation variance formula: Var = E[X^2] - E[X]^2"""
+        """Test standard deviation variance formula: Var = E[X^2] - E[X]^2."""
         config = VWAPConfig(
             enable_std_bands=True, min_bars_for_std=5, price_source=PriceSource.CLOSE
         )
@@ -386,7 +386,7 @@ class TestStandardDeviationBands:
         assert abs(session.bands.std - expected_std) < 0.1
 
     def test_atr_fallback_bands(self):
-        """Test ATR fallback bands when std not ready"""
+        """Test ATR fallback bands when std not ready."""
         config = VWAPConfig(
             enable_std_bands=True,
             min_bars_for_std=100,  # High threshold
@@ -407,10 +407,10 @@ class TestStandardDeviationBands:
 
 
 class TestPricePosition:
-    """Tests for price position detection"""
+    """Tests for price position detection."""
 
     def test_price_above_vwap(self):
-        """Test price position ABOVE"""
+        """Test price position ABOVE."""
         config = VWAPConfig(touch_tolerance=0.0001)
         engine = VWAPEngine(config)
 
@@ -423,7 +423,7 @@ class TestPricePosition:
         assert result.session_by_tf["1m"].price_position == PricePosition.ABOVE
 
     def test_price_below_vwap(self):
-        """Test price position BELOW"""
+        """Test price position BELOW."""
         config = VWAPConfig(touch_tolerance=0.0001)
         engine = VWAPEngine(config)
 
@@ -448,7 +448,7 @@ class TestPricePosition:
 
 
 class TestInteractionStateMachine:
-    """Tests for interaction state machine"""
+    """Tests for interaction state machine."""
 
     def test_reclaim_state(self):
         """Test RECLAIM state (cross from below to above with hold)"""
@@ -511,10 +511,10 @@ class TestInteractionStateMachine:
 
 
 class TestDistanceMetrics:
-    """Tests for distance metric calculations"""
+    """Tests for distance metric calculations."""
 
     def test_percentage_distance(self):
-        """Test percentage distance calculation"""
+        """Test percentage distance calculation."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -547,10 +547,10 @@ class TestDistanceMetrics:
 
 
 class TestMultiTimeframe:
-    """Tests for multi-timeframe support"""
+    """Tests for multi-timeframe support."""
 
     def test_independent_timeframes(self):
-        """Test that different timeframes maintain independent state"""
+        """Test that different timeframes maintain independent state."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -573,7 +573,7 @@ class TestMultiTimeframe:
         assert abs(result.session_by_tf["1h"].vwap - 105.0) < 0.1
 
     def test_update_convenience_method(self):
-        """Test convenience update method"""
+        """Test convenience update method."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -598,10 +598,10 @@ class TestMultiTimeframe:
 
 
 class TestFormatting:
-    """Tests for output formatting"""
+    """Tests for output formatting."""
 
     def test_format_compact(self):
-        """Test compact formatting"""
+        """Test compact formatting."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -615,7 +615,7 @@ class TestFormatting:
         assert "dist=" in output
 
     def test_format_with_anchors(self):
-        """Test formatting with anchored VWAPs"""
+        """Test formatting with anchored VWAPs."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -635,10 +635,10 @@ class TestFormatting:
 
 
 class TestEdgeCases:
-    """Tests for edge cases"""
+    """Tests for edge cases."""
 
     def test_single_candle(self):
-        """Test with single candle"""
+        """Test with single candle."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -648,7 +648,7 @@ class TestEdgeCases:
         assert abs(result.session_by_tf["1m"].vwap - 100.0) < 1e-9
 
     def test_all_same_price(self):
-        """Test with all candles at same price"""
+        """Test with all candles at same price."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
@@ -663,7 +663,7 @@ class TestEdgeCases:
             assert result.session_by_tf["1m"].bands.std < 0.0001
 
     def test_warmup_empty_candles(self):
-        """Test warmup with empty candle list"""
+        """Test warmup with empty candle list."""
         config = VWAPConfig()
         engine = VWAPEngine(config)
 
